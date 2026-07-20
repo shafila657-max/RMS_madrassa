@@ -156,8 +156,6 @@ const RegisterPage = () => {
               </Link>
             </p>
           </div>
-
-          </div>
         </div>
       </motion.div>
     </div>
