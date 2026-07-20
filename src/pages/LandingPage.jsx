@@ -22,6 +22,7 @@ const LandingPage = () => {
     supabase
       .from('gallery_items')
       .select('*')
+      .eq('is_featured', true)
       .order('created_at', { ascending: false })
       .limit(6)
       .then(({ data }) => { if (data) setGalleryPreview(data); });
@@ -336,78 +337,117 @@ const LandingPage = () => {
         </div>
       </section>
 
-      {/* ── GALLERY PREVIEW SECTION ── */}
+      {/* ── FEATURED GALLERY MARQUEE ── */}
       {galleryPreview.length > 0 && (
-        <section id="gallery" className="py-24 bg-white">
-          <div className="container mx-auto px-6 md:px-12">
-            <motion.div
-              initial={{ opacity: 0, y: 40 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ duration: 0.7 }}
-              className="text-center max-w-2xl mx-auto mb-12"
-            >
-              <span className="text-xs uppercase tracking-widest font-bold text-emerald-600 bg-emerald-50 border border-emerald-100 px-3 py-1 rounded-full">
-                Media Gallery
-              </span>
-              <h2 className="font-heading text-4xl md:text-5xl text-stone-900 mt-4 mb-4">
-                Moments & Memories
-              </h2>
-              <p className="text-stone-500 text-sm leading-relaxed">
-                A glimpse into our events, classes, and celebrations at RMS Madrasa.
-              </p>
-            </motion.div>
+        <section id="gallery" className="py-20 bg-stone-950 overflow-hidden relative">
+          {/* Ambient glow blobs */}
+          <div className="absolute top-0 left-1/4 w-96 h-96 bg-emerald-600/10 rounded-full blur-3xl pointer-events-none" />
+          <div className="absolute bottom-0 right-1/4 w-96 h-96 bg-amber-500/10 rounded-full blur-3xl pointer-events-none" />
 
-            <div className="grid sm:grid-cols-2 md:grid-cols-3 gap-6 mb-10">
-              {galleryPreview.map((item, idx) => (
-                <motion.div
-                  key={item.id}
-                  initial={{ opacity: 0, scale: 0.9 }}
-                  whileInView={{ opacity: 1, scale: 1 }}
-                  viewport={{ once: true }}
-                  transition={{ duration: 0.4, delay: idx * 0.08 }}
-                  className="group relative rounded-3xl overflow-hidden bg-stone-100 shadow-md border border-stone-100 cursor-pointer"
-                  onClick={() => window.open('/gallery', '_self')}
+          <div className="container mx-auto px-6 mb-10">
+            <div className="flex items-center justify-between">
+              <div>
+                <span className="text-xs uppercase tracking-widest font-bold text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-3 py-1 rounded-full inline-block mb-3">
+                  ✦ Featured Moments
+                </span>
+                <h2 className="font-heading text-3xl md:text-4xl font-bold text-white">
+                  Our Gallery
+                </h2>
+                <p className="text-stone-400 text-sm mt-1">Events, classes &amp; celebrations at RMS Madrasa</p>
+              </div>
+              <Link
+                to="/gallery"
+                className="flex items-center gap-2 px-5 py-2.5 rounded-full bg-white/10 hover:bg-emerald-600 text-white text-sm font-semibold border border-white/10 hover:border-emerald-600 transition-all duration-300 group"
+              >
+                <ImageIcon className="w-4 h-4" />
+                <span>View Gallery</span>
+                <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+              </Link>
+            </div>
+          </div>
+
+          {/* Infinite marquee track — duplicated for seamless loop */}
+          <div className="relative flex">
+            {/* Left fade edge */}
+            <div className="absolute left-0 top-0 bottom-0 w-24 bg-gradient-to-r from-stone-950 to-transparent z-10 pointer-events-none" />
+            {/* Right fade edge */}
+            <div className="absolute right-0 top-0 bottom-0 w-24 bg-gradient-to-l from-stone-950 to-transparent z-10 pointer-events-none" />
+
+            <div className="flex gap-5 animate-marquee" style={{ width: 'max-content' }}>
+              {/* First copy */}
+              {galleryPreview.map((item) => (
+                <Link
+                  key={`a-${item.id}`}
+                  to="/gallery"
+                  className="flex-shrink-0 w-64 h-44 rounded-2xl overflow-hidden relative group border border-white/5 shadow-xl"
                 >
-                  <div className="aspect-[4/3] overflow-hidden">
-                    {item.media_type === 'image' ? (
+                  {item.media_type === 'image' ? (
+                    <img
+                      src={item.media_url}
+                      alt={item.title}
+                      className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700 brightness-90"
+                      loading="lazy"
+                    />
+                  ) : (
+                    <div className="relative w-full h-full">
                       <img
-                        src={item.media_url}
+                        src={`https://img.youtube.com/vi/${getYouTubeId(item.media_url) || 'default'}/hqdefault.jpg`}
                         alt={item.title}
-                        className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
+                        className="w-full h-full object-cover brightness-75 group-hover:scale-110 transition-transform duration-700"
                         loading="lazy"
                       />
-                    ) : (
-                      <div className="relative w-full h-full">
-                        <img
-                          src={`https://img.youtube.com/vi/${getYouTubeId(item.media_url) || 'default'}/hqdefault.jpg`}
-                          alt={item.title}
-                          className="w-full h-full object-cover brightness-75 group-hover:scale-110 transition-transform duration-700"
-                          loading="lazy"
-                        />
-                        <div className="absolute inset-0 flex items-center justify-center">
-                          <div className="w-12 h-12 bg-white/90 rounded-full flex items-center justify-center shadow-lg">
-                            <Play className="w-5 h-5 fill-red-600 text-red-600 ml-0.5" />
-                          </div>
+                      <div className="absolute inset-0 flex items-center justify-center">
+                        <div className="w-10 h-10 bg-white/90 rounded-full flex items-center justify-center shadow-lg">
+                          <Play className="w-4 h-4 fill-red-600 text-red-600 ml-0.5" />
                         </div>
                       </div>
-                    )}
+                    </div>
+                  )}
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-end p-3">
+                    <div>
+                      <span className="text-[9px] font-bold text-emerald-300 uppercase tracking-wider">{item.category}</span>
+                      <p className="text-white text-xs font-semibold line-clamp-2 leading-snug">{item.title}</p>
+                    </div>
                   </div>
-                  <div className="absolute bottom-0 inset-x-0 bg-gradient-to-t from-black/60 via-black/20 to-transparent p-4 translate-y-1 group-hover:translate-y-0 transition-transform duration-300">
-                    <span className="text-[10px] font-bold text-emerald-300 uppercase tracking-wider">{item.category}</span>
-                    <p className="text-white text-xs font-semibold mt-0.5 line-clamp-2">{item.title}</p>
-                  </div>
-                </motion.div>
+                </Link>
               ))}
-            </div>
-
-            <div className="text-center">
-              <Link to="/gallery">
-                <Button size="lg" className="rounded-full bg-stone-900 hover:bg-stone-700 text-white transform hover:scale-105 active:scale-95 transition-all shadow-md">
-                  Browse Full Gallery
-                  <ArrowRight className="ml-2 w-4 h-4" />
-                </Button>
-              </Link>
+              {/* Second copy for seamless loop */}
+              {galleryPreview.map((item) => (
+                <Link
+                  key={`b-${item.id}`}
+                  to="/gallery"
+                  className="flex-shrink-0 w-64 h-44 rounded-2xl overflow-hidden relative group border border-white/5 shadow-xl"
+                >
+                  {item.media_type === 'image' ? (
+                    <img
+                      src={item.media_url}
+                      alt={item.title}
+                      className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700 brightness-90"
+                      loading="lazy"
+                    />
+                  ) : (
+                    <div className="relative w-full h-full">
+                      <img
+                        src={`https://img.youtube.com/vi/${getYouTubeId(item.media_url) || 'default'}/hqdefault.jpg`}
+                        alt={item.title}
+                        className="w-full h-full object-cover brightness-75 group-hover:scale-110 transition-transform duration-700"
+                        loading="lazy"
+                      />
+                      <div className="absolute inset-0 flex items-center justify-center">
+                        <div className="w-10 h-10 bg-white/90 rounded-full flex items-center justify-center shadow-lg">
+                          <Play className="w-4 h-4 fill-red-600 text-red-600 ml-0.5" />
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-end p-3">
+                    <div>
+                      <span className="text-[9px] font-bold text-emerald-300 uppercase tracking-wider">{item.category}</span>
+                      <p className="text-white text-xs font-semibold line-clamp-2 leading-snug">{item.title}</p>
+                    </div>
+                  </div>
+                </Link>
+              ))}
             </div>
           </div>
         </section>

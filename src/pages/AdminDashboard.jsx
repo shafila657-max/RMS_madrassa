@@ -5,7 +5,7 @@ import {
   BookOpen, LogOut, Users, UserCheck, DollarSign, TrendingUp,
   CheckCircle, XCircle, Plus, X, Link, Calendar, Search,
   GraduationCap, ChevronDown, AlertCircle, RefreshCw,
-  Bell, Megaphone, AlertTriangle, Trash2, Volume2, Edit3
+  Bell, Megaphone, AlertTriangle, Trash2, Volume2, Edit3, Star
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { logout, getCachedProfile, clearCachedProfile } from '@/utils/auth';
@@ -143,7 +143,7 @@ const AdminDashboard = () => {
   // Gallery
   const [galleryItems, setGalleryItems] = useState([]);
   const [showAddGallery, setShowAddGallery] = useState(false);
-  const [galleryForm, setGalleryForm] = useState({ title: '', category: 'Meelad Fest', media_type: 'image', media_url: '' });
+  const [galleryForm, setGalleryForm] = useState({ title: '', category: 'Meelad Fest', media_type: 'image', media_url: '', is_featured: false });
 
   useEffect(() => { fetchAll(); }, []);
 
@@ -530,17 +530,32 @@ const AdminDashboard = () => {
         title: galleryForm.title,
         category: galleryForm.category,
         media_type: galleryForm.media_type,
-        media_url: galleryForm.media_url
+        media_url: galleryForm.media_url,
+        is_featured: galleryForm.is_featured
       }]);
       if (error) throw error;
       toast.success('Gallery item added successfully!');
-      setGalleryForm({ title: '', category: 'Meelad Fest', media_type: 'image', media_url: '' });
+      setGalleryForm({ title: '', category: 'Meelad Fest', media_type: 'image', media_url: '', is_featured: false });
       setShowAddGallery(false);
       fetchGalleryItems();
     } catch (err) {
       toast.error('Failed to add gallery item: ' + err.message);
     } finally {
       setFormLoading(false);
+    }
+  };
+
+  const handleToggleFeatured = async (id, currentStatus) => {
+    try {
+      const { error } = await supabase
+        .from('gallery_items')
+        .update({ is_featured: !currentStatus })
+        .eq('id', id);
+      if (error) throw error;
+      toast.success(`Item ${!currentStatus ? 'featured' : 'unfeatured'} successfully`);
+      fetchGalleryItems();
+    } catch (err) {
+      toast.error('Failed to update featured status: ' + err.message);
     }
   };
 
@@ -1172,7 +1187,7 @@ const AdminDashboard = () => {
                   <p className="text-xs text-stone-500 mt-1">Upload event photos and YouTube video links for the public landing page</p>
                 </div>
                 <Btn onClick={() => {
-                  setGalleryForm({ title: '', category: 'Meelad Fest', media_type: 'image', media_url: '' });
+                  setGalleryForm({ title: '', category: 'Meelad Fest', media_type: 'image', media_url: '', is_featured: false });
                   setShowAddGallery(true);
                 }}>
                   <Plus className="w-4 h-4" /> Add Gallery Item
@@ -1188,6 +1203,7 @@ const AdminDashboard = () => {
                         <th className="px-6 py-4">Title</th>
                         <th className="px-6 py-4">Category</th>
                         <th className="px-6 py-4">Type</th>
+                        <th className="px-6 py-4 text-center">Featured</th>
                         <th className="px-6 py-4 text-right">Action</th>
                       </tr>
                     </thead>
@@ -1216,6 +1232,15 @@ const AdminDashboard = () => {
                               </span>
                             </td>
                             <td className="px-6 py-4 capitalize font-medium text-stone-500">{item.media_type}</td>
+                            <td className="px-6 py-4 text-center">
+                              <button
+                                onClick={() => handleToggleFeatured(item.id, item.is_featured)}
+                                className={`p-2 rounded-xl transition-all ${item.is_featured ? 'text-amber-500 bg-amber-50 hover:bg-amber-100' : 'text-stone-300 hover:text-amber-500 hover:bg-stone-100'}`}
+                                title={item.is_featured ? 'Unfeature Item' : 'Feature Item'}
+                              >
+                                <Star className="w-5 h-5" fill={item.is_featured ? "currentColor" : "none"} />
+                              </button>
+                            </td>
                             <td className="px-6 py-4 text-right">
                               <button
                                 onClick={() => handleDeleteGalleryItem(item.id)}
@@ -1229,7 +1254,7 @@ const AdminDashboard = () => {
                         ))
                       ) : (
                         <tr>
-                          <td colSpan={5} className="text-center py-12 text-stone-400">
+                          <td colSpan={6} className="text-center py-12 text-stone-400">
                             <Plus className="w-12 h-12 text-stone-200 mx-auto mb-3" />
                             <p>No gallery items yet. Click "Add Gallery Item" to start!</p>
                           </td>
@@ -1503,6 +1528,19 @@ const AdminDashboard = () => {
             }
             required
           />
+
+          <label className="flex items-center gap-3 p-4 border border-stone-200 rounded-xl cursor-pointer hover:bg-stone-50 transition-colors">
+            <input
+              type="checkbox"
+              checked={galleryForm.is_featured}
+              onChange={(e) => setGalleryForm(f => ({ ...f, is_featured: e.target.checked }))}
+              className="w-5 h-5 rounded text-emerald-600 focus:ring-emerald-500 border-stone-300"
+            />
+            <div>
+              <span className="font-semibold text-stone-900 block">Feature on Landing Page</span>
+              <span className="text-xs text-stone-500">Show this item in the marquee on the home page</span>
+            </div>
+          </label>
 
           <div className="flex gap-2 pt-2">
             <Btn type="submit" className="flex-1" loading={formLoading}>
