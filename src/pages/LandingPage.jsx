@@ -436,20 +436,20 @@ const LandingPage = () => {
             <p className="font-bold text-sm text-white">Install RMS Madrasa</p>
             <p className="text-xs text-stone-400 truncate">Add to your home screen for quick access</p>
           </div>
-          {/* Install button */}
-          <button
-            onClick={async () => {
-              if (deferredPrompt) {
-                await handleInstallPWA();
-                setShowInstallBanner(false);
-              } else {
-                toast('Tap Share → "Add to Home Screen" in your browser.', { duration: 6000, icon: '📱' });
-              }
-            }}
-            className="flex-shrink-0 bg-emerald-500 hover:bg-emerald-400 text-white text-xs font-bold px-4 py-2 rounded-xl transition-colors"
-          >
-            Install
-          </button>
+          {/* Install & Download buttons */}
+          <div className="flex items-center gap-2 flex-shrink-0">
+            <a
+              href="/rms-madrasa.apk"
+              download="RMS_Madrasa.apk"
+              onClick={() => {
+                if (deferredPrompt) handleInstallPWA();
+                toast.success('Downloading Android APK...');
+              }}
+              className="bg-emerald-500 hover:bg-emerald-400 text-white text-xs font-bold px-3.5 py-2 rounded-xl transition-colors inline-flex items-center gap-1"
+            >
+              <Download className="w-3.5 h-3.5" /> Download App
+            </a>
+          </div>
           {/* Close button */}
           <button
             onClick={() => setShowInstallBanner(false)}
