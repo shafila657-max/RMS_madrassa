@@ -143,7 +143,7 @@ const AdminDashboard = () => {
   // Gallery
   const [galleryItems, setGalleryItems] = useState([]);
   const [showAddGallery, setShowAddGallery] = useState(false);
-  const [galleryForm, setGalleryForm] = useState({ title: '', category: 'Meelad Fest', media_type: 'image', media_url: '', is_featured: false });
+  const [galleryForm, setGalleryForm] = useState({ title: '', category: 'Meelad Fest', media_type: 'image', media_url: '', imageFile: null, is_featured: false });
 
   useEffect(() => { fetchAll(); }, []);
 
@@ -544,21 +544,48 @@ const AdminDashboard = () => {
 
   const handleAddGalleryItem = async (e) => {
     e.preventDefault();
-    if (!galleryForm.title || !galleryForm.media_url) {
-      toast.error('Title and Media URL are required');
+    if (!galleryForm.title) {
+      toast.error('Title is required');
+      return;
+    }
+    if (galleryForm.media_type === 'image' && !galleryForm.imageFile) {
+      toast.error('Please select an image file');
+      return;
+    }
+    if (galleryForm.media_type === 'video' && !galleryForm.media_url) {
+      toast.error('YouTube Video URL is required');
       return;
     }
     setFormLoading(true);
     try {
+      let finalMediaUrl = galleryForm.media_url;
+
+      if (galleryForm.media_type === 'image' && galleryForm.imageFile) {
+        const fileExt = galleryForm.imageFile.name.split('.').pop();
+        const fileName = `${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`;
+        const filePath = `uploads/${fileName}`;
+
+        const { error: uploadError } = await supabase.storage
+          .from('gallery')
+          .upload(filePath, galleryForm.imageFile);
+
+        if (uploadError) throw uploadError;
+
+        const { data: publicUrlData } = supabase.storage
+          .from('gallery')
+          .getPublicUrl(filePath);
+
+        finalMediaUrl = publicUrlData.publicUrl;
+      }
+
       const { error } = await supabase.from('gallery_items').insert([{
         title: galleryForm.title,
         category: galleryForm.category,
         media_type: galleryForm.media_type,
-        media_url: galleryForm.media_url,
+        media_url: finalMediaUrl,
         is_featured: galleryForm.is_featured
       }]);
       if (error) throw error;
-      toast.success('Gallery item added successfully!');
       setGalleryForm({ title: '', category: 'Meelad Fest', media_type: 'image', media_url: '', is_featured: false });
       setShowAddGallery(false);
       fetchGalleryItems();
@@ -1547,17 +1574,26 @@ const AdminDashboard = () => {
             </div>
           </div>
 
-          <Input
-            label={galleryForm.media_type === 'image' ? 'Image URL *' : 'YouTube Video URL *'}
-            value={galleryForm.media_url}
-            onChange={e => setGalleryForm(f => ({ ...f, media_url: e.target.value }))}
-            placeholder={
-              galleryForm.media_type === 'image'
-                ? 'e.g. https://images.unsplash.com/... or Supabase storage link'
-                : 'e.g. https://www.youtube.com/watch?v=dQw4w9WgXcQ'
-            }
-            required
-          />
+          {galleryForm.media_type === 'image' ? (
+            <div className="space-y-1.5">
+              <label className="text-sm font-semibold text-stone-700">Upload Image *</label>
+              <input
+                type="file"
+                accept="image/*"
+                onChange={e => setGalleryForm(f => ({ ...f, imageFile: e.target.files[0] }))}
+                className="w-full p-2.5 text-sm border border-stone-200 rounded-xl focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 outline-none transition-all"
+                required
+              />
+            </div>
+          ) : (
+            <Input
+              label="YouTube Video URL *"
+              value={galleryForm.media_url}
+              onChange={e => setGalleryForm(f => ({ ...f, media_url: e.target.value }))}
+              placeholder="e.g. https://www.youtube.com/watch?v=dQw4w9WgXcQ"
+              required
+            />
+          )}
 
           <label className="flex items-center gap-3 p-4 border border-stone-200 rounded-xl cursor-pointer hover:bg-stone-50 transition-colors">
             <input
