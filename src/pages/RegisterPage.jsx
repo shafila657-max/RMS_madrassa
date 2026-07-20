@@ -54,9 +54,26 @@ const RegisterPage = () => {
               <span className="font-heading text-2xl font-bold text-stone-900">RMS Madrasa</span>
             </div>
             <h2 className="font-heading text-3xl text-stone-900 mb-2">
-              {userType === 'parent' ? 'Parent' : 'Student'} Registration
+              {userType === 'parent' ? 'Parent' : userType === 'teacher' ? 'Teacher' : 'Student'} Registration
             </h2>
             <p className="text-stone-600">Create your account to get started</p>
+          </div>
+
+          {/* User Type Toggle */}
+          <div className="flex justify-center gap-2 mb-6">
+            {['parent', 'student', 'teacher'].map((type) => (
+              <button
+                key={type}
+                onClick={() => navigate(`/register?type=${type}`)}
+                className={`px-4 py-2 rounded-full text-sm font-semibold transition-all ${
+                  userType === type
+                    ? 'bg-emerald-100 text-emerald-800 ring-2 ring-emerald-500'
+                    : 'bg-stone-50 text-stone-500 hover:bg-stone-100'
+                }`}
+              >
+                {type.charAt(0).toUpperCase() + type.slice(1)}
+              </button>
+            ))}
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-4" data-testid="register-form">
@@ -140,13 +157,6 @@ const RegisterPage = () => {
             </p>
           </div>
 
-          <div className="mt-4 text-center">
-            <Link
-              to={`/register?type=${userType === 'parent' ? 'student' : 'parent'}`}
-              className="text-sm text-stone-600 hover:text-primary transition-colors"
-            >
-              Register as {userType === 'parent' ? 'Student' : 'Parent'} instead
-            </Link>
           </div>
         </div>
       </motion.div>
