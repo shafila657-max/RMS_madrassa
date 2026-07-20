@@ -175,11 +175,17 @@ const AdminStudentModal = ({ student, parents = [], open, onClose, onRefresh }) 
     }
   };
 
-  const handleDeleteScore = async (id) => {
-    if (!window.confirm('Delete score record?')) return;
-    await supabase.from('scores').delete().eq('id', id);
-    toast.success('Score deleted');
-    fetchStudentFullDetails();
+  const handleDeleteScore = (id) => {
+    toast('Delete this score record?', {
+      action: {
+        label: 'Delete',
+        onClick: async () => {
+          await supabase.from('scores').delete().eq('id', id);
+          toast.success('Score deleted');
+          fetchStudentFullDetails();
+        }
+      }
+    });
   };
 
   const handleAddFee = async () => {
@@ -216,11 +222,17 @@ const AdminStudentModal = ({ student, parents = [], open, onClose, onRefresh }) 
     fetchStudentFullDetails();
   };
 
-  const handleDeleteFee = async (feeId) => {
-    if (!window.confirm('Delete fee record?')) return;
-    await supabase.from('fees').delete().eq('id', feeId);
-    toast.success('Fee deleted');
-    fetchStudentFullDetails();
+  const handleDeleteFee = (id) => {
+    toast('Delete this fee record?', {
+      action: {
+        label: 'Delete',
+        onClick: async () => {
+          await supabase.from('fees').delete().eq('id', id);
+          toast.success('Fee deleted');
+          fetchStudentFullDetails();
+        }
+      }
+    });
   };
 
   const handleAddAchievement = async () => {
@@ -245,11 +257,17 @@ const AdminStudentModal = ({ student, parents = [], open, onClose, onRefresh }) 
     }
   };
 
-  const handleDeleteAchievement = async (id) => {
-    if (!window.confirm('Delete achievement?')) return;
-    await supabase.from('achievements').delete().eq('id', id);
-    toast.success('Achievement deleted');
-    fetchStudentFullDetails();
+  const handleDeleteAchievement = (id) => {
+    toast('Delete this achievement?', {
+      action: {
+        label: 'Delete',
+        onClick: async () => {
+          await supabase.from('achievements').delete().eq('id', id);
+          toast.success('Achievement deleted');
+          fetchStudentFullDetails();
+        }
+      }
+    });
   };
 
   const handleAddTask = async () => {
@@ -282,11 +300,17 @@ const AdminStudentModal = ({ student, parents = [], open, onClose, onRefresh }) 
     fetchStudentFullDetails();
   };
 
-  const handleDeleteTask = async (taskId) => {
-    if (!window.confirm('Delete task?')) return;
-    await supabase.from('student_tasks').delete().eq('id', taskId);
-    toast.success('Task deleted');
-    fetchStudentFullDetails();
+  const handleDeleteTask = (id) => {
+    toast('Delete this task?', {
+      action: {
+        label: 'Delete',
+        onClick: async () => {
+          await supabase.from('student_tasks').delete().eq('id', id);
+          toast.success('Task deleted');
+          fetchStudentFullDetails();
+        }
+      }
+    });
   };
 
   // Stats calculation

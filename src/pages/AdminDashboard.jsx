@@ -345,13 +345,19 @@ const AdminDashboard = () => {
     }
   };
 
-  const handleDeleteStudent = async (studentId, name) => {
-    if (!window.confirm(`Delete ${name}? This will also remove their fees, attendance, and scores.`)) return;
-    const { error } = await supabase.from('students').delete().eq('id', studentId);
-    if (error) { toast.error('Failed to delete'); return; }
-    toast.success(`${name} deleted`);
-    fetchStudents();
-    fetchAll();
+  const handleDeleteStudent = (studentId, name) => {
+    toast(`Delete ${name}? This will also remove their fees, attendance, and scores.`, {
+      action: {
+        label: 'Delete',
+        onClick: async () => {
+          const { error } = await supabase.from('students').delete().eq('id', studentId);
+          if (error) { toast.error('Failed to delete'); return; }
+          toast.success(`${name} deleted`);
+          fetchStudents();
+          fetchAll();
+        }
+      }
+    });
   };
 
   const handleSaveAttendance = async () => {
@@ -421,16 +427,22 @@ const AdminDashboard = () => {
     }
   };
 
-  const handleDeleteAnnouncement = async (id) => {
-    if (!window.confirm('Delete this announcement?')) return;
-    try {
-      const { error } = await supabase.from('announcements').delete().eq('id', id);
-      if (error) throw error;
-      toast.success('Announcement deleted');
-      fetchAnnouncements();
-    } catch (err) {
-      toast.error('Failed to delete announcement');
-    }
+  const handleDeleteAnnouncement = (id) => {
+    toast('Delete this announcement?', {
+      action: {
+        label: 'Delete',
+        onClick: async () => {
+          try {
+            const { error } = await supabase.from('announcements').delete().eq('id', id);
+            if (error) throw error;
+            toast.success('Announcement deleted');
+            fetchAnnouncements();
+          } catch (err) {
+            toast.error('Failed to delete announcement');
+          }
+        }
+      }
+    });
   };
 
   const handleApproveAlumni = async (id) => {
@@ -455,16 +467,22 @@ const AdminDashboard = () => {
     }
   };
 
-  const handleDeleteAlumni = async (id) => {
-    if (!window.confirm('Delete this alumni record?')) return;
-    try {
-      const { error } = await supabase.from('alumni_profiles').delete().eq('id', id);
-      if (error) throw error;
-      toast.success('Alumni record deleted');
-      fetchAdminAlumni();
-    } catch (err) {
-      toast.error('Failed to delete alumni');
-    }
+  const handleDeleteAlumni = (id) => {
+    toast('Delete this alumni record?', {
+      action: {
+        label: 'Delete',
+        onClick: async () => {
+          try {
+            const { error } = await supabase.from('alumni_profiles').delete().eq('id', id);
+            if (error) throw error;
+            toast.success('Alumni record deleted');
+            fetchAdminAlumni();
+          } catch (err) {
+            toast.error('Failed to delete alumni: ' + err.message);
+          }
+        }
+      }
+    });
   };
 
   const handleToggleMentorStatus = async (id, currentStatus) => {
@@ -506,16 +524,22 @@ const AdminDashboard = () => {
     }
   };
 
-  const handleDeleteAlumniEvent = async (id) => {
-    if (!window.confirm('Delete this event?')) return;
-    try {
-      const { error } = await supabase.from('alumni_events').delete().eq('id', id);
-      if (error) throw error;
-      toast.success('Event deleted');
-      fetchAdminAlumni();
-    } catch (err) {
-      toast.error('Failed to delete event');
-    }
+  const handleDeleteAlumniEvent = (id) => {
+    toast('Delete this event?', {
+      action: {
+        label: 'Delete',
+        onClick: async () => {
+          try {
+            const { error } = await supabase.from('alumni_events').delete().eq('id', id);
+            if (error) throw error;
+            toast.success('Event deleted');
+            fetchAdminAlumni();
+          } catch (err) {
+            toast.error('Failed to delete event');
+          }
+        }
+      }
+    });
   };
 
   const handleAddGalleryItem = async (e) => {
@@ -559,16 +583,22 @@ const AdminDashboard = () => {
     }
   };
 
-  const handleDeleteGalleryItem = async (id) => {
-    if (!window.confirm('Are you sure you want to delete this gallery item?')) return;
-    try {
-      const { error } = await supabase.from('gallery_items').delete().eq('id', id);
-      if (error) throw error;
-      toast.success('Gallery item deleted');
-      fetchGalleryItems();
-    } catch (err) {
-      toast.error('Failed to delete gallery item: ' + err.message);
-    }
+  const handleDeleteGalleryItem = (id) => {
+    toast('Delete this gallery item?', {
+      action: {
+        label: 'Delete',
+        onClick: async () => {
+          try {
+            const { error } = await supabase.from('gallery_items').delete().eq('id', id);
+            if (error) throw error;
+            toast.success('Gallery item deleted');
+            fetchGalleryItems();
+          } catch (err) {
+            toast.error('Failed to delete gallery item: ' + err.message);
+          }
+        }
+      }
+    });
   };
 
   const handleLogout = async () => {
