@@ -140,6 +140,11 @@ const AdminDashboard = () => {
   const [showAddEvent, setShowAddEvent] = useState(false);
   const [eventForm, setEventForm] = useState({ title: '', description: '', event_date: '', location: 'Madrasa Main Auditorium' });
 
+  // Gallery
+  const [galleryItems, setGalleryItems] = useState([]);
+  const [showAddGallery, setShowAddGallery] = useState(false);
+  const [galleryForm, setGalleryForm] = useState({ title: '', category: 'Meelad Fest', media_type: 'image', media_url: '' });
+
   useEffect(() => { fetchAll(); }, []);
 
   const fetchAll = async () => {
@@ -239,6 +244,19 @@ const AdminDashboard = () => {
     setAlumniRSVPs(rsvps || []);
   }, []);
 
+  const fetchGalleryItems = useCallback(async () => {
+    try {
+      const { data, error } = await supabase
+        .from('gallery_items')
+        .select('*')
+        .order('created_at', { ascending: false });
+      if (error) throw error;
+      setGalleryItems(data || []);
+    } catch (err) {
+      toast.error('Failed to fetch gallery items: ' + err.message);
+    }
+  }, []);
+
   // Tab switch: lazy load
   useEffect(() => {
     if (activeTab === 'students') { fetchStudents(); fetchParents(); }
@@ -246,7 +264,8 @@ const AdminDashboard = () => {
     if (activeTab === 'fees') { fetchFeeStudents(); }
     if (activeTab === 'announcements') { fetchAnnouncements(); }
     if (activeTab === 'alumni') { fetchAdminAlumni(); }
-  }, [activeTab]);
+    if (activeTab === 'gallery') { fetchGalleryItems(); }
+  }, [activeTab, fetchGalleryItems]);
 
   // ─── Handlers ───────────────────────────────────────────────────────────────
   const handleApprove = async (userId) => {
@@ -499,6 +518,44 @@ const AdminDashboard = () => {
     }
   };
 
+  const handleAddGalleryItem = async (e) => {
+    e.preventDefault();
+    if (!galleryForm.title || !galleryForm.media_url) {
+      toast.error('Title and Media URL are required');
+      return;
+    }
+    setFormLoading(true);
+    try {
+      const { error } = await supabase.from('gallery_items').insert([{
+        title: galleryForm.title,
+        category: galleryForm.category,
+        media_type: galleryForm.media_type,
+        media_url: galleryForm.media_url
+      }]);
+      if (error) throw error;
+      toast.success('Gallery item added successfully!');
+      setGalleryForm({ title: '', category: 'Meelad Fest', media_type: 'image', media_url: '' });
+      setShowAddGallery(false);
+      fetchGalleryItems();
+    } catch (err) {
+      toast.error('Failed to add gallery item: ' + err.message);
+    } finally {
+      setFormLoading(false);
+    }
+  };
+
+  const handleDeleteGalleryItem = async (id) => {
+    if (!window.confirm('Are you sure you want to delete this gallery item?')) return;
+    try {
+      const { error } = await supabase.from('gallery_items').delete().eq('id', id);
+      if (error) throw error;
+      toast.success('Gallery item deleted');
+      fetchGalleryItems();
+    } catch (err) {
+      toast.error('Failed to delete gallery item: ' + err.message);
+    }
+  };
+
   const handleLogout = async () => {
     await logout(); clearCachedProfile(); navigate('/');
   };
@@ -540,6 +597,7 @@ const AdminDashboard = () => {
     { id: 'students', label: 'Students' },
     { id: 'attendance', label: 'Attendance' },
     { id: 'fees', label: 'Fees' },
+    { id: 'gallery', label: '📸 Gallery' },
   ];
 
   if (loading) {
@@ -1105,6 +1163,85 @@ const AdminDashboard = () => {
             </motion.div>
           )}
 
+          {/* ── GALLERY ── */}
+          {activeTab === 'gallery' && (
+            <motion.div key="gallery" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+              <div className="flex items-center justify-between mb-5">
+                <div>
+                  <h2 className="text-xl font-bold text-stone-900">Media Gallery Manager</h2>
+                  <p className="text-xs text-stone-500 mt-1">Upload event photos and YouTube video links for the public landing page</p>
+                </div>
+                <Btn onClick={() => {
+                  setGalleryForm({ title: '', category: 'Meelad Fest', media_type: 'image', media_url: '' });
+                  setShowAddGallery(true);
+                }}>
+                  <Plus className="w-4 h-4" /> Add Gallery Item
+                </Btn>
+              </div>
+
+              <div className="bg-white rounded-2xl border border-stone-100 overflow-hidden shadow-sm">
+                <div className="overflow-x-auto">
+                  <table className="w-full text-sm text-left">
+                    <thead className="bg-stone-50 text-stone-500 uppercase text-[10px] tracking-wider border-b border-stone-100">
+                      <tr>
+                        <th className="px-6 py-4">Preview</th>
+                        <th className="px-6 py-4">Title</th>
+                        <th className="px-6 py-4">Category</th>
+                        <th className="px-6 py-4">Type</th>
+                        <th className="px-6 py-4 text-right">Action</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-stone-100 text-stone-700">
+                      {galleryItems.length > 0 ? (
+                        galleryItems.map(item => (
+                          <tr key={item.id} className="hover:bg-stone-50/55 transition-colors">
+                            <td className="px-6 py-4">
+                              {item.media_type === 'image' ? (
+                                <img
+                                  src={item.media_url}
+                                  alt={item.title}
+                                  className="w-12 h-12 object-cover rounded-xl border border-stone-100"
+                                  onError={(e) => { e.target.src = 'https://images.unsplash.com/photo-1542838132-92c53300491e?w=100'; }}
+                                />
+                              ) : (
+                                <div className="w-12 h-12 bg-red-50 text-red-600 rounded-xl flex items-center justify-center border border-red-100 font-bold text-[10px]">
+                                  Video
+                                </div>
+                              )}
+                            </td>
+                            <td className="px-6 py-4 font-semibold text-stone-900">{item.title}</td>
+                            <td className="px-6 py-4">
+                              <span className="inline-block text-xs px-2.5 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-100 font-medium">
+                                {item.category}
+                              </span>
+                            </td>
+                            <td className="px-6 py-4 capitalize font-medium text-stone-500">{item.media_type}</td>
+                            <td className="px-6 py-4 text-right">
+                              <button
+                                onClick={() => handleDeleteGalleryItem(item.id)}
+                                className="p-2 text-stone-400 hover:text-red-600 hover:bg-red-50 rounded-xl transition-all"
+                                title="Delete Item"
+                              >
+                                <Trash2 className="w-4 h-4" />
+                              </button>
+                            </td>
+                          </tr>
+                        ))
+                      ) : (
+                        <tr>
+                          <td colSpan={5} className="text-center py-12 text-stone-400">
+                            <Plus className="w-12 h-12 text-stone-200 mx-auto mb-3" />
+                            <p>No gallery items yet. Click "Add Gallery Item" to start!</p>
+                          </td>
+                        </tr>
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </motion.div>
+          )}
+
         </AnimatePresence>
       </div>
 
@@ -1304,6 +1441,76 @@ const AdminDashboard = () => {
           </Btn>
           <Btn variant="ghost" className="flex-1" onClick={() => setShowAddEvent(false)}>Cancel</Btn>
         </div>
+      </Modal>
+
+      {/* ── MODAL: Add Gallery Item ── */}
+      <Modal open={showAddGallery} onClose={() => setShowAddGallery(false)} title="Add Gallery Item">
+        <form onSubmit={handleAddGalleryItem} className="space-y-4">
+          <Input
+            label="Item Title *"
+            value={galleryForm.title}
+            onChange={e => setGalleryForm(f => ({ ...f, title: e.target.value }))}
+            placeholder="e.g. Meelad Fest Celebrations 2026"
+            required
+          />
+
+          <Select
+            label="Category *"
+            value={galleryForm.category}
+            onChange={e => setGalleryForm(f => ({ ...f, category: e.target.value }))}
+          >
+            {['Meelad Fest', 'Alumni Meet', 'Conference', 'Uroos Mubarak', 'Classes', 'General'].map(cat => (
+              <option key={cat} value={cat}>{cat}</option>
+            ))}
+          </Select>
+
+          <div className="mb-3">
+            <label className="block text-sm font-medium text-stone-700 mb-1.5">Media Type *</label>
+            <div className="flex gap-4">
+              <label className="flex items-center gap-2 text-sm text-stone-700 font-medium cursor-pointer">
+                <input
+                  type="radio"
+                  name="media_type"
+                  value="image"
+                  checked={galleryForm.media_type === 'image'}
+                  onChange={e => setGalleryForm(f => ({ ...f, media_type: e.target.value }))}
+                  className="w-4 h-4 text-emerald-600 focus:ring-emerald-500 border-stone-300"
+                />
+                📷 Image
+              </label>
+              <label className="flex items-center gap-2 text-sm text-stone-700 font-medium cursor-pointer">
+                <input
+                  type="radio"
+                  name="media_type"
+                  value="video"
+                  checked={galleryForm.media_type === 'video'}
+                  onChange={e => setGalleryForm(f => ({ ...f, media_type: e.target.value }))}
+                  className="w-4 h-4 text-emerald-600 focus:ring-emerald-500 border-stone-300"
+                />
+                🎥 YouTube Video
+              </label>
+            </div>
+          </div>
+
+          <Input
+            label={galleryForm.media_type === 'image' ? 'Image URL *' : 'YouTube Video URL *'}
+            value={galleryForm.media_url}
+            onChange={e => setGalleryForm(f => ({ ...f, media_url: e.target.value }))}
+            placeholder={
+              galleryForm.media_type === 'image'
+                ? 'e.g. https://images.unsplash.com/... or Supabase storage link'
+                : 'e.g. https://www.youtube.com/watch?v=dQw4w9WgXcQ'
+            }
+            required
+          />
+
+          <div className="flex gap-2 pt-2">
+            <Btn type="submit" className="flex-1" loading={formLoading}>
+              <Plus className="w-4 h-4" /> Add Item
+            </Btn>
+            <Btn variant="ghost" className="flex-1" onClick={() => setShowAddGallery(false)}>Cancel</Btn>
+          </div>
+        </form>
       </Modal>
 
       {/* ── MODAL: Admin Student 360° Management ── */}

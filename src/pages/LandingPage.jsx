@@ -1,14 +1,31 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { BookOpen, Users, Award, GraduationCap, ArrowRight, CheckCircle, Sparkles, HeartHandshake, Briefcase, QrCode } from 'lucide-react';
+import { BookOpen, Users, Award, GraduationCap, ArrowRight, CheckCircle, Sparkles, HeartHandshake, Briefcase, QrCode, Play, Image as ImageIcon } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import AlumniRegisterModal from '@/components/AlumniRegisterModal';
 import MobileQRModal from '@/components/MobileQRModal';
+import { supabase } from '@/lib/supabase';
+
+const getYouTubeId = (url) => {
+  const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|\&v=)([^#\&\?]*).*/;
+  const match = url?.match(regExp);
+  return (match && match[2].length === 11) ? match[2] : null;
+};
 
 const LandingPage = () => {
   const [showAlumniModal, setShowAlumniModal] = useState(false);
   const [showQRModal, setShowQRModal] = useState(false);
+  const [galleryPreview, setGalleryPreview] = useState([]);
+
+  useEffect(() => {
+    supabase
+      .from('gallery_items')
+      .select('*')
+      .order('created_at', { ascending: false })
+      .limit(6)
+      .then(({ data }) => { if (data) setGalleryPreview(data); });
+  }, []);
 
   return (
     <div className="min-h-screen">
@@ -29,6 +46,9 @@ const LandingPage = () => {
               <a href="#programs" className="hidden md:inline-block text-stone-600 hover:text-primary transition-colors">Programs</a>
               <Link to="/alumni" className="hidden md:flex text-stone-600 hover:text-primary transition-colors items-center gap-1 font-semibold text-emerald-700">
                 <GraduationCap className="w-4 h-4 text-emerald-600" /> Alumni Network
+              </Link>
+              <Link to="/gallery" className="hidden md:flex text-stone-600 hover:text-primary transition-colors items-center gap-1 font-semibold text-stone-700">
+                <ImageIcon className="w-4 h-4 text-stone-600" /> Gallery
               </Link>
               <Button
                 onClick={() => setShowQRModal(true)}
@@ -315,6 +335,83 @@ const LandingPage = () => {
           </div>
         </div>
       </section>
+
+      {/* ── GALLERY PREVIEW SECTION ── */}
+      {galleryPreview.length > 0 && (
+        <section id="gallery" className="py-24 bg-white">
+          <div className="container mx-auto px-6 md:px-12">
+            <motion.div
+              initial={{ opacity: 0, y: 40 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.7 }}
+              className="text-center max-w-2xl mx-auto mb-12"
+            >
+              <span className="text-xs uppercase tracking-widest font-bold text-emerald-600 bg-emerald-50 border border-emerald-100 px-3 py-1 rounded-full">
+                Media Gallery
+              </span>
+              <h2 className="font-heading text-4xl md:text-5xl text-stone-900 mt-4 mb-4">
+                Moments & Memories
+              </h2>
+              <p className="text-stone-500 text-sm leading-relaxed">
+                A glimpse into our events, classes, and celebrations at RMS Madrasa.
+              </p>
+            </motion.div>
+
+            <div className="grid sm:grid-cols-2 md:grid-cols-3 gap-6 mb-10">
+              {galleryPreview.map((item, idx) => (
+                <motion.div
+                  key={item.id}
+                  initial={{ opacity: 0, scale: 0.9 }}
+                  whileInView={{ opacity: 1, scale: 1 }}
+                  viewport={{ once: true }}
+                  transition={{ duration: 0.4, delay: idx * 0.08 }}
+                  className="group relative rounded-3xl overflow-hidden bg-stone-100 shadow-md border border-stone-100 cursor-pointer"
+                  onClick={() => window.open('/gallery', '_self')}
+                >
+                  <div className="aspect-[4/3] overflow-hidden">
+                    {item.media_type === 'image' ? (
+                      <img
+                        src={item.media_url}
+                        alt={item.title}
+                        className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
+                        loading="lazy"
+                      />
+                    ) : (
+                      <div className="relative w-full h-full">
+                        <img
+                          src={`https://img.youtube.com/vi/${getYouTubeId(item.media_url) || 'default'}/hqdefault.jpg`}
+                          alt={item.title}
+                          className="w-full h-full object-cover brightness-75 group-hover:scale-110 transition-transform duration-700"
+                          loading="lazy"
+                        />
+                        <div className="absolute inset-0 flex items-center justify-center">
+                          <div className="w-12 h-12 bg-white/90 rounded-full flex items-center justify-center shadow-lg">
+                            <Play className="w-5 h-5 fill-red-600 text-red-600 ml-0.5" />
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                  <div className="absolute bottom-0 inset-x-0 bg-gradient-to-t from-black/60 via-black/20 to-transparent p-4 translate-y-1 group-hover:translate-y-0 transition-transform duration-300">
+                    <span className="text-[10px] font-bold text-emerald-300 uppercase tracking-wider">{item.category}</span>
+                    <p className="text-white text-xs font-semibold mt-0.5 line-clamp-2">{item.title}</p>
+                  </div>
+                </motion.div>
+              ))}
+            </div>
+
+            <div className="text-center">
+              <Link to="/gallery">
+                <Button size="lg" className="rounded-full bg-stone-900 hover:bg-stone-700 text-white transform hover:scale-105 active:scale-95 transition-all shadow-md">
+                  Browse Full Gallery
+                  <ArrowRight className="ml-2 w-4 h-4" />
+                </Button>
+              </Link>
+            </div>
+          </div>
+        </section>
+      )}
 
       {/* Footer */}
       <footer className="bg-stone-950 text-white py-12 border-t border-stone-800">

@@ -7,6 +7,7 @@ import AdminDashboard from './pages/AdminDashboard';
 import ParentDashboard from './pages/ParentDashboard';
 import StudentDetailPage from './pages/StudentDetailPage';
 import AlumniPage from './pages/AlumniPage';
+import GalleryPage from './pages/GalleryPage';
 import { Toaster } from './components/ui/toaster';
 import PWAInstallPrompt from './components/PWAInstallPrompt';
 
@@ -21,6 +22,8 @@ function App() {
                     <Route path="/admin" element={<AdminDashboard />} />
                     {/* Alumni Community & Directory */}
                     <Route path="/alumni" element={<AlumniPage />} />
+                    {/* Public Media Gallery */}
+                    <Route path="/gallery" element={<GalleryPage />} />
                     {/* Parent: family home (child picker) */}
                     <Route path="/parent" element={<ParentDashboard />} />
                     {/* Parent: individual child detail */}
