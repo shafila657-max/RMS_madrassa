@@ -22,7 +22,7 @@ const LandingPage = () => {
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
               <BookOpen className="w-8 h-8 text-primary" />
-              <span className="font-heading text-2xl font-bold text-stone-900">Al-Noor Madrasa</span>
+              <span className="font-heading text-2xl font-bold text-stone-900">RMS Madrasa</span>
             </div>
             <nav className="flex items-center gap-4 md:gap-8">
               <a href="#about" className="hidden md:inline-block text-stone-600 hover:text-primary transition-colors">About</a>
