@@ -747,21 +747,24 @@ const AdminDashboard = () => {
     <div className="min-h-screen bg-stone-50">
       {/* Header */}
       <header className="sticky top-0 z-40 bg-white border-b border-stone-200 shadow-sm">
-        <div className="max-w-6xl mx-auto px-4 py-3 flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <div className="w-8 h-8 bg-emerald-600 rounded-lg flex items-center justify-center">
-              <BookOpen className="w-4 h-4 text-white" />
+        <div className="max-w-6xl mx-auto px-4 py-4 flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 bg-emerald-600 rounded-xl flex items-center justify-center shadow-sm">
+              <BookOpen className="w-5 h-5 text-white" />
             </div>
             <div>
-              <p className="font-bold text-stone-900 text-sm leading-tight">RMS Madrasa</p>
-              <p className="text-xs text-stone-400 leading-tight">Admin Panel</p>
+              <p className="font-bold text-stone-900 text-lg leading-tight">RMS Madrasa</p>
+              <p className="text-sm text-emerald-700 font-semibold leading-tight">Admin Dashboard</p>
             </div>
           </div>
-          <div className="flex items-center gap-3">
-            <span className="text-sm text-stone-600 hidden sm:block">{profile?.full_name}</span>
+          <div className="flex items-center gap-4">
+            <div className="hidden sm:flex flex-col items-end mr-2">
+              <span className="text-sm font-bold text-stone-900 leading-tight">{profile?.full_name}</span>
+              <span className="text-xs text-stone-500 leading-tight">Administrator</span>
+            </div>
             <button
               onClick={handleLogout}
-              className="flex items-center gap-1.5 px-3 py-2 rounded-xl hover:bg-stone-100 text-stone-500 text-sm transition-colors"
+              className="flex items-center gap-2 px-4 py-2 rounded-xl bg-stone-100 hover:bg-red-50 hover:text-red-600 text-stone-600 text-sm font-semibold transition-colors"
               data-testid="admin-logout-button"
             >
               <LogOut className="w-4 h-4" />
@@ -771,18 +774,26 @@ const AdminDashboard = () => {
         </div>
 
         {/* Tab bar */}
-        <div className="max-w-6xl mx-auto px-4 flex gap-1 overflow-x-auto pb-0 scrollbar-hide">
+        <div className="max-w-6xl mx-auto px-4 flex gap-2 overflow-x-auto pb-0 scrollbar-hide pt-2">
           {tabs.map(({ id, label }) => (
             <button
               key={id}
               onClick={() => setActiveTab(id)}
-              className={`flex-shrink-0 px-4 py-2.5 text-sm font-medium border-b-2 transition-colors whitespace-nowrap ${
+              className={`relative flex-shrink-0 px-4 py-3 text-[15px] transition-all whitespace-nowrap ${
                 activeTab === id
-                  ? 'border-emerald-600 text-emerald-700'
-                  : 'border-transparent text-stone-500 hover:text-stone-700'
+                  ? 'font-bold text-emerald-700'
+                  : 'font-semibold text-stone-500 hover:text-stone-800 hover:bg-stone-50 rounded-t-xl'
               }`}
             >
               {label}
+              {activeTab === id && (
+                <motion.div
+                  layoutId="activeAdminTab"
+                  className="absolute bottom-0 left-0 right-0 h-1 bg-emerald-600 rounded-t-full"
+                  initial={false}
+                  transition={{ type: "spring", stiffness: 500, damping: 30 }}
+                />
+              )}
             </button>
           ))}
         </div>
