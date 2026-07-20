@@ -295,7 +295,6 @@ const LandingPage = () => {
                 {[
                   { icon: Briefcase,     text: 'Showcase your current occupation & working area with contact/WhatsApp' },
                   { icon: HeartHandshake,text: 'Provide career guidance & Quranic mentorship for current Madrasa students' },
-                  { icon: Sparkles,      text: 'Dual role support: Alumni who are now parents can manage both seamlessly' },
                 ].map(({ icon: Icon, text }) => (
                   <div key={text} className="flex items-center gap-3 text-sm text-emerald-100">
                     <div className="w-8 h-8 rounded-full bg-emerald-800/80 flex items-center justify-center text-emerald-300 flex-shrink-0">
