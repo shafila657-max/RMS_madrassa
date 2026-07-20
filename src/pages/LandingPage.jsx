@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { BookOpen, Users, Award, GraduationCap, ArrowRight, CheckCircle, Sparkles, HeartHandshake, Briefcase, QrCode, Play, Image as ImageIcon, Download } from 'lucide-react';
+import { toast } from 'sonner';
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import AlumniRegisterModal from '@/components/AlumniRegisterModal';
@@ -73,18 +74,25 @@ const LandingPage = () => {
               <Button
                 onClick={() => setShowQRModal(true)}
                 variant="outline"
-                className="rounded-full border-emerald-300 text-emerald-800 bg-emerald-50/50 hover:bg-emerald-100 flex items-center gap-1.5 text-xs font-bold"
+                className="hidden md:flex rounded-full border-emerald-300 text-emerald-800 bg-emerald-50/50 hover:bg-emerald-100 items-center gap-1.5 text-xs font-bold"
               >
                 <QrCode className="w-4 h-4 text-emerald-600" /> Scan QR
               </Button>
-              {deferredPrompt && (
-                <Button
-                  onClick={handleInstallPWA}
-                  className="rounded-full bg-emerald-600 hover:bg-emerald-700 text-white flex items-center gap-1.5 text-xs font-bold shadow-md shadow-emerald-200"
-                >
-                  <Download className="w-4 h-4" /> Install App
-                </Button>
-              )}
+              <Button
+                onClick={() => {
+                  if (deferredPrompt) {
+                    handleInstallPWA();
+                  } else {
+                    toast('To install the app, tap the Share button (iOS) or Menu (Android/Desktop) and select "Add to Home Screen".', {
+                      duration: 8000,
+                      icon: '📱'
+                    });
+                  }
+                }}
+                className="rounded-full bg-emerald-600 hover:bg-emerald-700 text-white flex items-center gap-1.5 text-xs font-bold shadow-md shadow-emerald-200"
+              >
+                <Download className="w-4 h-4" /> Install App
+              </Button>
               <Link to="/login">
                 <Button variant="outline" className="rounded-full" data-testid="header-login-button">
                   Login
