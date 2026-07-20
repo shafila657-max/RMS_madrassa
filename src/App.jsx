@@ -8,6 +8,7 @@ import ParentDashboard from './pages/ParentDashboard';
 import StudentDetailPage from './pages/StudentDetailPage';
 import AlumniPage from './pages/AlumniPage';
 import GalleryPage from './pages/GalleryPage';
+import ResetPasswordPage from './pages/ResetPasswordPage';
 import { Toaster } from './components/ui/toaster';
 import PWAInstallPrompt from './components/PWAInstallPrompt';
 
@@ -28,6 +29,8 @@ function App() {
                     <Route path="/parent" element={<ParentDashboard />} />
                     {/* Parent: individual child detail */}
                     <Route path="/parent/:studentId" element={<StudentDetailPage />} />
+                    {/* Password reset */}
+                    <Route path="/reset-password" element={<ResetPasswordPage />} />
                 </Routes>
                 <Toaster />
                 <PWAInstallPrompt />

@@ -7,11 +7,14 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { toast } from 'sonner';
 import { login, setCachedProfile } from '@/utils/auth';
+import { supabase } from '@/lib/supabase';
 
 const LoginPage = () => {
   const navigate = useNavigate();
   const [formData, setFormData] = useState({ email: '', password: '' });
   const [loading, setLoading] = useState(false);
+  const [forgotMode, setForgotMode] = useState(false);
+  const [forgotEmail, setForgotEmail] = useState('');
 
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
@@ -41,6 +44,24 @@ const LoginPage = () => {
     }
   };
 
+  const handleForgotPassword = async (e) => {
+    e.preventDefault();
+    if (!forgotEmail) { toast.error('Enter your email'); return; }
+    setLoading(true);
+    try {
+      const { error } = await supabase.auth.resetPasswordForEmail(forgotEmail, {
+        redirectTo: `${window.location.origin}/reset-password`,
+      });
+      if (error) throw error;
+      toast.success('Password reset email sent! Check your inbox.');
+      setForgotMode(false);
+    } catch (err) {
+      toast.error(err.message || 'Failed to send reset email');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-secondary flex items-center justify-center p-6">
       <motion.div
@@ -58,49 +79,71 @@ const LoginPage = () => {
             <p className="text-stone-600">Sign in to access your account</p>
           </div>
 
-          <form onSubmit={handleSubmit} className="space-y-4" data-testid="login-form">
-            <div>
-              <Label htmlFor="email">Email</Label>
-              <Input
-                id="email"
-                name="email"
-                type="email"
-                required
-                value={formData.email}
-                onChange={handleChange}
-                className="mt-1"
-                data-testid="login-email-input"
-              />
-            </div>
+          {forgotMode ? (
+            <form onSubmit={handleForgotPassword} className="space-y-4">
+              <div>
+                <Label htmlFor="forgot-email">Your Email Address</Label>
+                <Input
+                  id="forgot-email"
+                  type="email"
+                  required
+                  value={forgotEmail}
+                  onChange={e => setForgotEmail(e.target.value)}
+                  placeholder="you@example.com"
+                  className="mt-1"
+                />
+              </div>
+              <Button type="submit" className="w-full rounded-full bg-primary hover:bg-emerald-600 transition-colors" disabled={loading}>
+                {loading ? 'Sending...' : 'Send Reset Link'}
+              </Button>
+              <button type="button" onClick={() => setForgotMode(false)} className="w-full text-sm text-stone-500 hover:text-stone-700 transition-colors pt-1">
+                ← Back to Login
+              </button>
+            </form>
+          ) : (
+            <form onSubmit={handleSubmit} className="space-y-4" data-testid="login-form">
+              <div>
+                <Label htmlFor="email">Email</Label>
+                <Input
+                  id="email"
+                  name="email"
+                  type="email"
+                  required
+                  value={formData.email}
+                  onChange={handleChange}
+                  className="mt-1"
+                  data-testid="login-email-input"
+                />
+              </div>
 
-            <div>
-              <Label htmlFor="password">Password</Label>
-              <Input
-                id="password"
-                name="password"
-                type="password"
-                required
-                value={formData.password}
-                onChange={handleChange}
-                className="mt-1"
-                data-testid="login-password-input"
-              />
-            </div>
+              <div>
+                <div className="flex items-center justify-between mb-1">
+                  <Label htmlFor="password">Password</Label>
+                  <button type="button" onClick={() => setForgotMode(true)} className="text-xs text-primary hover:underline">Forgot password?</button>
+                </div>
+                <Input
+                  id="password"
+                  name="password"
+                  type="password"
+                  required
+                  value={formData.password}
+                  onChange={handleChange}
+                  data-testid="login-password-input"
+                />
+              </div>
 
-            <Button
-              type="submit"
-              className="w-full rounded-full bg-primary hover:bg-emerald-600 transform hover:scale-105 active:scale-95 transition-all"
-              disabled={loading}
-              data-testid="login-submit-button"
-            >
-              {loading ? 'Signing in...' : (
-                <>
-                  <LogIn className="w-4 h-4 mr-2" />
-                  Sign In
-                </>
-              )}
-            </Button>
-          </form>
+              <Button
+                type="submit"
+                className="w-full rounded-full bg-primary hover:bg-emerald-600 transition-colors"
+                disabled={loading}
+                data-testid="login-submit-button"
+              >
+                {loading ? 'Signing in...' : (
+                  <><LogIn className="w-4 h-4 mr-2" /> Sign In</>
+                )}
+              </Button>
+            </form>
+          )}
 
           <div className="mt-6 text-center">
             <p className="text-sm text-stone-600">
