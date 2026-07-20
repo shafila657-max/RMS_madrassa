@@ -136,7 +136,7 @@ const LandingPage = () => {
               <a href="#about"    className="hidden md:inline-block text-stone-600 hover:text-primary transition-colors">About</a>
               <a href="#programs" className="hidden md:inline-block text-stone-600 hover:text-primary transition-colors">Programs</a>
               <Link to="/alumni"  className="hidden md:flex text-stone-600 hover:text-primary transition-colors items-center gap-1 font-semibold text-emerald-700">
-                <GraduationCap className="w-4 h-4 text-emerald-600" /> Alumni Network
+                <GraduationCap className="w-4 h-4 text-emerald-600" /> Alumni
               </Link>
               <Link to="/gallery" className="hidden md:flex text-stone-600 hover:text-primary transition-colors items-center gap-1 font-semibold text-stone-700">
                 <ImageIcon className="w-4 h-4 text-stone-600" /> Gallery
