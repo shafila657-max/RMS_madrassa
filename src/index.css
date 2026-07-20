@@ -7,15 +7,26 @@
 @layer base {
   * {
     @apply border-border;
+    /* Prevent text blurriness on GPU-composited elements */
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
   }
   body {
     @apply bg-background text-foreground;
     font-family: 'Manrope', sans-serif;
     font-weight: 500;
+    /* Improve scroll performance globally */
+    overscroll-behavior: none;
   }
   h1, h2, h3, h4, h5, h6 {
     font-family: 'Playfair Display', serif;
     font-weight: 700;
+  }
+
+  /* Use content-visibility on all below-the-fold sections to skip rendering offscreen */
+  .section-lazy {
+    content-visibility: auto;
+    contain-intrinsic-size: auto 500px;
   }
 }
 
@@ -23,19 +34,28 @@
   .text-balance {
     text-wrap: balance;
   }
-  
+
+  /* Marquee: strictly GPU-composited, no repaints */
   .animate-marquee {
-    animation: marquee 30s linear infinite;
+    animation: marquee 35s linear infinite;
     will-change: transform;
     backface-visibility: hidden;
+    /* Isolate the marquee so it doesn't affect parent paint layers */
+    isolation: isolate;
   }
-  
+
   .animate-marquee:hover {
     animation-play-state: paused;
+  }
+
+  /* Force images into their own compositor layer */
+  .gpu-img {
+    transform: translateZ(0);
+    backface-visibility: hidden;
   }
 }
 
 @keyframes marquee {
-  0% { transform: translateX(0); }
-  100% { transform: translateX(calc(-50% - 10px)); } /* 50% because we duplicated the items, -10px for the gap */
+  from { transform: translateX(0); }
+  to   { transform: translateX(calc(-50% - 10px)); }
 }
