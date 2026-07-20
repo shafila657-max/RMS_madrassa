@@ -26,6 +26,8 @@
   
   .animate-marquee {
     animation: marquee 30s linear infinite;
+    will-change: transform;
+    backface-visibility: hidden;
   }
   
   .animate-marquee:hover {
