@@ -163,6 +163,16 @@ const AdminDashboard = () => {
   // Leaves
   const [leaveApplications, setLeaveApplications] = useState([]);
 
+  // Class Level Management
+  const [classTeachers, setClassTeachers] = useState([]);
+  const [selectedClassLevel, setSelectedClassLevel] = useState('Class 1');
+  const [classSubTab, setClassSubTab] = useState('students');
+  const [classAttendanceDate, setClassAttendanceDate] = useState(new Date().toISOString().split('T')[0]);
+  const [classAttendanceMap, setClassAttendanceMap] = useState({});
+  const [showAddClassTask, setShowAddClassTask] = useState(false);
+  const [classTaskForm, setClassTaskForm] = useState({ title: '', description: '', due_date: '' });
+  const [classTaskLoading, setClassTaskLoading] = useState(false);
+
   useEffect(() => { fetchAll(); }, []);
 
   const fetchAll = async () => {
@@ -292,6 +302,10 @@ const AdminDashboard = () => {
     const { data } = await supabase.from('leave_applications').select('*, students(full_name, class_level)').order('created_at', { ascending: false });
     if (data) setLeaveApplications(data);
   };
+  const fetchClassTeachers = async () => {
+    const { data } = await supabase.from('class_teachers').select('*');
+    if (data) setClassTeachers(data);
+  };
 
   // Tab switch: lazy load
   useEffect(() => {
@@ -305,6 +319,7 @@ const AdminDashboard = () => {
     if (activeTab === 'subjects') { fetchSubjects(); }
     if (activeTab === 'teachers') { fetchTeachers(); }
     if (activeTab === 'leaves') { fetchLeaves(); }
+    if (activeTab === 'classes') { fetchStudents(); fetchTeachers(); fetchClassTeachers(); fetchTimetable(); fetchSubjects(); }
   }, [activeTab, fetchGalleryItems]);
 
   // ─── Handlers ───────────────────────────────────────────────────────────────
@@ -703,6 +718,7 @@ const AdminDashboard = () => {
 
   const tabs = [
     { id: 'overview', label: 'Overview' },
+    { id: 'classes', label: '🏫 Classes' },
     { id: 'approvals', label: `Approvals${pendingUsers.length > 0 ? ` (${pendingUsers.length})` : ''}` },
     { id: 'alumni', label: `Alumni${pendingAlumniCount > 0 ? ` (${pendingAlumniCount})` : ''}` },
     { id: 'announcements', label: 'Announcements' },
@@ -1884,6 +1900,311 @@ const AdminDashboard = () => {
               </div>
             </div>
           ))}
+        </div>
+      )}
+
+      {/* ══════════════════════════════════════════════════════════════ */}
+      {/* CLASS LEVEL MANAGEMENT TAB (Class 1 to Class 10)               */}
+      {/* ══════════════════════════════════════════════════════════════ */}
+      {activeTab === 'classes' && (
+        <div className="max-w-6xl mx-auto px-4 py-8 space-y-6">
+          <div className="flex items-center justify-between">
+            <div>
+              <h2 className="font-bold text-xl text-stone-900">🏫 Class Level Management</h2>
+              <p className="text-xs text-stone-500">Manage Class 1 to Class 10 roster, teachers, attendance & homework</p>
+            </div>
+          </div>
+
+          {/* 10 Class Pills Bar */}
+          <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide">
+            {['Class 1','Class 2','Class 3','Class 4','Class 5','Class 6','Class 7','Class 8','Class 9','Class 10'].map(cls => {
+              const count = students.filter(s => s.class_level === cls).length;
+              const isSelected = selectedClassLevel === cls;
+              return (
+                <button
+                  key={cls}
+                  onClick={() => setSelectedClassLevel(cls)}
+                  className={`flex-shrink-0 px-4 py-2.5 rounded-2xl text-xs font-bold transition-all flex items-center gap-2 border ${
+                    isSelected
+                      ? 'bg-emerald-600 text-white border-emerald-600 shadow-md shadow-emerald-200 scale-105'
+                      : 'bg-white text-stone-600 border-stone-200 hover:border-emerald-300'
+                  }`}
+                >
+                  <span>{cls}</span>
+                  <span className={`px-2 py-0.5 rounded-full text-[10px] ${isSelected ? 'bg-white/20 text-white' : 'bg-stone-100 text-stone-500'}`}>
+                    {count}
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+
+          {/* Class Overview Header Card */}
+          {(() => {
+            const clsStudents = students.filter(s => s.class_level === selectedClassLevel);
+            const currentCT = classTeachers.find(ct => ct.class_level === selectedClassLevel);
+            const clsSubjects = subjectsList.filter(s => s.class_level === selectedClassLevel);
+
+            return (
+              <div className="bg-gradient-to-br from-stone-900 via-emerald-950 to-stone-900 text-white rounded-3xl p-6 shadow-xl space-y-4 border border-white/10">
+                <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                  <div>
+                    <span className="text-[10px] uppercase font-bold tracking-widest text-emerald-400 bg-emerald-500/20 px-3 py-1 rounded-full border border-emerald-500/30">
+                      Selected Class Level
+                    </span>
+                    <h3 className="font-heading text-3xl font-bold mt-2 text-white">{selectedClassLevel}</h3>
+                    <p className="text-xs text-stone-300 mt-1">
+                      {clsStudents.length} Students Enrolled &nbsp;·&nbsp; {clsSubjects.length} Active Subjects
+                    </p>
+                  </div>
+
+                  {/* Assign Class Teacher Form */}
+                  <div className="bg-white/10 backdrop-blur-md p-4 rounded-2xl border border-white/15 space-y-2 min-w-[280px]">
+                    <p className="text-xs font-bold text-emerald-300 flex items-center gap-1">
+                      👤 Assigned Class Teacher
+                    </p>
+                    <select
+                      value={currentCT?.teacher_name || ''}
+                      onChange={async (e) => {
+                        const val = e.target.value;
+                        const { error } = await supabase
+                          .from('class_teachers')
+                          .upsert({ class_level: selectedClassLevel, teacher_name: val }, { onConflict: 'class_level' });
+                        if (error) { toast.error(error.message); return; }
+                        toast.success(`Assigned ${val || 'None'} to ${selectedClassLevel}`);
+                        fetchClassTeachers();
+                      }}
+                      className="w-full bg-stone-800 text-white border border-white/20 rounded-xl px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-emerald-400"
+                    >
+                      <option value="">-- No Teacher Assigned --</option>
+                      {teacherContacts.map(t => (
+                        <option key={t.id} value={t.full_name}>{t.full_name} ({t.subject})</option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+
+                {/* Sub-tabs Inside Class Manager */}
+                <div className="flex gap-2 border-t border-white/10 pt-4 overflow-x-auto">
+                  {[
+                    { id: 'students', label: `👨‍🎓 Students Roster (${clsStudents.length})` },
+                    { id: 'tasks', label: '📝 Class Homework' },
+                    { id: 'timetable', label: '📚 Timetable & Subjects' },
+                  ].map(st => (
+                    <button
+                      key={st.id}
+                      onClick={() => setClassSubTab(st.id)}
+                      className={`px-4 py-2 rounded-xl text-xs font-bold transition-colors ${
+                        classSubTab === st.id
+                          ? 'bg-emerald-500 text-stone-950 shadow-md'
+                          : 'bg-white/10 text-stone-300 hover:bg-white/20'
+                      }`}
+                    >
+                      {st.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            );
+          })()}
+
+          {/* SUB-TAB 1: STUDENTS ROSTER & QUICK ATTENDANCE */}
+          {classSubTab === 'students' && (() => {
+            const clsStudents = students.filter(s => s.class_level === selectedClassLevel);
+            return (
+              <div className="bg-white rounded-2xl border border-stone-200 p-6 shadow-sm space-y-4">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-2 border-b border-stone-100">
+                  <h4 className="font-bold text-stone-900 text-base">Class Roster &amp; Batch Attendance</h4>
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="date"
+                      value={classAttendanceDate}
+                      onChange={e => setClassAttendanceDate(e.target.value)}
+                      className="border border-stone-200 rounded-xl px-3 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                    />
+                    <button
+                      onClick={() => {
+                        const m = {};
+                        clsStudents.forEach(s => m[s.id] = 'present');
+                        setClassAttendanceMap(m);
+                      }}
+                      className="px-3 py-1.5 bg-emerald-50 text-emerald-700 border border-emerald-200 rounded-xl text-xs font-bold hover:bg-emerald-100"
+                    >
+                      All Present
+                    </button>
+                    <button
+                      onClick={() => {
+                        const m = {};
+                        clsStudents.forEach(s => m[s.id] = 'absent');
+                        setClassAttendanceMap(m);
+                      }}
+                      className="px-3 py-1.5 bg-red-50 text-red-700 border border-red-200 rounded-xl text-xs font-bold hover:bg-red-100"
+                    >
+                      All Absent
+                    </button>
+                    <button
+                      onClick={async () => {
+                        const rows = Object.entries(classAttendanceMap).map(([sid, status]) => ({
+                          student_id: sid,
+                          date: classAttendanceDate,
+                          status,
+                        }));
+                        if (rows.length === 0) { toast.error('No status toggled'); return; }
+                        const { error } = await supabase.from('attendance').upsert(rows, { onConflict: 'student_id,date' });
+                        if (error) { toast.error(error.message); return; }
+                        toast.success(`Attendance saved for ${selectedClassLevel} on ${classAttendanceDate}`);
+                      }}
+                      className="px-4 py-1.5 bg-emerald-600 text-white rounded-xl text-xs font-bold hover:bg-emerald-700 shadow-sm"
+                    >
+                      Save Attendance
+                    </button>
+                  </div>
+                </div>
+
+                <div className="overflow-x-auto">
+                  <table className="w-full text-sm text-left">
+                    <thead>
+                      <tr className="border-b border-stone-100 text-stone-400 text-xs uppercase font-bold">
+                        <th className="py-2.5 px-3">Student Name</th>
+                        <th className="py-2.5 px-3">Status</th>
+                        <th className="py-2.5 px-3">Attendance Toggle ({classAttendanceDate})</th>
+                        <th className="py-2.5 px-3 text-right">Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {clsStudents.map(s => {
+                        const attStatus = classAttendanceMap[s.id] || 'present';
+                        return (
+                          <tr key={s.id} className="border-b border-stone-50 hover:bg-stone-50">
+                            <td className="py-3 px-3 font-semibold text-stone-900">{s.full_name}</td>
+                            <td className="py-3 px-3">
+                              <span className={`text-[10px] font-bold px-2.5 py-0.5 rounded-full ${s.status === 'active' ? 'bg-emerald-100 text-emerald-700' : 'bg-stone-100 text-stone-500'}`}>
+                                {s.status?.toUpperCase()}
+                              </span>
+                            </td>
+                            <td className="py-3 px-3">
+                              <div className="flex gap-2">
+                                <button
+                                  onClick={() => setClassAttendanceMap(m => ({ ...m, [s.id]: 'present' }))}
+                                  className={`px-3 py-1 rounded-lg text-xs font-bold transition-colors ${attStatus === 'present' ? 'bg-emerald-600 text-white shadow-sm' : 'bg-stone-100 text-stone-500 hover:bg-stone-200'}`}
+                                >
+                                  Present
+                                </button>
+                                <button
+                                  onClick={() => setClassAttendanceMap(m => ({ ...m, [s.id]: 'absent' }))}
+                                  className={`px-3 py-1 rounded-lg text-xs font-bold transition-colors ${attStatus === 'absent' ? 'bg-red-600 text-white shadow-sm' : 'bg-stone-100 text-stone-500 hover:bg-stone-200'}`}
+                                >
+                                  Absent
+                                </button>
+                              </div>
+                            </td>
+                            <td className="py-3 px-3 text-right">
+                              <button
+                                onClick={() => { setSelectedStudent(s); setShow360Modal(true); }}
+                                className="text-xs font-semibold text-emerald-600 hover:underline"
+                              >
+                                View 360° Profile
+                              </button>
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+                {clsStudents.length === 0 && (
+                  <p className="text-stone-400 text-xs text-center py-8">No students currently enrolled in {selectedClassLevel}.</p>
+                )}
+              </div>
+            );
+          })()}
+
+          {/* SUB-TAB 2: CLASS HOMEWORK & TASKS */}
+          {classSubTab === 'tasks' && (() => {
+            const clsStudents = students.filter(s => s.class_level === selectedClassLevel);
+            return (
+              <div className="bg-white rounded-2xl border border-stone-200 p-6 shadow-sm space-y-4">
+                <div className="flex items-center justify-between pb-2 border-b border-stone-100">
+                  <h4 className="font-bold text-stone-900 text-base">Class Homework &amp; Assignments ({selectedClassLevel})</h4>
+                  <button onClick={() => setShowAddClassTask(true)} className="flex items-center gap-1.5 px-3.5 py-2 bg-emerald-600 text-white rounded-xl text-xs font-bold hover:bg-emerald-700">
+                    <Plus className="w-4 h-4" /> Assign Homework
+                  </button>
+                </div>
+
+                <p className="text-xs text-stone-500">Assigning homework here sends it to all {clsStudents.length} students in {selectedClassLevel}.</p>
+
+                <Modal open={showAddClassTask} onClose={() => setShowAddClassTask(false)} title={`Assign Homework to ${selectedClassLevel}`}>
+                  <form onSubmit={async (e) => {
+                    e.preventDefault();
+                    if (!classTaskForm.title) { toast.error('Title is required'); return; }
+                    setClassTaskLoading(true);
+                    try {
+                      const taskRows = clsStudents.map(s => ({
+                        student_id: s.id,
+                        title: classTaskForm.title,
+                        description: classTaskForm.description,
+                        due_date: classTaskForm.due_date || null,
+                        status: 'pending',
+                      }));
+                      if (taskRows.length === 0) { toast.error('No students in this class to assign tasks to'); setClassTaskLoading(false); return; }
+                      const { error } = await supabase.from('student_tasks').insert(taskRows);
+                      if (error) throw error;
+                      toast.success(`Homework assigned to all ${clsStudents.length} students in ${selectedClassLevel}!`);
+                      setShowAddClassTask(false);
+                      setClassTaskForm({ title: '', description: '', due_date: '' });
+                    } catch (err) {
+                      toast.error(err.message);
+                    } finally {
+                      setClassTaskLoading(false);
+                    }
+                  }} className="space-y-3">
+                    <Input label="Homework Title *" value={classTaskForm.title} onChange={e => setClassTaskForm(f => ({...f, title: e.target.value}))} placeholder="e.g. Surah Al-Mulk Memorization Lines 1-10" required />
+                    <Input label="Due Date" type="date" value={classTaskForm.due_date} onChange={e => setClassTaskForm(f => ({...f, due_date: e.target.value}))} />
+                    <div>
+                      <label className="block text-xs font-semibold text-stone-600 mb-1">Instructions / Description</label>
+                      <textarea value={classTaskForm.description} onChange={e => setClassTaskForm(f => ({...f, description: e.target.value}))} rows={3} className="w-full border border-stone-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 resize-none" placeholder="Detailed instructions for students..." />
+                    </div>
+                    <button type="submit" disabled={classTaskLoading} className="w-full bg-emerald-600 text-white py-2.5 rounded-xl font-semibold text-sm hover:bg-emerald-700 transition-colors disabled:opacity-60">
+                      {classTaskLoading ? 'Assigning...' : 'Assign to All Students'}
+                    </button>
+                  </form>
+                </Modal>
+              </div>
+            );
+          })()}
+
+          {/* SUB-TAB 3: TIMETABLE & SUBJECTS */}
+          {classSubTab === 'timetable' && (() => {
+            const clsTT = timetable.filter(t => t.class_level === selectedClassLevel);
+            const clsSub = subjectsList.filter(s => s.class_level === selectedClassLevel);
+            return (
+              <div className="grid md:grid-cols-2 gap-6">
+                <div className="bg-white rounded-2xl border border-stone-200 p-5 shadow-sm space-y-3">
+                  <h4 className="font-bold text-stone-900 text-sm flex items-center gap-1.5">📚 Subjects ({clsSub.length})</h4>
+                  {clsSub.map(s => (
+                    <div key={s.id} className="p-3 bg-stone-50 rounded-xl border border-stone-100 space-y-1">
+                      <p className="font-bold text-stone-900 text-xs">{s.name}</p>
+                      {s.teacher_name && <p className="text-[11px] text-stone-500">👤 {s.teacher_name}</p>}
+                    </div>
+                  ))}
+                  {clsSub.length === 0 && <p className="text-stone-400 text-xs text-center py-4">No subjects added for {selectedClassLevel}.</p>}
+                </div>
+
+                <div className="bg-white rounded-2xl border border-stone-200 p-5 shadow-sm space-y-3">
+                  <h4 className="font-bold text-stone-900 text-sm flex items-center gap-1.5">📅 Weekly Timetable</h4>
+                  {clsTT.map(t => (
+                    <div key={t.id} className="flex items-center justify-between p-2.5 bg-emerald-50/50 rounded-xl border border-emerald-100 text-xs">
+                      <div>
+                        <span className="font-bold text-emerald-800">{t.day_of_week}</span> · Period {t.period_number}: <span className="font-bold text-stone-900">{t.subject}</span>
+                      </div>
+                      <span className="text-[10px] text-stone-500">{t.start_time?.slice(0,5)}–{t.end_time?.slice(0,5)}</span>
+                    </div>
+                  ))}
+                  {clsTT.length === 0 && <p className="text-stone-400 text-xs text-center py-4">No timetable slots for {selectedClassLevel}.</p>}
+                </div>
+              </div>
+            );
+          })()}
         </div>
       )}
     </div>
