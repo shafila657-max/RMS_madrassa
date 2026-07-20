@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { BookOpen, Users, Award, GraduationCap, ArrowRight, CheckCircle, Sparkles, HeartHandshake, Briefcase, QrCode, Play, Image as ImageIcon } from 'lucide-react';
+import { BookOpen, Users, Award, GraduationCap, ArrowRight, CheckCircle, Sparkles, HeartHandshake, Briefcase, QrCode, Play, Image as ImageIcon, Download } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import AlumniRegisterModal from '@/components/AlumniRegisterModal';
@@ -17,6 +17,7 @@ const LandingPage = () => {
   const [showAlumniModal, setShowAlumniModal] = useState(false);
   const [showQRModal, setShowQRModal] = useState(false);
   const [galleryPreview, setGalleryPreview] = useState([]);
+  const [deferredPrompt, setDeferredPrompt] = useState(null);
 
   useEffect(() => {
     supabase
@@ -27,6 +28,24 @@ const LandingPage = () => {
       .limit(6)
       .then(({ data }) => { if (data) setGalleryPreview(data); });
   }, []);
+
+  useEffect(() => {
+    const handleBeforeInstallPrompt = (e) => {
+      e.preventDefault();
+      setDeferredPrompt(e);
+    };
+    window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+    return () => window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+  }, []);
+
+  const handleInstallPWA = async () => {
+    if (!deferredPrompt) return;
+    deferredPrompt.prompt();
+    const { outcome } = await deferredPrompt.userChoice;
+    if (outcome === 'accepted') {
+      setDeferredPrompt(null);
+    }
+  };
 
   return (
     <div className="min-h-screen">
@@ -58,6 +77,14 @@ const LandingPage = () => {
               >
                 <QrCode className="w-4 h-4 text-emerald-600" /> Scan QR
               </Button>
+              {deferredPrompt && (
+                <Button
+                  onClick={handleInstallPWA}
+                  className="rounded-full bg-emerald-600 hover:bg-emerald-700 text-white flex items-center gap-1.5 text-xs font-bold shadow-md shadow-emerald-200"
+                >
+                  <Download className="w-4 h-4" /> Install App
+                </Button>
+              )}
               <Link to="/login">
                 <Button variant="outline" className="rounded-full" data-testid="header-login-button">
                   Login
