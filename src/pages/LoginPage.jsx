@@ -30,7 +30,7 @@ const LoginPage = () => {
 
       toast.success(`Welcome back, ${profile.full_name}!`);
 
-      if (profile.role === 'admin') {
+      if (profile.role === 'admin' || profile.role === 'teacher') {
         navigate('/admin');
       } else if (profile.role === 'parent') {
         navigate('/parent');
