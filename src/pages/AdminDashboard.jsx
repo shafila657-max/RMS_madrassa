@@ -145,6 +145,24 @@ const AdminDashboard = () => {
   const [showAddGallery, setShowAddGallery] = useState(false);
   const [galleryForm, setGalleryForm] = useState({ title: '', category: 'Meelad Fest', media_type: 'image', media_url: '', imageFile: null, is_featured: false });
 
+  // Timetable
+  const [timetable, setTimetable] = useState([]);
+  const [showAddTimetable, setShowAddTimetable] = useState(false);
+  const [timetableForm, setTimetableForm] = useState({ class_level: '', day_of_week: 'Monday', period_number: 1, subject: '', teacher_name: '', start_time: '', end_time: '' });
+
+  // Subjects
+  const [subjectsList, setSubjectsList] = useState([]);
+  const [showAddSubject, setShowAddSubject] = useState(false);
+  const [subjectForm, setSubjectForm] = useState({ class_level: '', name: '', description: '', teacher_name: '' });
+
+  // Teachers
+  const [teacherContacts, setTeacherContacts] = useState([]);
+  const [showAddTeacher, setShowAddTeacher] = useState(false);
+  const [teacherForm, setTeacherForm] = useState({ full_name: '', subject: '', phone: '', email: '' });
+
+  // Leaves
+  const [leaveApplications, setLeaveApplications] = useState([]);
+
   useEffect(() => { fetchAll(); }, []);
 
   const fetchAll = async () => {
@@ -257,6 +275,24 @@ const AdminDashboard = () => {
     }
   }, []);
 
+  // New feature fetchers
+  const fetchTimetable = async () => {
+    const { data } = await supabase.from('timetable').select('*').order('class_level').order('day_of_week').order('period_number');
+    if (data) setTimetable(data);
+  };
+  const fetchSubjects = async () => {
+    const { data } = await supabase.from('subjects').select('*').order('class_level').order('name');
+    if (data) setSubjectsList(data);
+  };
+  const fetchTeachers = async () => {
+    const { data } = await supabase.from('teacher_contacts').select('*').order('full_name');
+    if (data) setTeacherContacts(data);
+  };
+  const fetchLeaves = async () => {
+    const { data } = await supabase.from('leave_applications').select('*, students(full_name, class_level)').order('created_at', { ascending: false });
+    if (data) setLeaveApplications(data);
+  };
+
   // Tab switch: lazy load
   useEffect(() => {
     if (activeTab === 'students') { fetchStudents(); fetchParents(); }
@@ -265,6 +301,10 @@ const AdminDashboard = () => {
     if (activeTab === 'announcements') { fetchAnnouncements(); }
     if (activeTab === 'alumni') { fetchAdminAlumni(); }
     if (activeTab === 'gallery') { fetchGalleryItems(); }
+    if (activeTab === 'timetable') { fetchTimetable(); }
+    if (activeTab === 'subjects') { fetchSubjects(); }
+    if (activeTab === 'teachers') { fetchTeachers(); }
+    if (activeTab === 'leaves') { fetchLeaves(); }
   }, [activeTab, fetchGalleryItems]);
 
   // ─── Handlers ───────────────────────────────────────────────────────────────
@@ -670,6 +710,10 @@ const AdminDashboard = () => {
     { id: 'attendance', label: 'Attendance' },
     { id: 'fees', label: 'Fees' },
     { id: 'gallery', label: '📸 Gallery' },
+    { id: 'timetable', label: '📅 Timetable' },
+    { id: 'subjects', label: '📚 Subjects' },
+    { id: 'teachers', label: '📞 Teachers' },
+    { id: 'leaves', label: `📝 Leaves${leaveApplications.filter(l=>l.status==='pending').length > 0 ? ` (${leaveApplications.filter(l=>l.status==='pending').length})` : ''}` },
   ];
 
   if (loading) {
@@ -1625,6 +1669,223 @@ const AdminDashboard = () => {
         onClose={() => setShow360Modal(false)}
         onRefresh={() => { fetchStudents(); fetchAll(); }}
       />
+
+      {/* ══════════════════════════════════════════════════════════════ */}
+      {/* TIMETABLE TAB                                                  */}
+      {/* ══════════════════════════════════════════════════════════════ */}
+      {activeTab === 'timetable' && (
+        <div className="max-w-6xl mx-auto px-4 py-8 space-y-6">
+          <div className="flex items-center justify-between">
+            <h2 className="font-bold text-xl text-stone-900">📅 Class Timetable</h2>
+            <button onClick={() => setShowAddTimetable(true)} className="flex items-center gap-2 px-4 py-2 bg-emerald-600 text-white rounded-xl text-sm font-semibold hover:bg-emerald-700 transition-colors">
+              <Plus className="w-4 h-4" /> Add Slot
+            </button>
+          </div>
+          {Object.entries(
+            timetable.reduce((acc, row) => { (acc[row.class_level] = acc[row.class_level] || []).push(row); return acc; }, {})
+          ).map(([cls, rows]) => (
+            <div key={cls} className="bg-white rounded-2xl border border-stone-200 overflow-hidden shadow-sm">
+              <div className="px-5 py-3 bg-emerald-50 border-b border-stone-200">
+                <span className="font-bold text-emerald-800 text-sm">{cls}</span>
+              </div>
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead><tr className="border-b border-stone-100 text-stone-500 text-xs">
+                    <th className="px-4 py-2 text-left">Day</th>
+                    <th className="px-4 py-2 text-left">Period</th>
+                    <th className="px-4 py-2 text-left">Subject</th>
+                    <th className="px-4 py-2 text-left">Teacher</th>
+                    <th className="px-4 py-2 text-left">Time</th>
+                    <th className="px-4 py-2 text-left">Action</th>
+                  </tr></thead>
+                  <tbody>
+                    {rows.map(r => (
+                      <tr key={r.id} className="border-b border-stone-50 hover:bg-stone-50">
+                        <td className="px-4 py-2 font-medium text-stone-700">{r.day_of_week}</td>
+                        <td className="px-4 py-2 text-stone-500">P{r.period_number}</td>
+                        <td className="px-4 py-2 font-semibold text-stone-900">{r.subject}</td>
+                        <td className="px-4 py-2 text-stone-600">{r.teacher_name}</td>
+                        <td className="px-4 py-2 text-stone-500">{r.start_time?.slice(0,5)} – {r.end_time?.slice(0,5)}</td>
+                        <td className="px-4 py-2">
+                          <button onClick={async () => { await supabase.from('timetable').delete().eq('id', r.id); fetchTimetable(); toast.success('Deleted'); }} className="text-red-400 hover:text-red-600 transition-colors">
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          ))}
+          {timetable.length === 0 && <p className="text-stone-400 text-sm text-center py-12">No timetable entries yet. Add slots using the button above.</p>}
+
+          <Modal open={showAddTimetable} onClose={() => setShowAddTimetable(false)} title="Add Timetable Slot">
+            <form onSubmit={async e => {
+              e.preventDefault();
+              const { error } = await supabase.from('timetable').insert([timetableForm]);
+              if (error) { toast.error(error.message); return; }
+              toast.success('Slot added');
+              setShowAddTimetable(false);
+              setTimetableForm({ class_level: '', day_of_week: 'Monday', period_number: 1, subject: '', teacher_name: '', start_time: '', end_time: '' });
+              fetchTimetable();
+            }} className="space-y-3">
+              <Input label="Class Level *" value={timetableForm.class_level} onChange={e => setTimetableForm(f => ({...f, class_level: e.target.value}))} placeholder="e.g. Class 5" required />
+              <div className="mb-4">
+                <label className="block text-sm font-medium text-stone-700 mb-1">Day *</label>
+                <select value={timetableForm.day_of_week} onChange={e => setTimetableForm(f => ({...f, day_of_week: e.target.value}))} className="w-full border border-stone-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500">
+                  {['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday'].map(d => <option key={d}>{d}</option>)}
+                </select>
+              </div>
+              <Input label="Period No. *" type="number" min="1" value={timetableForm.period_number} onChange={e => setTimetableForm(f => ({...f, period_number: parseInt(e.target.value)}))} required />
+              <Input label="Subject *" value={timetableForm.subject} onChange={e => setTimetableForm(f => ({...f, subject: e.target.value}))} placeholder="e.g. Quran" required />
+              <Input label="Teacher Name *" value={timetableForm.teacher_name} onChange={e => setTimetableForm(f => ({...f, teacher_name: e.target.value}))} placeholder="e.g. Ustadh Ahmed" required />
+              <div className="grid grid-cols-2 gap-3">
+                <Input label="Start Time *" type="time" value={timetableForm.start_time} onChange={e => setTimetableForm(f => ({...f, start_time: e.target.value}))} required />
+                <Input label="End Time *" type="time" value={timetableForm.end_time} onChange={e => setTimetableForm(f => ({...f, end_time: e.target.value}))} required />
+              </div>
+              <button type="submit" className="w-full bg-emerald-600 text-white py-2.5 rounded-xl font-semibold text-sm hover:bg-emerald-700 transition-colors">Add Slot</button>
+            </form>
+          </Modal>
+        </div>
+      )}
+
+      {/* ══════════════════════════════════════════════════════════════ */}
+      {/* SUBJECTS TAB                                                   */}
+      {/* ══════════════════════════════════════════════════════════════ */}
+      {activeTab === 'subjects' && (
+        <div className="max-w-6xl mx-auto px-4 py-8 space-y-6">
+          <div className="flex items-center justify-between">
+            <h2 className="font-bold text-xl text-stone-900">📚 Subjects</h2>
+            <button onClick={() => setShowAddSubject(true)} className="flex items-center gap-2 px-4 py-2 bg-emerald-600 text-white rounded-xl text-sm font-semibold hover:bg-emerald-700 transition-colors">
+              <Plus className="w-4 h-4" /> Add Subject
+            </button>
+          </div>
+          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {subjectsList.map(s => (
+              <div key={s.id} className="bg-white rounded-2xl border border-stone-200 p-5 shadow-sm space-y-2">
+                <div className="flex items-start justify-between">
+                  <div>
+                    <p className="font-bold text-stone-900">{s.name}</p>
+                    <span className="text-xs bg-emerald-100 text-emerald-700 px-2 py-0.5 rounded-full font-medium">{s.class_level}</span>
+                  </div>
+                  <button onClick={async () => { await supabase.from('subjects').delete().eq('id', s.id); fetchSubjects(); toast.success('Deleted'); }} className="text-red-400 hover:text-red-600 transition-colors p-1">
+                    <Trash2 className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+                {s.teacher_name && <p className="text-xs text-stone-500">👤 {s.teacher_name}</p>}
+                {s.description && <p className="text-xs text-stone-400">{s.description}</p>}
+              </div>
+            ))}
+          </div>
+          {subjectsList.length === 0 && <p className="text-stone-400 text-sm text-center py-12">No subjects yet. Add subjects using the button above.</p>}
+
+          <Modal open={showAddSubject} onClose={() => setShowAddSubject(false)} title="Add Subject">
+            <form onSubmit={async e => {
+              e.preventDefault();
+              const { error } = await supabase.from('subjects').insert([subjectForm]);
+              if (error) { toast.error(error.message); return; }
+              toast.success('Subject added');
+              setShowAddSubject(false);
+              setSubjectForm({ class_level: '', name: '', description: '', teacher_name: '' });
+              fetchSubjects();
+            }} className="space-y-3">
+              <Input label="Class Level *" value={subjectForm.class_level} onChange={e => setSubjectForm(f => ({...f, class_level: e.target.value}))} placeholder="e.g. Class 5" required />
+              <Input label="Subject Name *" value={subjectForm.name} onChange={e => setSubjectForm(f => ({...f, name: e.target.value}))} placeholder="e.g. Quran" required />
+              <Input label="Teacher Name" value={subjectForm.teacher_name} onChange={e => setSubjectForm(f => ({...f, teacher_name: e.target.value}))} placeholder="e.g. Ustadh Ahmed" />
+              <div className="mb-4">
+                <label className="block text-sm font-medium text-stone-700 mb-1">Description</label>
+                <textarea value={subjectForm.description} onChange={e => setSubjectForm(f => ({...f, description: e.target.value}))} rows={3} className="w-full border border-stone-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500" placeholder="Brief description..." />
+              </div>
+              <button type="submit" className="w-full bg-emerald-600 text-white py-2.5 rounded-xl font-semibold text-sm hover:bg-emerald-700 transition-colors">Add Subject</button>
+            </form>
+          </Modal>
+        </div>
+      )}
+
+      {/* ══════════════════════════════════════════════════════════════ */}
+      {/* TEACHERS TAB                                                   */}
+      {/* ══════════════════════════════════════════════════════════════ */}
+      {activeTab === 'teachers' && (
+        <div className="max-w-6xl mx-auto px-4 py-8 space-y-6">
+          <div className="flex items-center justify-between">
+            <h2 className="font-bold text-xl text-stone-900">📞 Teacher Contacts</h2>
+            <button onClick={() => setShowAddTeacher(true)} className="flex items-center gap-2 px-4 py-2 bg-emerald-600 text-white rounded-xl text-sm font-semibold hover:bg-emerald-700 transition-colors">
+              <Plus className="w-4 h-4" /> Add Teacher
+            </button>
+          </div>
+          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {teacherContacts.map(t => (
+              <div key={t.id} className="bg-white rounded-2xl border border-stone-200 p-5 shadow-sm space-y-2">
+                <div className="flex items-start justify-between">
+                  <div>
+                    <p className="font-bold text-stone-900">{t.full_name}</p>
+                    <span className="text-xs bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full font-medium">{t.subject}</span>
+                  </div>
+                  <button onClick={async () => { await supabase.from('teacher_contacts').delete().eq('id', t.id); fetchTeachers(); toast.success('Deleted'); }} className="text-red-400 hover:text-red-600 transition-colors p-1">
+                    <Trash2 className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+                {t.phone && <p className="text-xs text-stone-500">📱 {t.phone}</p>}
+                {t.email && <p className="text-xs text-stone-500">✉️ {t.email}</p>}
+              </div>
+            ))}
+          </div>
+          {teacherContacts.length === 0 && <p className="text-stone-400 text-sm text-center py-12">No teachers added yet.</p>}
+
+          <Modal open={showAddTeacher} onClose={() => setShowAddTeacher(false)} title="Add Teacher Contact">
+            <form onSubmit={async e => {
+              e.preventDefault();
+              const { error } = await supabase.from('teacher_contacts').insert([teacherForm]);
+              if (error) { toast.error(error.message); return; }
+              toast.success('Teacher added');
+              setShowAddTeacher(false);
+              setTeacherForm({ full_name: '', subject: '', phone: '', email: '' });
+              fetchTeachers();
+            }} className="space-y-3">
+              <Input label="Full Name *" value={teacherForm.full_name} onChange={e => setTeacherForm(f => ({...f, full_name: e.target.value}))} placeholder="e.g. Ustadh Ahmed Ali" required />
+              <Input label="Subject *" value={teacherForm.subject} onChange={e => setTeacherForm(f => ({...f, subject: e.target.value}))} placeholder="e.g. Quran Memorization" required />
+              <Input label="Phone" type="tel" value={teacherForm.phone} onChange={e => setTeacherForm(f => ({...f, phone: e.target.value}))} placeholder="+91 9876543210" />
+              <Input label="Email" type="email" value={teacherForm.email} onChange={e => setTeacherForm(f => ({...f, email: e.target.value}))} placeholder="teacher@rmsmadrasa.edu" />
+              <button type="submit" className="w-full bg-emerald-600 text-white py-2.5 rounded-xl font-semibold text-sm hover:bg-emerald-700 transition-colors">Add Teacher</button>
+            </form>
+          </Modal>
+        </div>
+      )}
+
+      {/* ══════════════════════════════════════════════════════════════ */}
+      {/* LEAVES TAB                                                     */}
+      {/* ══════════════════════════════════════════════════════════════ */}
+      {activeTab === 'leaves' && (
+        <div className="max-w-6xl mx-auto px-4 py-8 space-y-4">
+          <h2 className="font-bold text-xl text-stone-900">📝 Leave Applications</h2>
+          {leaveApplications.length === 0 && <p className="text-stone-400 text-sm text-center py-12">No leave applications submitted yet.</p>}
+          {leaveApplications.map(l => (
+            <div key={l.id} className="bg-white rounded-2xl border border-stone-200 p-5 shadow-sm">
+              <div className="flex items-start justify-between gap-4">
+                <div className="space-y-1">
+                  <p className="font-bold text-stone-900">{l.students?.full_name}</p>
+                  <p className="text-xs text-stone-500">{l.students?.class_level} &nbsp;·&nbsp; {new Date(l.from_date).toLocaleDateString('en-IN')} → {new Date(l.to_date).toLocaleDateString('en-IN')}</p>
+                  <p className="text-sm text-stone-700 mt-1">{l.reason}</p>
+                </div>
+                <div className="flex-shrink-0 flex flex-col items-end gap-2">
+                  <span className={`text-xs font-bold px-3 py-1 rounded-full ${
+                    l.status === 'approved' ? 'bg-emerald-100 text-emerald-700' :
+                    l.status === 'rejected' ? 'bg-red-100 text-red-700' :
+                    'bg-amber-100 text-amber-700'
+                  }`}>{l.status.toUpperCase()}</span>
+                  {l.status === 'pending' && (
+                    <div className="flex gap-2">
+                      <button onClick={async () => { await supabase.from('leave_applications').update({ status: 'approved' }).eq('id', l.id); fetchLeaves(); toast.success('Leave approved'); }} className="px-3 py-1 bg-emerald-600 text-white text-xs rounded-lg font-semibold hover:bg-emerald-700 transition-colors">Approve</button>
+                      <button onClick={async () => { await supabase.from('leave_applications').update({ status: 'rejected' }).eq('id', l.id); fetchLeaves(); toast.success('Leave rejected'); }} className="px-3 py-1 bg-red-500 text-white text-xs rounded-lg font-semibold hover:bg-red-600 transition-colors">Reject</button>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 };

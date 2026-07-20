@@ -4,7 +4,8 @@ import { useNavigate, useParams } from 'react-router-dom';
 import {
   BookOpen, ArrowLeft, Calendar, Award, TrendingUp,
   DollarSign, BarChart2, CheckCircle2, Clock, AlertCircle, Star,
-  Bell, Megaphone, AlertTriangle, ListTodo, Check
+  Bell, Megaphone, AlertTriangle, ListTodo, Check,
+  Table, BookMarked, Phone, FileText
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { supabase } from '@/lib/supabase';
@@ -39,6 +40,16 @@ const StudentDetailPage = () => {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('overview');
+
+  // New feature state
+  const [timetable, setTimetable] = useState([]);
+  const [subjectsList, setSubjectsList] = useState([]);
+  const [teacherContacts, setTeacherContacts] = useState([]);
+  const [leaveApplications, setLeaveApplications] = useState([]);
+  const [leaveForm, setLeaveForm] = useState({ from_date: '', to_date: '', reason: '' });
+  const [leaveLoading, setLeaveLoading] = useState(false);
+  const [classLevel, setClassLevel] = useState('');
+  const [studentIdState, setStudentIdState] = useState(null);
 
   useEffect(() => { fetchStudentData(); }, [studentId]);
 
@@ -128,6 +139,20 @@ const StudentDetailPage = () => {
         leaderboard_position,
         total_students_in_class: classIds.length,
       });
+
+      // Fetch additional feature data based on class level
+      setClassLevel(student.class_level);
+      setStudentIdState(sid);
+      const [{ data: ttData }, { data: subData }, { data: tcData }, { data: leaveData }] = await Promise.all([
+        supabase.from('timetable').select('*').eq('class_level', student.class_level).order('day_of_week').order('period_number'),
+        supabase.from('subjects').select('*').eq('class_level', student.class_level).order('name'),
+        supabase.from('teacher_contacts').select('*').order('full_name'),
+        supabase.from('leave_applications').select('*').eq('student_id', sid).order('created_at', { ascending: false }),
+      ]);
+      if (ttData) setTimetable(ttData);
+      if (subData) setSubjectsList(subData);
+      if (tcData) setTeacherContacts(tcData);
+      if (leaveData) setLeaveApplications(leaveData);
     } catch (err) {
       toast.error('Failed to load student data');
       console.error(err);
@@ -155,12 +180,16 @@ const StudentDetailPage = () => {
   const avgScore = scores.length > 0 ? Math.round(scores.reduce((s, sc) => s + sc.percentage, 0) / scores.length) : 0;
 
   const tabs = [
-    { id: 'overview', label: 'Overview', icon: Calendar },
-    { id: 'notices', label: `Notices${announcements.length > 0 ? ` (${announcements.length})` : ''}`, icon: Bell },
-    { id: 'tasks', label: `Homework${tasks.length > 0 ? ` (${tasks.length})` : ''}`, icon: ListTodo },
-    { id: 'scores', label: 'Scores', icon: BarChart2 },
-    { id: 'fees', label: 'Fees', icon: DollarSign },
-    { id: 'awards', label: 'Awards', icon: Award },
+    { id: 'overview',  label: 'Overview',  icon: Calendar },
+    { id: 'notices',   label: `Notices${announcements.length > 0 ? ` (${announcements.length})` : ''}`, icon: Bell },
+    { id: 'tasks',     label: `Homework${tasks.length > 0 ? ` (${tasks.length})` : ''}`, icon: ListTodo },
+    { id: 'scores',    label: 'Scores',    icon: BarChart2 },
+    { id: 'fees',      label: 'Fees',      icon: DollarSign },
+    { id: 'awards',    label: 'Awards',    icon: Award },
+    { id: 'timetable', label: 'Timetable', icon: Table },
+    { id: 'subjects',  label: 'Subjects',  icon: BookMarked },
+    { id: 'teachers',  label: 'Teachers',  icon: Phone },
+    { id: 'leave',     label: 'Leave',     icon: FileText },
   ];
 
   return (
@@ -559,6 +588,162 @@ const StudentDetailPage = () => {
               </div>
             </motion.div>
           )}
+      {/* ── TIMETABLE TAB ── */}
+      {activeTab === 'timetable' && (
+        <motion.div key="timetable" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="space-y-4">
+          <h3 className="font-bold text-stone-900 text-base">📅 Class Timetable</h3>
+          {Object.entries(
+            timetable.reduce((acc, r) => { (acc[r.day_of_week] = acc[r.day_of_week] || []).push(r); return acc; }, {})
+          ).map(([day, rows]) => (
+            <div key={day} className="bg-white rounded-2xl border border-stone-200 overflow-hidden shadow-sm">
+              <div className="px-4 py-2.5 bg-emerald-50 border-b border-stone-100">
+                <span className="text-sm font-bold text-emerald-800">{day}</span>
+              </div>
+              {rows.map(r => (
+                <div key={r.id} className="flex items-center justify-between px-4 py-3 border-b border-stone-50 last:border-0">
+                  <div>
+                    <p className="font-semibold text-stone-900 text-sm">{r.subject}</p>
+                    <p className="text-xs text-stone-500">{r.teacher_name} · Period {r.period_number}</p>
+                  </div>
+                  <span className="text-xs font-medium text-stone-500 bg-stone-100 px-2.5 py-1 rounded-full">
+                    {r.start_time?.slice(0,5)} – {r.end_time?.slice(0,5)}
+                  </span>
+                </div>
+              ))}
+            </div>
+          ))}
+          {timetable.length === 0 && (
+            <div className="text-center py-16">
+              <Table className="w-10 h-10 text-stone-200 mx-auto mb-3" />
+              <p className="text-stone-400 text-sm">No timetable set yet</p>
+            </div>
+          )}
+        </motion.div>
+      )}
+
+      {/* ── SUBJECTS TAB ── */}
+      {activeTab === 'subjects' && (
+        <motion.div key="subjects" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="space-y-3">
+          <h3 className="font-bold text-stone-900 text-base">📚 Subjects</h3>
+          {subjectsList.map(s => (
+            <div key={s.id} className="bg-white rounded-2xl border border-stone-200 p-4 shadow-sm">
+              <p className="font-bold text-stone-900">{s.name}</p>
+              {s.teacher_name && <p className="text-xs text-stone-500 mt-0.5">👤 {s.teacher_name}</p>}
+              {s.description && <p className="text-xs text-stone-400 mt-1">{s.description}</p>}
+            </div>
+          ))}
+          {subjectsList.length === 0 && (
+            <div className="text-center py-16">
+              <BookMarked className="w-10 h-10 text-stone-200 mx-auto mb-3" />
+              <p className="text-stone-400 text-sm">No subjects added yet</p>
+            </div>
+          )}
+        </motion.div>
+      )}
+
+      {/* ── TEACHERS TAB ── */}
+      {activeTab === 'teachers' && (
+        <motion.div key="teachers" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="space-y-3">
+          <h3 className="font-bold text-stone-900 text-base">📞 Teacher Contacts</h3>
+          {teacherContacts.map(t => (
+            <div key={t.id} className="bg-white rounded-2xl border border-stone-200 p-4 shadow-sm space-y-2">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="font-bold text-stone-900">{t.full_name}</p>
+                  <span className="text-xs bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full font-medium">{t.subject}</span>
+                </div>
+              </div>
+              <div className="flex gap-3 pt-1">
+                {t.phone && (
+                  <a href={`tel:${t.phone}`} className="flex items-center gap-1.5 text-xs font-semibold text-emerald-700 bg-emerald-50 border border-emerald-100 px-3 py-1.5 rounded-xl hover:bg-emerald-100 transition-colors">
+                    <Phone className="w-3.5 h-3.5" /> {t.phone}
+                  </a>
+                )}
+                {t.email && (
+                  <a href={`mailto:${t.email}`} className="flex items-center gap-1.5 text-xs font-semibold text-blue-700 bg-blue-50 border border-blue-100 px-3 py-1.5 rounded-xl hover:bg-blue-100 transition-colors">
+                    ✉️ Email
+                  </a>
+                )}
+              </div>
+            </div>
+          ))}
+          {teacherContacts.length === 0 && (
+            <div className="text-center py-16">
+              <Phone className="w-10 h-10 text-stone-200 mx-auto mb-3" />
+              <p className="text-stone-400 text-sm">No teacher contacts added yet</p>
+            </div>
+          )}
+        </motion.div>
+      )}
+
+      {/* ── LEAVE TAB ── */}
+      {activeTab === 'leave' && (
+        <motion.div key="leave" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="space-y-4">
+          <h3 className="font-bold text-stone-900 text-base">📝 Apply for Leave</h3>
+          <form onSubmit={async e => {
+            e.preventDefault();
+            if (!leaveForm.from_date || !leaveForm.to_date || !leaveForm.reason) {
+              toast.error('All fields are required');
+              return;
+            }
+            setLeaveLoading(true);
+            try {
+              const { error } = await supabase.from('leave_applications').insert([{
+                student_id: studentIdState,
+                from_date: leaveForm.from_date,
+                to_date: leaveForm.to_date,
+                reason: leaveForm.reason,
+              }]);
+              if (error) throw error;
+              toast.success('Leave application submitted!');
+              setLeaveForm({ from_date: '', to_date: '', reason: '' });
+              const { data: leaveData } = await supabase.from('leave_applications').select('*').eq('student_id', studentIdState).order('created_at', { ascending: false });
+              if (leaveData) setLeaveApplications(leaveData);
+            } catch (err) {
+              toast.error('Failed to submit: ' + err.message);
+            } finally {
+              setLeaveLoading(false);
+            }
+          }} className="bg-white rounded-2xl border border-stone-200 p-5 shadow-sm space-y-3">
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="block text-xs font-semibold text-stone-600 mb-1">From Date *</label>
+                <input type="date" value={leaveForm.from_date} onChange={e => setLeaveForm(f => ({...f, from_date: e.target.value}))} className="w-full border border-stone-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500" required />
+              </div>
+              <div>
+                <label className="block text-xs font-semibold text-stone-600 mb-1">To Date *</label>
+                <input type="date" value={leaveForm.to_date} onChange={e => setLeaveForm(f => ({...f, to_date: e.target.value}))} className="w-full border border-stone-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500" required />
+              </div>
+            </div>
+            <div>
+              <label className="block text-xs font-semibold text-stone-600 mb-1">Reason *</label>
+              <textarea value={leaveForm.reason} onChange={e => setLeaveForm(f => ({...f, reason: e.target.value}))} rows={3} className="w-full border border-stone-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 resize-none" placeholder="Please explain the reason for leave..." required />
+            </div>
+            <button type="submit" disabled={leaveLoading} className="w-full bg-emerald-600 text-white py-2.5 rounded-xl font-semibold text-sm hover:bg-emerald-700 transition-colors disabled:opacity-60">
+              {leaveLoading ? 'Submitting...' : 'Submit Leave Application'}
+            </button>
+          </form>
+
+          <h3 className="font-bold text-stone-900 text-base mt-6">Past Applications</h3>
+          {leaveApplications.map(l => (
+            <div key={l.id} className="bg-white rounded-2xl border border-stone-200 p-4 shadow-sm">
+              <div className="flex items-start justify-between">
+                <div>
+                  <p className="text-sm text-stone-600">{new Date(l.from_date).toLocaleDateString('en-IN')} → {new Date(l.to_date).toLocaleDateString('en-IN')}</p>
+                  <p className="text-xs text-stone-500 mt-1">{l.reason}</p>
+                </div>
+                <span className={`text-xs font-bold px-3 py-1 rounded-full flex-shrink-0 ${
+                  l.status === 'approved' ? 'bg-emerald-100 text-emerald-700' :
+                  l.status === 'rejected' ? 'bg-red-100 text-red-700' :
+                  'bg-amber-100 text-amber-700'
+                }`}>{l.status.toUpperCase()}</span>
+              </div>
+            </div>
+          ))}
+          {leaveApplications.length === 0 && <p className="text-stone-400 text-xs text-center py-4">No leave applications yet.</p>}
+        </motion.div>
+      )}
+
         </AnimatePresence>
       </div>
 
