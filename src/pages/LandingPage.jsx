@@ -84,6 +84,7 @@ const LandingPage = () => {
   const [showQRModal,     setShowQRModal]     = useState(false);
   const [galleryPreview,  setGalleryPreview]  = useState([]);
   const [deferredPrompt,  setDeferredPrompt]  = useState(null);
+  const [showInstallBanner, setShowInstallBanner] = useState(false);
 
   // Fetch featured gallery items
   useEffect(() => {
@@ -98,7 +99,11 @@ const LandingPage = () => {
 
   // PWA install prompt
   useEffect(() => {
-    const fn = (e) => { e.preventDefault(); setDeferredPrompt(e); };
+    const fn = (e) => {
+      e.preventDefault();
+      setDeferredPrompt(e);
+      setShowInstallBanner(true); // show the banner when install is available
+    };
     window.addEventListener('beforeinstallprompt', fn, { passive: true });
     return () => window.removeEventListener('beforeinstallprompt', fn);
   }, []);
@@ -142,18 +147,6 @@ const LandingPage = () => {
                 className="hidden md:flex rounded-full border-emerald-300 text-emerald-800 bg-emerald-50/50 hover:bg-emerald-100 items-center gap-1.5 text-xs font-bold"
               >
                 <QrCode className="w-4 h-4 text-emerald-600" /> Scan QR
-              </Button>
-              <Button
-                onClick={() => {
-                  if (deferredPrompt) {
-                    handleInstallPWA();
-                  } else {
-                    toast('Tap the Share / Menu button in your browser and select "Add to Home Screen".', { duration: 8000, icon: '📱' });
-                  }
-                }}
-                className="rounded-full bg-emerald-600 hover:bg-emerald-700 text-white flex items-center gap-1.5 text-xs font-bold"
-              >
-                <Download className="w-4 h-4" /> Install App
               </Button>
               <Link to="/login">
                 <Button variant="outline" className="rounded-full" data-testid="header-login-button">Login</Button>
@@ -424,6 +417,51 @@ const LandingPage = () => {
         {showAlumniModal && <AlumniRegisterModal open onClose={() => setShowAlumniModal(false)} />}
         {showQRModal     && <MobileQRModal       open onClose={() => setShowQRModal(false)} />}
       </Suspense>
+
+      {/* ── FLOATING INSTALL BANNER ─────────────────────────────────── */}
+      <motion.div
+        initial={{ y: 100, opacity: 0 }}
+        animate={showInstallBanner ? { y: 0, opacity: 1 } : { y: 100, opacity: 0 }}
+        transition={{ type: 'spring', damping: 20, stiffness: 200 }}
+        className="fixed bottom-5 left-1/2 -translate-x-1/2 z-50 pointer-events-none"
+        style={{ width: 'min(92vw, 420px)' }}
+      >
+        <div className="pointer-events-auto bg-stone-900 text-white rounded-2xl shadow-2xl shadow-black/30 px-5 py-4 flex items-center gap-4 border border-white/10">
+          {/* Icon */}
+          <div className="w-11 h-11 rounded-xl bg-emerald-600 flex items-center justify-center flex-shrink-0">
+            <Download className="w-5 h-5 text-white" />
+          </div>
+          {/* Text */}
+          <div className="flex-1 min-w-0">
+            <p className="font-bold text-sm text-white">Install RMS Madrasa</p>
+            <p className="text-xs text-stone-400 truncate">Add to your home screen for quick access</p>
+          </div>
+          {/* Install button */}
+          <button
+            onClick={async () => {
+              if (deferredPrompt) {
+                await handleInstallPWA();
+                setShowInstallBanner(false);
+              } else {
+                toast('Tap Share → "Add to Home Screen" in your browser.', { duration: 6000, icon: '📱' });
+              }
+            }}
+            className="flex-shrink-0 bg-emerald-500 hover:bg-emerald-400 text-white text-xs font-bold px-4 py-2 rounded-xl transition-colors"
+          >
+            Install
+          </button>
+          {/* Close button */}
+          <button
+            onClick={() => setShowInstallBanner(false)}
+            className="flex-shrink-0 p-1.5 rounded-lg text-stone-400 hover:text-white hover:bg-white/10 transition-colors"
+            aria-label="Dismiss"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+              <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
+            </svg>
+          </button>
+        </div>
+      </motion.div>
     </div>
   );
 };
