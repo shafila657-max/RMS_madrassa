@@ -82,7 +82,7 @@ const LandingPage = () => {
             <motion.div
               initial={{ opacity: 0, x: -50 }}
               animate={{ opacity: 1, x: 0 }}
-              transition={{ duration: 0.8 }}
+              transition={{ duration: 0.4 }}
             >
               <div className="inline-flex items-center gap-2 bg-emerald-100/80 border border-emerald-200 px-3.5 py-1.5 rounded-full text-xs font-bold text-emerald-800 mb-4">
                 <Sparkles className="w-4 h-4 text-emerald-600" /> RMS Madrasa Management Platform
@@ -119,7 +119,7 @@ const LandingPage = () => {
             <motion.div
               initial={{ opacity: 0, scale: 0.9 }}
               animate={{ opacity: 1, scale: 1 }}
-              transition={{ duration: 0.8 }}
+              transition={{ duration: 0.4 }}
               className="hidden md:block relative"
             >
               <div className="relative rounded-3xl overflow-hidden shadow-2xl border-4 border-white/80 ring-1 ring-stone-200">
@@ -145,8 +145,8 @@ const LandingPage = () => {
           <motion.div
             initial={{ opacity: 0, y: 50 }}
             whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            transition={{ duration: 0.6 }}
+            viewport={{ once: true, margin: "100px" }}
+            transition={{ duration: 0.3 }}
             className="text-center max-w-3xl mx-auto"
           >
             <h2 className="font-heading text-4xl md:text-5xl text-stone-900 mb-6">Our Mission</h2>
@@ -159,8 +159,8 @@ const LandingPage = () => {
             <motion.div
               initial={{ opacity: 0, y: 30 }}
               whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ duration: 0.6, delay: 0.1 }}
+              viewport={{ once: true, margin: "100px" }}
+              transition={{ duration: 0.3, delay: 0.05 }}
               className="bg-white p-8 rounded-xl border border-stone-200 shadow-sm"
             >
               <BookOpen className="w-12 h-12 text-primary mb-4" />
@@ -171,8 +171,8 @@ const LandingPage = () => {
             <motion.div
               initial={{ opacity: 0, y: 30 }}
               whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ duration: 0.6, delay: 0.2 }}
+              viewport={{ once: true, margin: "100px" }}
+              transition={{ duration: 0.3, delay: 0.1 }}
               className="bg-white p-8 rounded-xl border border-stone-200 shadow-sm"
             >
               <Users className="w-12 h-12 text-primary mb-4" />
@@ -183,8 +183,8 @@ const LandingPage = () => {
             <motion.div
               initial={{ opacity: 0, y: 30 }}
               whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ duration: 0.6, delay: 0.3 }}
+              viewport={{ once: true, margin: "100px" }}
+              transition={{ duration: 0.3, delay: 0.15 }}
               className="bg-white p-8 rounded-xl border border-stone-200 shadow-sm"
             >
               <Award className="w-12 h-12 text-primary mb-4" />
@@ -201,8 +201,8 @@ const LandingPage = () => {
           <motion.div
             initial={{ opacity: 0, scale: 0.95 }}
             whileInView={{ opacity: 1, scale: 1 }}
-            viewport={{ once: true }}
-            transition={{ duration: 0.6 }}
+            viewport={{ once: true, margin: "100px" }}
+            transition={{ duration: 0.3 }}
             className="text-center max-w-3xl mx-auto"
           >
             <h2 className="font-heading text-4xl md:text-5xl mb-6">Begin Your Spiritual Journey</h2>
@@ -241,8 +241,8 @@ const LandingPage = () => {
             <motion.div
               initial={{ opacity: 0, x: -40 }}
               whileInView={{ opacity: 1, x: 0 }}
-              viewport={{ once: true }}
-              transition={{ duration: 0.6 }}
+              viewport={{ once: true, margin: "100px" }}
+              transition={{ duration: 0.3 }}
               className="space-y-6"
             >
               <div className="inline-flex items-center gap-2 bg-emerald-800/80 border border-emerald-700 px-3.5 py-1 rounded-full text-xs text-emerald-200 font-semibold">
@@ -305,8 +305,8 @@ const LandingPage = () => {
             <motion.div
               initial={{ opacity: 0, scale: 0.9 }}
               whileInView={{ opacity: 1, scale: 1 }}
-              viewport={{ once: true }}
-              transition={{ duration: 0.6 }}
+              viewport={{ once: true, margin: "100px" }}
+              transition={{ duration: 0.3 }}
               className="bg-white/10 backdrop-blur-xl border border-white/15 rounded-3xl p-8 text-white space-y-6 shadow-2xl"
             >
               <div className="flex items-center justify-between">
