@@ -22,6 +22,17 @@ export default defineConfig({
         orientation: 'portrait',
         scope: '/',
         start_url: '/',
+        id: '/?source=pwa',
+        categories: ['education', 'productivity'],
+        screenshots: [
+          {
+            src: 'hero-madrasa-boy.jpg',
+            sizes: '1024x1024',
+            type: 'image/jpeg',
+            form_factor: 'wide',
+            label: 'RMS Madrasa Landing Page'
+          }
+        ],
         icons: [
           {
             src: 'pwa-192x192.png',
@@ -37,7 +48,7 @@ export default defineConfig({
             src: 'pwa-512x512.png',
             sizes: '512x512',
             type: 'image/png',
-            purpose: 'any maskable',
+            purpose: 'maskable',
           },
         ],
       },
