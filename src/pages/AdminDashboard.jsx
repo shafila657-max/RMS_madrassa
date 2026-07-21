@@ -222,6 +222,7 @@ const AdminDashboard = () => {
       });
       fetchTeachers();
       fetchClassTeachers();
+      fetchStudents();
     } catch (err) {
       toast.error('Failed to load data');
     } finally {
@@ -1860,7 +1861,7 @@ const AdminDashboard = () => {
             {['Class 1','Class 2','Class 3','Class 4','Class 5','Class 6','Class 7','Class 8','Class 9','Class 10']
               .filter(cls => !isTeacher || classTeachers.some(ct => ct.class_level === cls && ct.teacher_name === profile?.full_name))
               .map(cls => {
-              const count = students.filter(s => s.class_level === cls).length;
+              const count = students.filter(s => (s.class_level || '').trim().toLowerCase() === (cls || '').trim().toLowerCase()).length;
               const isSelected = selectedClassLevel === cls;
               return (
                 <button
@@ -1883,7 +1884,7 @@ const AdminDashboard = () => {
 
           {/* Class Overview Header Card */}
           {(() => {
-            const clsStudents = students.filter(s => s.class_level === selectedClassLevel);
+            const clsStudents = students.filter(s => (s.class_level || '').trim().toLowerCase() === (selectedClassLevel || '').trim().toLowerCase());
             const currentCT = classTeachers.find(ct => ct.class_level === selectedClassLevel);
             const clsSubjects = subjectsList.filter(s => s.class_level === selectedClassLevel);
 
@@ -1956,7 +1957,7 @@ const AdminDashboard = () => {
 
           {/* SUB-TAB 1: STUDENTS ROSTER & QUICK ATTENDANCE */}
           {classSubTab === 'students' && (() => {
-            const clsStudents = students.filter(s => s.class_level === selectedClassLevel);
+            const clsStudents = students.filter(s => (s.class_level || '').trim().toLowerCase() === (selectedClassLevel || '').trim().toLowerCase());
             return (
               <div className="bg-white rounded-2xl border border-stone-200 p-6 shadow-sm space-y-4">
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-2 border-b border-stone-100">
