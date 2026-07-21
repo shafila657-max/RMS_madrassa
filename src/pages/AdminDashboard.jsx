@@ -304,15 +304,15 @@ const AdminDashboard = () => {
     try {
       const [
         { data: pending, error: pErr },
-        { count: studentCount, error: sErr },
-        { count: parentCount, error: prErr },
-        { count: pendingCount, error: pcErr },
+        { data: studentsDataRes, error: sErr },
+        { data: parentsDataRes, error: prErr },
+        { data: pendingDataRes, error: pcErr },
         { data: feesData, error: fErr },
       ] = await Promise.all([
         supabase.from('profiles').select('*').eq('status', 'pending').order('created_at', { ascending: false }),
-        supabase.from('students').select('*', { count: 'exact', head: true }),
-        supabase.from('profiles').select('*', { count: 'exact', head: true }).eq('role', 'parent').eq('status', 'approved'),
-        supabase.from('profiles').select('*', { count: 'exact', head: true }).eq('status', 'pending'),
+        supabase.from('students').select('id'),
+        supabase.from('profiles').select('id').eq('role', 'parent').eq('status', 'approved'),
+        supabase.from('profiles').select('id').eq('status', 'pending'),
         supabase.from('fees').select('amount, status'),
       ]);
 
@@ -322,9 +322,9 @@ const AdminDashboard = () => {
 
       setPendingUsers(pending || []);
       setStats({
-        total_students: studentCount || 0,
-        total_parents: parentCount || 0,
-        pending_approvals: pendingCount || 0,
+        total_students: studentsDataRes?.length || 0,
+        total_parents: parentsDataRes?.length || 0,
+        pending_approvals: pendingDataRes?.length || 0,
         fees_collected: (feesData || []).filter(f => f.status === 'paid').reduce((s, f) => s + Number(f.amount), 0),
         fees_pending: (feesData || []).filter(f => f.status === 'pending').reduce((s, f) => s + Number(f.amount), 0),
       });
