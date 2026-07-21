@@ -163,6 +163,8 @@ const AdminDashboard = () => {
   const [teacherContacts, setTeacherContacts] = useState([]);
   const [showAddTeacher, setShowAddTeacher] = useState(false);
   const [teacherForm, setTeacherForm] = useState({ full_name: '', subject: '', phone: '', email: '', password: '', classes: [] });
+  const [editingTeacher, setEditingTeacher] = useState(null);
+  const [editTeacherForm, setEditTeacherForm] = useState({ full_name: '', subject: '', phone: '', email: '', classes: [] });
 
   // Leaves
   const [leaveApplications, setLeaveApplications] = useState([]);
@@ -1636,12 +1638,22 @@ const AdminDashboard = () => {
                     <p className="font-bold text-stone-900">{t.full_name}</p>
                     <span className="text-xs bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full font-medium">{t.subject}</span>
                   </div>
-                  <button onClick={async () => { await supabase.from('teacher_contacts').delete().eq('id', t.id); fetchTeachers(); toast.success('Deleted'); }} className="text-red-400 hover:text-red-600 transition-colors p-1">
-                    <Trash2 className="w-3.5 h-3.5" />
-                  </button>
+                  <div className="flex gap-1">
+                    <button onClick={() => {
+                      const assignedClasses = classTeachers.filter(ct => ct.teacher_name === t.full_name).map(ct => ct.class_level);
+                      setEditTeacherForm({ full_name: t.full_name, subject: t.subject, phone: t.phone || '', email: t.email || '', classes: assignedClasses });
+                      setEditingTeacher(t);
+                    }} className="text-blue-400 hover:text-blue-600 transition-colors p-1">
+                      <Edit3 className="w-3.5 h-3.5" />
+                    </button>
+                    <button onClick={async () => { await supabase.from('teacher_contacts').delete().eq('id', t.id); fetchTeachers(); toast.success('Deleted'); }} className="text-red-400 hover:text-red-600 transition-colors p-1">
+                      <Trash2 className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
                 </div>
                 {t.phone && <p className="text-xs text-stone-500">📱 {t.phone}</p>}
                 {t.email && <p className="text-xs text-stone-500">✉️ {t.email}</p>}
+                {(() => { const assigned = classTeachers.filter(ct => ct.teacher_name === t.full_name).map(ct => ct.class_level); return assigned.length > 0 ? <div className="flex flex-wrap gap-1 pt-1">{assigned.map(c => <span key={c} className="text-[10px] bg-emerald-50 text-emerald-700 px-1.5 py-0.5 rounded-full font-medium">{c}</span>)}</div> : null; })()}
               </div>
             ))}
           </div>
@@ -1736,6 +1748,68 @@ const AdminDashboard = () => {
                 </div>
               </div>
               <button type="submit" className="w-full bg-emerald-600 text-white py-2.5 rounded-xl font-semibold text-sm hover:bg-emerald-700 transition-colors">Add Teacher</button>
+            </form>
+          </Modal>
+
+          {/* Edit Teacher Modal */}
+          <Modal open={!!editingTeacher} onClose={() => setEditingTeacher(null)} title="Edit Teacher">
+            <form onSubmit={async e => {
+              e.preventDefault();
+              const oldName = editingTeacher.full_name;
+              // 1. Update teacher_contacts
+              const { error } = await supabase.from('teacher_contacts').update({
+                full_name: editTeacherForm.full_name,
+                subject: editTeacherForm.subject,
+                phone: editTeacherForm.phone,
+                email: editTeacherForm.email
+              }).eq('id', editingTeacher.id);
+              if (error) { toast.error(error.message); return; }
+
+              // 2. Remove old class assignments for this teacher
+              await supabase.from('class_teachers').delete().eq('teacher_name', oldName);
+
+              // 3. Insert new class assignments
+              if (editTeacherForm.classes.length > 0) {
+                const classAssignments = editTeacherForm.classes.map(c => ({
+                  class_level: c,
+                  teacher_name: editTeacherForm.full_name
+                }));
+                await supabase.from('class_teachers').upsert(classAssignments, { onConflict: 'class_level' });
+              }
+
+              toast.success('Teacher updated!');
+              setEditingTeacher(null);
+              fetchTeachers();
+              fetchClassTeachers();
+            }} className="space-y-3">
+              <Input label="Full Name *" value={editTeacherForm.full_name} onChange={e => setEditTeacherForm(f => ({...f, full_name: e.target.value}))} required />
+              <Input label="Subject *" value={editTeacherForm.subject} onChange={e => setEditTeacherForm(f => ({...f, subject: e.target.value}))} required />
+              <Input label="Phone" type="tel" value={editTeacherForm.phone} onChange={e => setEditTeacherForm(f => ({...f, phone: e.target.value}))} />
+              <Input label="Email" type="email" value={editTeacherForm.email} onChange={e => setEditTeacherForm(f => ({...f, email: e.target.value}))} />
+              
+              <div className="mb-4">
+                <label className="block text-sm font-medium text-stone-700 mb-2">Assigned Classes</label>
+                <div className="grid grid-cols-2 gap-2 max-h-40 overflow-y-auto p-2 border border-stone-200 rounded-xl bg-stone-50">
+                  {['Class 1','Class 2','Class 3','Class 4','Class 5','Class 6','Class 7','Class 8','Class 9','Class 10'].map(cls => (
+                    <label key={cls} className="flex items-center gap-2 text-xs font-medium text-stone-700 cursor-pointer p-1">
+                      <input 
+                        type="checkbox" 
+                        checked={editTeacherForm.classes.includes(cls)}
+                        onChange={(e) => {
+                          if (e.target.checked) {
+                            setEditTeacherForm(f => ({...f, classes: [...f.classes, cls]}));
+                          } else {
+                            setEditTeacherForm(f => ({...f, classes: f.classes.filter(c => c !== cls)}));
+                          }
+                        }}
+                        className="rounded text-emerald-600 focus:ring-emerald-500"
+                      />
+                      {cls}
+                    </label>
+                  ))}
+                </div>
+              </div>
+              <button type="submit" className="w-full bg-blue-600 text-white py-2.5 rounded-xl font-semibold text-sm hover:bg-blue-700 transition-colors">Save Changes</button>
             </form>
           </Modal>
         </div>
