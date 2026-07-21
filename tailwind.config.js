@@ -45,7 +45,7 @@ module.exports = {
         },
       },
       fontFamily: {
-        heading: ['Playfair Display', 'serif'],
+        heading: ['Inter', 'system-ui', '-apple-system', 'sans-serif'],
         body: ['Manrope', 'sans-serif'],
         mono: ['JetBrains Mono', 'monospace'],
       },
