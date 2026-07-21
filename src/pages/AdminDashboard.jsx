@@ -182,6 +182,7 @@ const AdminDashboard = () => {
   const [showAddClassTask, setShowAddClassTask] = useState(false);
   const [classTaskForm, setClassTaskForm] = useState({ title: '', description: '', due_date: '' });
   const [classTaskLoading, setClassTaskLoading] = useState(false);
+  const [classTasks, setClassTasks] = useState([]);
 
   // Leaderboard System
   const [disciplineRecords, setDisciplineRecords] = useState([]);
@@ -313,6 +314,21 @@ const AdminDashboard = () => {
     const { data } = await supabase.from('profiles').select('*').eq('status', 'pending').order('created_at', { ascending: false });
     if (data) setPendingUsers(data);
   };
+  const fetchClassTasks = async (classLevel) => {
+    try {
+      const { data, error } = await supabase
+        .from('student_tasks')
+        .select('*, students(id, full_name, class_level)')
+        .order('created_at', { ascending: false });
+      if (error) throw error;
+      if (data) {
+        const filtered = data.filter(t => (t.students?.class_level || '').trim().toLowerCase() === (classLevel || '').trim().toLowerCase());
+        setClassTasks(filtered);
+      }
+    } catch (e) {
+      console.error('Error fetching class tasks:', e);
+    }
+  };
   const fetchLeaderboardTab = async () => {
     try {
       const [
@@ -398,8 +414,9 @@ const AdminDashboard = () => {
       fetchAttendanceForDate(attendanceDate);
       fetchFeeStudents();
       fetchLeaves();
+      fetchClassTasks(selectedClassLevel);
     }
-  }, [activeTab, fetchGalleryItems]);
+  }, [activeTab, fetchGalleryItems, selectedClassLevel, classSubTab]);
 
   // ─── Handlers ───────────────────────────────────────────────────────────────
   const handleApprove = async (userId) => {
@@ -2511,6 +2528,7 @@ const AdminDashboard = () => {
                       toast.success(`Homework & targeted parent notification assigned for ${selectedClassLevel}!`);
                       setShowAddClassTask(false);
                       setClassTaskForm({ title: '', description: '', due_date: '' });
+                      fetchClassTasks(selectedClassLevel);
                     } catch (err) {
                       toast.error(err.message);
                     } finally {
@@ -2528,6 +2546,73 @@ const AdminDashboard = () => {
                     </button>
                   </form>
                 </Modal>
+
+                {/* CLASS HOMEWORK TASKS HISTORY & ROSTER TABLE */}
+                {classTasks.length > 0 ? (
+                  <div className="overflow-x-auto no-scrollbar touch-scroll border border-stone-200 rounded-2xl">
+                    <table className="w-full text-left text-xs">
+                      <thead>
+                        <tr className="border-b border-stone-200 text-stone-500 uppercase tracking-wider bg-stone-50">
+                          <th className="py-3 px-3">Student</th>
+                          <th className="py-3 px-3">Homework Title &amp; Description</th>
+                          <th className="py-3 px-3">Assigned Date</th>
+                          <th className="py-3 px-3">Due Date</th>
+                          <th className="py-3 px-3 text-center">Status</th>
+                          <th className="py-3 px-3 text-right">Action</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-stone-100">
+                        {classTasks.map(t => (
+                          <tr key={t.id} className="hover:bg-stone-50/80 transition-colors">
+                            <td className="py-3 px-3 font-bold text-stone-900">{t.students?.full_name || 'Student'}</td>
+                            <td className="py-3 px-3">
+                              <p className="font-bold text-stone-900">{t.title}</p>
+                              {t.description && <p className="text-[11px] text-stone-500 mt-0.5">{t.description}</p>}
+                            </td>
+                            <td className="py-3 px-3 text-stone-600 font-medium">
+                              {t.created_at ? new Date(t.created_at).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }) : '—'}
+                            </td>
+                            <td className="py-3 px-3 text-stone-600 font-medium">
+                              {t.due_date ? new Date(t.due_date).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }) : 'No due date'}
+                            </td>
+                            <td className="py-3 px-3 text-center">
+                              <span className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold ${
+                                t.status === 'completed' ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800'
+                              }`}>
+                                {t.status === 'completed' ? '✓ Completed' : 'Pending'}
+                              </span>
+                            </td>
+                            <td className="py-3 px-3 text-right">
+                              <button
+                                onClick={async () => {
+                                  if (!window.confirm('Delete this homework assignment?')) return;
+                                  try {
+                                    const { error } = await supabase.from('student_tasks').delete().eq('id', t.id);
+                                    if (error) throw error;
+                                    toast.success('Homework task deleted');
+                                    fetchClassTasks(selectedClassLevel);
+                                  } catch (err) {
+                                    toast.error(err.message);
+                                  }
+                                }}
+                                className="p-1.5 text-stone-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                                title="Delete Homework"
+                              >
+                                <Trash2 className="w-4 h-4" />
+                              </button>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                ) : (
+                  <div className="text-center py-8 bg-stone-50 rounded-xl border border-dashed border-stone-200">
+                    <ClipboardList className="w-8 h-8 text-stone-300 mx-auto mb-2" />
+                    <p className="text-xs font-semibold text-stone-600">No homework tasks assigned to {selectedClassLevel} yet.</p>
+                    <p className="text-[11px] text-stone-400 mt-1">Click "+ Assign Homework" above to send homework to all students in {selectedClassLevel}.</p>
+                  </div>
+                )}
               </div>
             );
           })()}
