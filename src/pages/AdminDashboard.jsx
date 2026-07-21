@@ -195,45 +195,6 @@ const AdminDashboard = () => {
     }
   }, [isTeacher, classTeachers, profile, selectedClassLevel]);
 
-  const fetchAll = async () => {
-    setLoading(true);
-    try {
-      const [
-        { data: pending, error: pErr },
-        { count: studentCount, error: sErr },
-        { count: parentCount, error: prErr },
-        { count: pendingCount, error: pcErr },
-        { data: feesData, error: fErr },
-      ] = await Promise.all([
-        supabase.from('profiles').select('*').eq('status', 'pending').order('created_at', { ascending: false }),
-        supabase.from('students').select('*', { count: 'exact', head: true }),
-        supabase.from('profiles').select('*', { count: 'exact', head: true }).eq('role', 'parent').eq('status', 'approved'),
-        supabase.from('profiles').select('*', { count: 'exact', head: true }).eq('status', 'pending'),
-        supabase.from('fees').select('amount, status'),
-      ]);
-
-      if (pErr || sErr || prErr || pcErr || fErr) {
-        console.error('Fetch error details:', { pErr, sErr, prErr, pcErr, fErr });
-      }
-
-      setPendingUsers(pending || []);
-      setStats({
-        total_students: studentCount || 0,
-        total_parents: parentCount || 0,
-        pending_approvals: pendingCount || 0,
-        fees_collected: (feesData || []).filter(f => f.status === 'paid').reduce((s, f) => s + Number(f.amount), 0),
-        fees_pending: (feesData || []).filter(f => f.status === 'pending').reduce((s, f) => s + Number(f.amount), 0),
-      });
-      fetchTeachers();
-      fetchClassTeachers();
-      fetchStudents();
-    } catch (err) {
-      toast.error('Failed to load data');
-    } finally {
-      setLoading(false);
-    }
-  };
-
   const fetchStudents = useCallback(async () => {
     const { data } = await supabase
       .from('students')
@@ -337,6 +298,47 @@ const AdminDashboard = () => {
     const { data } = await supabase.from('profiles').select('*').eq('status', 'pending').order('created_at', { ascending: false });
     if (data) setPendingUsers(data);
   };
+
+  const fetchAll = async () => {
+    setLoading(true);
+    try {
+      const [
+        { data: pending, error: pErr },
+        { count: studentCount, error: sErr },
+        { count: parentCount, error: prErr },
+        { count: pendingCount, error: pcErr },
+        { data: feesData, error: fErr },
+      ] = await Promise.all([
+        supabase.from('profiles').select('*').eq('status', 'pending').order('created_at', { ascending: false }),
+        supabase.from('students').select('*', { count: 'exact', head: true }),
+        supabase.from('profiles').select('*', { count: 'exact', head: true }).eq('role', 'parent').eq('status', 'approved'),
+        supabase.from('profiles').select('*', { count: 'exact', head: true }).eq('status', 'pending'),
+        supabase.from('fees').select('amount, status'),
+      ]);
+
+      if (pErr || sErr || prErr || pcErr || fErr) {
+        console.error('Fetch error details:', { pErr, sErr, prErr, pcErr, fErr });
+      }
+
+      setPendingUsers(pending || []);
+      setStats({
+        total_students: studentCount || 0,
+        total_parents: parentCount || 0,
+        pending_approvals: pendingCount || 0,
+        fees_collected: (feesData || []).filter(f => f.status === 'paid').reduce((s, f) => s + Number(f.amount), 0),
+        fees_pending: (feesData || []).filter(f => f.status === 'pending').reduce((s, f) => s + Number(f.amount), 0),
+      });
+      fetchTeachers();
+      fetchClassTeachers();
+      fetchStudents();
+    } catch (err) {
+      toast.error('Failed to load data');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+
 
   // Tab switch: lazy load
   useEffect(() => {
