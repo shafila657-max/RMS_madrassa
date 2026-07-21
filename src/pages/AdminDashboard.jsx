@@ -744,22 +744,16 @@ const AdminDashboard = () => {
     }
   };
 
-  const handleDeleteGalleryItem = (id) => {
-    toast('Delete this gallery item?', {
-      action: {
-        label: 'Delete',
-        onClick: async () => {
-          try {
-            const { error } = await supabase.from('gallery_items').delete().eq('id', id);
-            if (error) throw error;
-            toast.success('Gallery item deleted');
-            fetchGalleryItems();
-          } catch (err) {
-            toast.error('Failed to delete gallery item: ' + err.message);
-          }
-        }
-      }
-    });
+  const handleDeleteGalleryItem = async (id) => {
+    if (!window.confirm('Are you sure you want to delete this gallery item?')) return;
+    try {
+      const { error } = await supabase.from('gallery_items').delete().eq('id', id);
+      if (error) throw error;
+      toast.success('Gallery item deleted successfully');
+      fetchGalleryItems();
+    } catch (err) {
+      toast.error('Failed to delete gallery item: ' + err.message);
+    }
   };
 
   const handleLogout = async () => {
