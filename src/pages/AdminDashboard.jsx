@@ -208,6 +208,8 @@ const AdminDashboard = () => {
         fees_collected: (feesData || []).filter(f => f.status === 'paid').reduce((s, f) => s + Number(f.amount), 0),
         fees_pending: (feesData || []).filter(f => f.status === 'pending').reduce((s, f) => s + Number(f.amount), 0),
       });
+      fetchTeachers();
+      fetchClassTeachers();
     } catch (err) {
       toast.error('Failed to load data');
     } finally {
@@ -327,7 +329,7 @@ const AdminDashboard = () => {
     if (activeTab === 'announcements') { fetchAnnouncements(); }
     if (activeTab === 'alumni') { fetchAdminAlumni(); }
     if (activeTab === 'gallery') { fetchGalleryItems(); }
-    if (activeTab === 'teachers') { fetchTeachers(); }
+    if (activeTab === 'teachers') { fetchTeachers(); fetchClassTeachers(); }
     if (activeTab === 'classes') { 
       fetchStudents(); 
       fetchTeachers(); 
