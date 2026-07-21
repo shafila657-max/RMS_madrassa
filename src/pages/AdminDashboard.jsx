@@ -1778,7 +1778,8 @@ const AdminDashboard = () => {
               if (error) { toast.error(error.message); return; }
 
               // 2. Remove old class assignments for this teacher
-              await supabase.from('class_teachers').delete().eq('teacher_name', oldName);
+              const { error: delErr } = await supabase.from('class_teachers').delete().eq('teacher_name', oldName);
+              if (delErr) { toast.error('Failed to remove old classes: ' + delErr.message); return; }
 
               // 3. Insert new class assignments
               if (editTeacherForm.classes.length > 0) {
@@ -1786,7 +1787,8 @@ const AdminDashboard = () => {
                   class_level: c,
                   teacher_name: editTeacherForm.full_name
                 }));
-                await supabase.from('class_teachers').upsert(classAssignments, { onConflict: 'class_level' });
+                const { error: upsertErr } = await supabase.from('class_teachers').upsert(classAssignments, { onConflict: 'class_level' });
+                if (upsertErr) { toast.error('Failed to assign classes: ' + upsertErr.message); return; }
               }
 
               toast.success('Teacher updated!');
