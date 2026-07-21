@@ -183,6 +183,18 @@ const AdminDashboard = () => {
 
   useEffect(() => { fetchAll(); }, []);
 
+  // Auto-select first assigned class for teachers
+  useEffect(() => {
+    if (isTeacher && classTeachers.length > 0 && profile?.full_name) {
+      const myClasses = classTeachers
+        .filter(ct => ct.teacher_name === profile.full_name)
+        .map(ct => ct.class_level);
+      if (myClasses.length > 0 && !myClasses.includes(selectedClassLevel)) {
+        setSelectedClassLevel(myClasses[0]);
+      }
+    }
+  }, [isTeacher, classTeachers, profile, selectedClassLevel]);
+
   const fetchAll = async () => {
     setLoading(true);
     try {
