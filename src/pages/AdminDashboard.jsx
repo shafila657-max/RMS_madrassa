@@ -199,11 +199,11 @@ const AdminDashboard = () => {
     setLoading(true);
     try {
       const [
-        { data: pending },
-        { count: studentCount },
-        { count: parentCount },
-        { count: pendingCount },
-        { data: feesData },
+        { data: pending, error: pErr },
+        { count: studentCount, error: sErr },
+        { count: parentCount, error: prErr },
+        { count: pendingCount, error: pcErr },
+        { data: feesData, error: fErr },
       ] = await Promise.all([
         supabase.from('profiles').select('*').eq('status', 'pending').order('created_at', { ascending: false }),
         supabase.from('students').select('*', { count: 'exact', head: true }),
@@ -211,6 +211,10 @@ const AdminDashboard = () => {
         supabase.from('profiles').select('*', { count: 'exact', head: true }).eq('status', 'pending'),
         supabase.from('fees').select('amount, status'),
       ]);
+
+      if (pErr || sErr || prErr || pcErr || fErr) {
+        console.error('Fetch error details:', { pErr, sErr, prErr, pcErr, fErr });
+      }
 
       setPendingUsers(pending || []);
       setStats({
