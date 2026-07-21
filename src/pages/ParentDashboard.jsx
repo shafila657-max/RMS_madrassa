@@ -3,7 +3,7 @@ import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import {
   BookOpen, LogOut, ChevronRight, Users, AlertCircle,
-  Calendar, TrendingUp, DollarSign, Award, Bell, Megaphone, AlertTriangle, Trophy, ShieldCheck
+  Calendar, TrendingUp, DollarSign, Award, Bell, Megaphone, AlertTriangle, Trophy, ShieldCheck, X
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { logout, getCachedProfile, clearCachedProfile } from '@/utils/auth';
@@ -23,6 +23,9 @@ const ParentDashboard = () => {
   const [announcements, setAnnouncements] = useState([]);
   const [loading, setLoading] = useState(true);
   const [pushPermission, setPushPermission] = useState(getNotificationPermission());
+  const [dismissedNotifs, setDismissedNotifs] = useState([]);
+  const [showNotifications, setShowNotifications] = useState(false);
+  const [userId, setUserId] = useState(null);
 
   useEffect(() => { fetchChildren(); }, []);
 
@@ -30,6 +33,10 @@ const ParentDashboard = () => {
     try {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) { navigate('/login'); return; }
+      
+      setUserId(session.user.id);
+      const storedDismissed = JSON.parse(localStorage.getItem(`dismissed_notifs_${session.user.id}`) || '[]');
+      setDismissedNotifs(storedDismissed);
 
       // Fetch all students linked to this parent
       const { data: students, error } = await supabase
@@ -89,7 +96,10 @@ const ParentDashboard = () => {
         .select('*')
         .order('created_at', { ascending: false });
 
-      const filtered = filterAnnouncementsForParent(allAnnouncements, childClasses);
+      const filtered = filterAnnouncementsForParent(allAnnouncements, childClasses).filter(a => {
+        if (a.expires_at && new Date(a.expires_at) < new Date()) return false;
+        return true;
+      });
       setAnnouncements(filtered);
 
       // Trigger browser push notification for newest targeted announcement if permission granted
@@ -115,6 +125,16 @@ const ParentDashboard = () => {
     toast.success('Logged out');
     navigate('/');
   };
+
+  const handleDismissNotif = (id) => {
+    const updated = [...dismissedNotifs, id];
+    setDismissedNotifs(updated);
+    if (userId) {
+      localStorage.setItem(`dismissed_notifs_${userId}`, JSON.stringify(updated));
+    }
+  };
+
+  const activeAnnouncements = announcements.filter(a => !dismissedNotifs.includes(a.id));
 
   // Color palette per child index
   const palettes = [
@@ -150,8 +170,51 @@ const ParentDashboard = () => {
               <p className="text-[11px] text-stone-400 font-medium">Parent Family Portal</p>
             </div>
           </div>
-          <div className="flex items-center gap-2">
-            <span className="text-xs text-stone-500 hidden sm:block">{profile?.full_name}</span>
+          <div className="flex items-center gap-2 relative">
+            <button
+              onClick={() => setShowNotifications(!showNotifications)}
+              className="relative p-2 rounded-xl hover:bg-stone-100 text-stone-500 transition-colors"
+            >
+              <Bell className="w-5 h-5" />
+              {activeAnnouncements.length > 0 && (
+                <span className="absolute top-1.5 right-2 w-2 h-2 bg-red-500 rounded-full ring-2 ring-white"></span>
+              )}
+            </button>
+
+            {/* Notification Dropdown */}
+            {showNotifications && (
+              <div className="absolute top-full right-0 mt-2 w-80 max-w-[calc(100vw-2rem)] bg-white rounded-2xl shadow-xl border border-stone-200 overflow-hidden z-50">
+                <div className="p-3 border-b border-stone-100 flex items-center justify-between bg-stone-50">
+                  <h3 className="font-bold text-sm text-stone-800">Notifications</h3>
+                  {activeAnnouncements.length > 0 && (
+                    <span className="text-[10px] font-bold bg-emerald-100 text-emerald-700 px-2 py-0.5 rounded-full">{activeAnnouncements.length} New</span>
+                  )}
+                </div>
+                <div className="max-h-80 overflow-y-auto p-2 space-y-2">
+                  {activeAnnouncements.length === 0 ? (
+                    <div className="p-4 text-center text-stone-400">
+                      <Bell className="w-8 h-8 mx-auto mb-2 opacity-20" />
+                      <p className="text-xs">No new notifications</p>
+                    </div>
+                  ) : (
+                    activeAnnouncements.map(ann => (
+                      <div key={ann.id} className="relative p-3 rounded-xl bg-white border border-stone-100 shadow-sm hover:border-stone-200 transition-colors pr-8">
+                        <button
+                          onClick={() => handleDismissNotif(ann.id)}
+                          className="absolute top-2 right-2 p-1 text-stone-300 hover:text-stone-500 hover:bg-stone-100 rounded-lg transition-colors"
+                        >
+                          <X className="w-3.5 h-3.5" />
+                        </button>
+                        <h4 className="text-xs font-bold text-stone-800 mb-1 line-clamp-1">{ann.title}</h4>
+                        <p className="text-[10px] text-stone-500 line-clamp-2">{ann.message}</p>
+                      </div>
+                    ))
+                  )}
+                </div>
+              </div>
+            )}
+
+            <span className="text-xs text-stone-500 hidden sm:block pl-2 border-l border-stone-200 ml-2">{profile?.full_name}</span>
             <button
               onClick={handleLogout}
               className="p-2 rounded-xl hover:bg-stone-100 text-stone-500 transition-colors"

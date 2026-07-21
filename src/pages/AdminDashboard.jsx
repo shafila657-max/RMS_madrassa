@@ -139,7 +139,7 @@ const AdminDashboard = () => {
   // Announcements
   const [announcements, setAnnouncements] = useState([]);
   const [showAddAnnouncement, setShowAddAnnouncement] = useState(false);
-  const [announcementForm, setAnnouncementForm] = useState({ title: '', message: '', target_class: 'All', severity: 'normal' });
+  const [announcementForm, setAnnouncementForm] = useState({ title: '', message: '', target_class: 'All', severity: 'normal', expiry_days: 'never' });
 
   // Alumni
   const [alumniData, setAlumniData] = useState([]);
@@ -562,15 +562,29 @@ const AdminDashboard = () => {
     }
     setFormLoading(true);
     try {
+      let expires_at = null;
+      if (announcementForm.expiry_days !== 'never') {
+        const days = parseInt(announcementForm.expiry_days, 10);
+        if (!isNaN(days)) {
+          const date = new Date();
+          date.setDate(date.getDate() + days);
+          expires_at = date.toISOString();
+        }
+      }
+
       const { data: { session } } = await supabase.auth.getSession();
       const { error } = await supabase.from('announcements').insert([{
-        ...announcementForm,
+        title: announcementForm.title,
+        message: announcementForm.message,
+        target_class: announcementForm.target_class,
+        severity: announcementForm.severity,
+        expires_at,
         created_by: session?.user?.id
       }]);
       if (error) throw error;
       toast.success('Announcement published!');
       setShowAddAnnouncement(false);
-      setAnnouncementForm({ title: '', message: '', target_class: 'All', severity: 'normal' });
+      setAnnouncementForm({ title: '', message: '', target_class: 'All', severity: 'normal', expiry_days: 'never' });
       fetchAnnouncements();
     } catch (err) {
       toast.error('Failed to post announcement: ' + err.message);
@@ -1116,9 +1130,11 @@ const AdminDashboard = () => {
                 </Btn>
               </div>
 
-              {announcements.length > 0 ? (
-                <div className="space-y-4">
-                  {announcements.map((item) => {
+              {(() => {
+                const validAnnouncements = announcements.filter(a => !a.expires_at || new Date(a.expires_at) > new Date());
+                return validAnnouncements.length > 0 ? (
+                  <div className="space-y-4">
+                    {validAnnouncements.map((item) => {
                     const isHigh = item.severity === 'high';
                     const isMedium = item.severity === 'medium';
                     const cardStyle = isHigh
@@ -1143,6 +1159,11 @@ const AdminDashboard = () => {
                             <span className="text-xs font-semibold px-2.5 py-0.5 rounded-full bg-stone-100 text-stone-700">
                               Target: {item.target_class || 'All'}
                             </span>
+                            {item.expires_at && (
+                              <span className="text-xs font-semibold px-2.5 py-0.5 rounded-full bg-stone-100 text-stone-500 flex items-center gap-1">
+                                <Clock className="w-3 h-3" /> Expires: {new Date(item.expires_at).toLocaleDateString('en-IN', { day: '2-digit', month: 'short' })}
+                              </span>
+                            )}
                             <span className="text-xs text-stone-400">
                               {item.created_at ? new Date(item.created_at).toLocaleString('en-IN', { dateStyle: 'medium', timeStyle: 'short' }) : ''}
                             </span>
@@ -1169,7 +1190,8 @@ const AdminDashboard = () => {
                     <Plus className="w-4 h-4" /> Make Announcement
                   </Btn>
                 </div>
-              )}
+              );
+              })()}
             </motion.div>
           )}
 
@@ -1512,6 +1534,18 @@ const AdminDashboard = () => {
               </button>
             ))}
           </div>
+        </div>
+
+        <div className="mb-4">
+          <label className="block text-sm font-medium text-stone-700 mb-1">Auto-Remove / Expiry</label>
+          <Select value={announcementForm.expiry_days} onChange={e => setAnnouncementForm(f => ({ ...f, expiry_days: e.target.value }))}>
+            <option value="never">Never (Keep Forever)</option>
+            <option value="1">After 1 Day</option>
+            <option value="3">After 3 Days</option>
+            <option value="7">After 1 Week</option>
+            <option value="14">After 2 Weeks</option>
+            <option value="30">After 1 Month</option>
+          </Select>
         </div>
 
         <div className="mb-4">

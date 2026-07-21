@@ -1,15 +1,31 @@
 import React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, QrCode, Smartphone, Copy, CheckCircle2, Sparkles, ArrowRight } from 'lucide-react';
+import { X, QrCode, Smartphone, Copy, CheckCircle2, Sparkles, Share2, Download } from 'lucide-react';
 import { QRCodeSVG } from 'qrcode.react';
 import { toast } from 'sonner';
 
 const MobileQRModal = ({ open, onClose }) => {
-  const localIpUrl = 'http://192.168.1.6:5174';
+  const apkUrl = 'https://rms-madrasa.vercel.app/rms-madrasa-app.apk'; // Placeholder, replace with actual URL
 
   const handleCopy = () => {
-    navigator.clipboard.writeText(localIpUrl);
-    toast.success('Mobile URL copied to clipboard!');
+    navigator.clipboard.writeText(apkUrl);
+    toast.success('App download link copied to clipboard!');
+  };
+
+  const handleShare = async () => {
+    if (navigator.share) {
+      try {
+        await navigator.share({
+          title: 'Download RMS Madrasa App',
+          text: 'Install the RMS Madrasa App for the best experience!',
+          url: apkUrl,
+        });
+      } catch (error) {
+        console.error('Error sharing:', error);
+      }
+    } else {
+      toast.error('Sharing not supported on this browser. Please copy the link instead.');
+    }
   };
 
   if (!open) return null;
@@ -44,8 +60,8 @@ const MobileQRModal = ({ open, onClose }) => {
                 <QrCode className="w-6 h-6 text-white" />
               </div>
               <div>
-                <h3 className="text-xl font-bold">Scan to Open on Mobile</h3>
-                <p className="text-emerald-100 text-xs mt-0.5">Use your Phone Camera or Scanner</p>
+                <h3 className="text-xl font-bold">Download Mobile App</h3>
+                <p className="text-emerald-100 text-xs mt-0.5">Scan QR to install the Android APK</p>
               </div>
             </div>
           </div>
@@ -54,7 +70,7 @@ const MobileQRModal = ({ open, onClose }) => {
             {/* QR Code Container */}
             <div className="bg-gradient-to-br from-emerald-50 to-stone-100 p-6 rounded-3xl border-2 border-emerald-100 inline-block shadow-inner">
               <QRCodeSVG
-                value={localIpUrl}
+                value={apkUrl}
                 size={200}
                 bgColor="#ffffff"
                 fgColor="#047857"
@@ -68,19 +84,28 @@ const MobileQRModal = ({ open, onClose }) => {
                 <Smartphone className="w-4 h-4 text-emerald-600" /> Point Camera at QR Code
               </p>
               <p className="text-stone-500 text-xs max-w-xs mx-auto">
-                Works on iPhone (Safari Camera) and Android (Chrome / Camera) on the same Wi-Fi.
+                Works on Android devices. Scan to download the direct .apk installer file.
               </p>
             </div>
 
             {/* URL Copy box */}
-            <div className="bg-stone-50 border border-stone-200 rounded-2xl p-3 flex items-center justify-between text-xs">
-              <span className="font-mono text-emerald-800 font-bold truncate pr-2">{localIpUrl}</span>
-              <button
-                onClick={handleCopy}
-                className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl transition-colors flex items-center gap-1 flex-shrink-0"
-              >
-                <Copy className="w-3.5 h-3.5" /> Copy Link
-              </button>
+            <div className="bg-stone-50 border border-stone-200 rounded-2xl p-3 flex items-center justify-between text-xs gap-2">
+              <span className="font-mono text-emerald-800 font-bold truncate pr-2" title={apkUrl}>{apkUrl}</span>
+              <div className="flex items-center gap-1 flex-shrink-0">
+                <button
+                  onClick={handleCopy}
+                  className="p-2 bg-emerald-100 hover:bg-emerald-200 text-emerald-700 font-bold rounded-xl transition-colors flex items-center justify-center"
+                  title="Copy Link"
+                >
+                  <Copy className="w-4 h-4" />
+                </button>
+                <button
+                  onClick={handleShare}
+                  className="px-3 py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl transition-colors flex items-center gap-1"
+                >
+                  <Share2 className="w-3.5 h-3.5" /> Share
+                </button>
+              </div>
             </div>
 
             {/* Quick installation note */}
