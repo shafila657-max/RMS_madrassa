@@ -848,7 +848,7 @@ const AdminDashboard = () => {
         </div>
 
         {/* Tab bar */}
-        <div className="max-w-6xl mx-auto px-4 flex gap-2 overflow-x-auto pb-0 scrollbar-hide pt-2">
+        <div className="max-w-6xl mx-auto px-4 flex gap-1.5 sm:gap-2 overflow-x-auto no-scrollbar touch-pan-x flex-nowrap pb-0 pt-2 border-t border-stone-100 sm:border-t-0">
           {tabs.map(({ id, label }) => (
             <button
               key={id}
@@ -2258,7 +2258,7 @@ const AdminDashboard = () => {
           </div>
 
           {/* 10 Class Pills Bar */}
-          <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide">
+          <div className="flex gap-2 overflow-x-auto no-scrollbar touch-pan-x flex-nowrap pb-2">
             {['Class 1','Class 2','Class 3','Class 4','Class 5','Class 6','Class 7','Class 8','Class 9','Class 10']
               .filter(cls => !isTeacher || classTeachers.some(ct => ct.class_level === cls && ct.teacher_name === profile?.full_name))
               .map(cls => {
@@ -2329,7 +2329,7 @@ const AdminDashboard = () => {
                 </div>
 
                 {/* Sub-tabs Inside Class Manager */}
-                <div className="flex gap-2 border-t border-white/10 pt-4 overflow-x-auto">
+                <div className="flex gap-2 border-t border-white/10 pt-4 overflow-x-auto no-scrollbar touch-pan-x flex-nowrap">
                   {[
                     { id: 'students', label: `Students Roster (${clsStudents.length})` },
                     { id: 'attendance', label: 'Attendance' },
@@ -2809,6 +2809,31 @@ const AdminDashboard = () => {
       
           </div>
       )}
+
+      {/* ── MOBILE QUICK DOCK (Sticky Bottom Navigation for Mobile Phones) ── */}
+      <div className="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-white/95 backdrop-blur-md border-t border-stone-200 px-3 py-2 flex items-center justify-around shadow-lg">
+        {[
+          { id: isTeacher ? 'classes' : 'overview', label: isTeacher ? 'Classes' : 'Overview', icon: isTeacher ? School : TrendingUp },
+          { id: 'classes', label: 'Classes', icon: School },
+          { id: 'students', label: 'Students', icon: Users },
+          { id: 'leaderboard', label: 'Leaderboard', icon: Trophy },
+          { id: isTeacher ? 'leaderboard' : 'approvals', label: isTeacher ? 'Standings' : 'Approvals', icon: isTeacher ? Award : UserCheck },
+        ].map(({ id, label, icon: Icon }) => {
+          const isActive = activeTab === id;
+          return (
+            <button
+              key={id}
+              onClick={() => setActiveTab(id)}
+              className={`flex flex-col items-center gap-0.5 px-2 py-1 rounded-xl transition-all ${
+                isActive ? 'text-emerald-700 font-bold scale-105' : 'text-stone-400 hover:text-stone-700 font-medium'
+              }`}
+            >
+              <Icon className={`w-5 h-5 ${isActive ? 'text-emerald-600' : 'text-stone-400'}`} />
+              <span className="text-[10px] tracking-tight">{label}</span>
+            </button>
+          );
+        })}
+      </div>
     </div>
   );
 };

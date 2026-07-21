@@ -54,6 +54,18 @@
     transform: translateZ(0);
     backface-visibility: hidden;
   }
+
+  /* Mobile scrollbar & touch utilities */
+  .no-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+  .no-scrollbar {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+  .touch-scroll {
+    -webkit-overflow-scrolling: touch;
+  }
 }
 
 @keyframes marquee {
