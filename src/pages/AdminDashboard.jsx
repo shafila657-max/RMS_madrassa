@@ -415,6 +415,7 @@ const AdminDashboard = () => {
       fetchFeeStudents();
       fetchLeaves();
       fetchClassTasks(selectedClassLevel);
+      fetchLeaderboardTab();
     }
   }, [activeTab, fetchGalleryItems, selectedClassLevel, classSubTab]);
 
@@ -2352,6 +2353,7 @@ const AdminDashboard = () => {
                     { id: 'attendance', label: 'Attendance' },
                     { id: 'fees', label: 'Fees' },
                     { id: 'tasks', label: 'Homework' },
+                    { id: 'discipline', label: 'Discipline' },
                     { id: 'timetable', label: 'Timetable' },
                     { id: 'subjects', label: '📚 Subjects' },
                     { id: 'leaves', label: 'Leaves' },
@@ -2614,6 +2616,101 @@ const AdminDashboard = () => {
                   </div>
                 )}
               </div>
+            );
+          })()}
+
+          {/* SUB-TAB: DISCIPLINE RATINGS */}
+          {classSubTab === 'discipline' && (() => {
+            const discClassStudents = students.filter(s => (s.class_level || '').trim().toLowerCase() === (selectedClassLevel || '').trim().toLowerCase());
+            return (
+              <motion.div key="discipline" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+                <div className="bg-white rounded-2xl border border-stone-200 p-6 shadow-sm space-y-4">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-3 border-b border-stone-100">
+                    <div>
+                      <h3 className="font-bold text-stone-900 text-base flex items-center gap-2">
+                        <ShieldCheck className="w-5 h-5 text-emerald-600" /> Weekly Discipline Ratings
+                      </h3>
+                      <p className="text-xs text-stone-500">Award discipline points (0 to 10) to {selectedClassLevel} students for the week.</p>
+                    </div>
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <input
+                        type="date"
+                        value={disciplineWeekDate}
+                        onChange={e => setDisciplineWeekDate(e.target.value)}
+                        className="border border-stone-200 rounded-xl px-3 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                      />
+                      <button
+                        onClick={() => {
+                          const m = {};
+                          discClassStudents.forEach(s => m[s.id] = 10);
+                          setDisciplineMap(m);
+                        }}
+                        className="px-3 py-1.5 bg-emerald-50 text-emerald-700 border border-emerald-200 rounded-xl text-xs font-bold hover:bg-emerald-100"
+                      >
+                        All 10/10
+                      </button>
+                      <button
+                        disabled={savingDiscipline}
+                        onClick={async () => {
+                          setSavingDiscipline(true);
+                          try {
+                            const rows = discClassStudents.map(s => ({
+                              student_id: s.id,
+                              week_date: disciplineWeekDate,
+                              score: disciplineMap[s.id] !== undefined ? Number(disciplineMap[s.id]) : 10,
+                            }));
+                            if (rows.length === 0) { toast.error('No students in selected class'); setSavingDiscipline(false); return; }
+                            const { error } = await supabase.from('discipline_records').upsert(rows, { onConflict: 'student_id,week_date' });
+                            if (error) throw error;
+                            toast.success(`Discipline points saved for ${selectedClassLevel}!`);
+                            fetchLeaderboardTab();
+                          } catch (err) {
+                            toast.error(err.message || 'Failed to save discipline records');
+                          } finally {
+                            setSavingDiscipline(false);
+                          }
+                        }}
+                        className="px-4 py-1.5 bg-emerald-600 text-white rounded-xl text-xs font-bold hover:bg-emerald-700 shadow-sm disabled:opacity-50"
+                      >
+                        {savingDiscipline ? 'Saving...' : 'Save Discipline'}
+                      </button>
+                    </div>
+                  </div>
+
+                  {discClassStudents.length > 0 ? (
+                    <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-3">
+                      {discClassStudents.map(s => {
+                        const currentScore = disciplineMap[s.id] !== undefined 
+                          ? disciplineMap[s.id] 
+                          : (disciplineRecords.find(d => d.student_id === s.id && d.week_date === disciplineWeekDate)?.score ?? 10);
+                        return (
+                          <div key={s.id} className="bg-stone-50 rounded-xl p-3 border border-stone-200 flex items-center justify-between gap-3">
+                            <div className="min-w-0">
+                              <p className="font-bold text-stone-900 text-xs truncate">{s.full_name}</p>
+                            </div>
+                            <div className="flex items-center gap-2 flex-shrink-0">
+                              <input
+                                type="number"
+                                min="0"
+                                max="10"
+                                value={currentScore}
+                                onChange={e => {
+                                  const val = Math.min(10, Math.max(0, Number(e.target.value)));
+                                  setDisciplineMap(m => ({ ...m, [s.id]: val }));
+                                }}
+                                className="w-14 border border-stone-300 rounded-lg text-center font-bold text-sm py-1 focus:outline-none focus:ring-2 focus:ring-emerald-500 bg-white"
+                              />
+                              <span className="text-xs text-stone-400 font-bold">/ 10</span>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  ) : (
+                    <p className="text-xs text-stone-400 text-center py-6">No students enrolled in {selectedClassLevel}.</p>
+                  )}
+                </div>
+              </motion.div>
             );
           })()}
 
