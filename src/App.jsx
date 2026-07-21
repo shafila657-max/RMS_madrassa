@@ -9,6 +9,7 @@ import StudentDetailPage from './pages/StudentDetailPage';
 import AlumniPage from './pages/AlumniPage';
 import GalleryPage from './pages/GalleryPage';
 import ResetPasswordPage from './pages/ResetPasswordPage';
+import ProtectedRoute from './components/ProtectedRoute';
 import { Toaster } from './components/ui/toaster';
 import PWAInstallPrompt from './components/PWAInstallPrompt';
 
@@ -20,15 +21,32 @@ function App() {
                     <Route path="/" element={<LandingPage />} />
                     <Route path="/login" element={<LoginPage />} />
                     <Route path="/register" element={<RegisterPage />} />
-                    <Route path="/admin" element={<AdminDashboard />} />
+                    
+                    {/* Protected Admin & Teacher Routes */}
+                    <Route path="/admin" element={
+                        <ProtectedRoute allowedRoles={['admin', 'teacher']}>
+                            <AdminDashboard />
+                        </ProtectedRoute>
+                    } />
+                    
                     {/* Alumni Community & Directory */}
                     <Route path="/alumni" element={<AlumniPage />} />
+                    
                     {/* Public Media Gallery */}
                     <Route path="/gallery" element={<GalleryPage />} />
-                    {/* Parent: family home (child picker) */}
-                    <Route path="/parent" element={<ParentDashboard />} />
-                    {/* Parent: individual child detail */}
-                    <Route path="/parent/:studentId" element={<StudentDetailPage />} />
+                    
+                    {/* Protected Parent Routes */}
+                    <Route path="/parent" element={
+                        <ProtectedRoute allowedRoles={['parent']}>
+                            <ParentDashboard />
+                        </ProtectedRoute>
+                    } />
+                    <Route path="/parent/:studentId" element={
+                        <ProtectedRoute allowedRoles={['parent', 'admin']}>
+                            <StudentDetailPage />
+                        </ProtectedRoute>
+                    } />
+                    
                     {/* Password reset */}
                     <Route path="/reset-password" element={<ResetPasswordPage />} />
                 </Routes>
