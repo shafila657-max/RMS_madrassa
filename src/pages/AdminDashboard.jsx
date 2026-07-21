@@ -310,6 +310,10 @@ const AdminDashboard = () => {
     const { data } = await supabase.from('class_teachers').select('*');
     if (data) setClassTeachers(data);
   };
+  const fetchPendingUsers = async () => {
+    const { data } = await supabase.from('profiles').select('*').eq('status', 'pending').order('created_at', { ascending: false });
+    if (data) setPendingUsers(data);
+  };
 
   // Tab switch: lazy load
   useEffect(() => {
