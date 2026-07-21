@@ -5,7 +5,9 @@ import {
   BookOpen, LogOut, Users, UserCheck, DollarSign, TrendingUp,
   CheckCircle, XCircle, Plus, X, Link, Calendar, Search,
   GraduationCap, ChevronDown, AlertCircle, RefreshCw,
-  Bell, Megaphone, AlertTriangle, Trash2, Volume2, Edit3, Star
+  Bell, Megaphone, AlertTriangle, Trash2, Volume2, Edit3, Star,
+  School, Camera, Phone, Mail, User, ClipboardList, Lightbulb,
+  FileText, Clock, BookOpenCheck, Wallet, PenLine
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { logout, getCachedProfile, clearCachedProfile } from '@/utils/auth';
@@ -733,16 +735,16 @@ const AdminDashboard = () => {
   const pendingAlumniCount = alumniData.filter(a => a.status === 'pending').length;
 
   const tabs = isTeacher 
-    ? [{ id: 'classes', label: '🏫 Classes' }] 
+    ? [{ id: 'classes', label: 'Classes' }] 
     : [
         { id: 'overview', label: 'Overview' },
-        { id: 'classes', label: '🏫 Classes' },
+        { id: 'classes', label: 'Classes' },
         { id: 'approvals', label: `Approvals${pendingUsers.length > 0 ? ` (${pendingUsers.length})` : ''}` },
         { id: 'alumni', label: `Alumni${pendingAlumniCount > 0 ? ` (${pendingAlumniCount})` : ''}` },
         { id: 'announcements', label: 'Announcements' },
         { id: 'students', label: 'Students' },
-        { id: 'gallery', label: '📸 Gallery' },
-        { id: 'teachers', label: '📞 Teachers' },
+        { id: 'gallery', label: 'Gallery' },
+        { id: 'teachers', label: 'Teachers' },
       ];
 
   if (loading) {
@@ -1006,7 +1008,7 @@ const AdminDashboard = () => {
                           <h4 className="font-bold text-stone-900 text-sm">{evt.title}</h4>
                           <p className="text-xs text-stone-600 mt-0.5">{evt.description}</p>
                           <div className="flex items-center gap-3 text-[11px] text-stone-400 mt-2">
-                            <span>📅 {evt.event_date ? new Date(evt.event_date).toLocaleString('en-IN', { dateStyle: 'medium', timeStyle: 'short' }) : 'Date TBD'}</span>
+                            <span>{evt.event_date ? new Date(evt.event_date).toLocaleString('en-IN', { dateStyle: 'medium', timeStyle: 'short' }) : 'Date TBD'}</span>
                             <span>📍 {evt.location}</span>
                           </div>
                         </div>
@@ -1111,7 +1113,7 @@ const AdminDashboard = () => {
               <div className="flex flex-wrap items-center gap-2 p-1.5 bg-stone-100/80 rounded-2xl">
                 {[
                   { id: 'active', label: '🟢 Active Enrolled', count: students.filter(s => (s.status || 'active') === 'active').length },
-                  { id: 'completed', label: '🎓 Completed (Graduates)', count: students.filter(s => s.status === 'completed').length },
+                  { id: 'completed', label: 'Completed (Graduates)', count: students.filter(s => s.status === 'completed').length },
                   { id: 'dropped', label: '⚠️ Dropped Out', count: students.filter(s => s.status === 'dropped').length },
                   { id: 'all', label: '📂 All Students', count: students.length },
                 ].map(tab => (
@@ -1190,7 +1192,7 @@ const AdminDashboard = () => {
                               }`}
                             >
                               <option value="active">🟢 Active Enrolled</option>
-                              <option value="completed">🎓 Completed (Graduate)</option>
+                              <option value="completed">Completed (Graduate)</option>
                               <option value="dropped">⚠️ Dropped Out</option>
                             </select>
 
@@ -1374,7 +1376,7 @@ const AdminDashboard = () => {
 
         <div className="bg-blue-50 rounded-xl p-3 mb-4">
           <p className="text-xs text-blue-700">
-            💡 If you select from the list above, the link will use the parent's ID directly. 
+            If you select from the list above, the link will use the parent's ID directly. 
             Alternatively, run this SQL in Supabase:
           </p>
           <code className="text-xs text-blue-600 block mt-1 break-all">
@@ -1625,7 +1627,7 @@ const AdminDashboard = () => {
       {activeTab === 'teachers' && (
         <div className="max-w-6xl mx-auto px-4 py-8 space-y-6">
           <div className="flex items-center justify-between">
-            <h2 className="font-bold text-xl text-stone-900">📞 Teacher Contacts</h2>
+            <h2 className="font-bold text-xl text-stone-900">Teacher Contacts</h2>
             <button onClick={() => setShowAddTeacher(true)} className="flex items-center gap-2 px-4 py-2 bg-emerald-600 text-white rounded-xl text-sm font-semibold hover:bg-emerald-700 transition-colors">
               <Plus className="w-4 h-4" /> Add Teacher
             </button>
@@ -1651,8 +1653,8 @@ const AdminDashboard = () => {
                     </button>
                   </div>
                 </div>
-                {t.phone && <p className="text-xs text-stone-500">📱 {t.phone}</p>}
-                {t.email && <p className="text-xs text-stone-500">✉️ {t.email}</p>}
+                {t.phone && <p className="text-xs text-stone-500 flex items-center gap-1"><Phone className="w-3 h-3" />{t.phone}</p>}
+                {t.email && <p className="text-xs text-stone-500 flex items-center gap-1"><Mail className="w-3 h-3" />{t.email}</p>}
                 {(() => { const assigned = classTeachers.filter(ct => ct.teacher_name === t.full_name).map(ct => ct.class_level); return assigned.length > 0 ? <div className="flex flex-wrap gap-1 pt-1">{assigned.map(c => <span key={c} className="text-[10px] bg-emerald-50 text-emerald-700 px-1.5 py-0.5 rounded-full font-medium">{c}</span>)}</div> : null; })()}
               </div>
             ))}
@@ -1832,7 +1834,7 @@ const AdminDashboard = () => {
         <div className="max-w-6xl mx-auto px-4 py-8 space-y-6">
           <div className="flex items-center justify-between">
             <div>
-              <h2 className="font-bold text-xl text-stone-900">🏫 Class Level Management</h2>
+              <h2 className="font-bold text-xl text-stone-900">Class Level Management</h2>
               <p className="text-xs text-stone-500">Manage Class 1 to Class 10 roster, teachers, attendance & homework</p>
             </div>
           </div>
@@ -1885,7 +1887,7 @@ const AdminDashboard = () => {
                   {/* Assign Class Teacher Form */}
                   <div className="bg-white/10 backdrop-blur-md p-4 rounded-2xl border border-white/15 space-y-2 min-w-[280px]">
                     <p className="text-xs font-bold text-emerald-300 flex items-center gap-1">
-                      👤 Assigned Class Teacher
+                      Assigned Class Teacher
                     </p>
                     <select
                       value={currentCT?.teacher_name || ''}
@@ -1911,13 +1913,13 @@ const AdminDashboard = () => {
                 {/* Sub-tabs Inside Class Manager */}
                 <div className="flex gap-2 border-t border-white/10 pt-4 overflow-x-auto">
                   {[
-                    { id: 'students', label: `👨‍🎓 Students Roster (${clsStudents.length})` },
-                    { id: 'attendance', label: '✅ Attendance' },
-                    { id: 'fees', label: '💰 Fees' },
-                    { id: 'tasks', label: '📝 Homework' },
-                    { id: 'timetable', label: '📅 Timetable' },
+                    { id: 'students', label: `Students Roster (${clsStudents.length})` },
+                    { id: 'attendance', label: 'Attendance' },
+                    { id: 'fees', label: 'Fees' },
+                    { id: 'tasks', label: 'Homework' },
+                    { id: 'timetable', label: 'Timetable' },
                     { id: 'subjects', label: '📚 Subjects' },
-                    { id: 'leaves', label: '📝 Leaves' },
+                    { id: 'leaves', label: 'Leaves' },
                   ].map(st => (
                     <button
                       key={st.id}
@@ -2205,7 +2207,7 @@ const AdminDashboard = () => {
           {classSubTab === 'timetable' && (
         <div className="max-w-6xl mx-auto px-4 py-8 space-y-6">
           <div className="flex items-center justify-between">
-            <h2 className="font-bold text-xl text-stone-900">📅 Class Timetable</h2>
+            <h2 className="font-bold text-xl text-stone-900">Class Timetable</h2>
             <button onClick={() => setShowAddTimetable(true)} className="flex items-center gap-2 px-4 py-2 bg-emerald-600 text-white rounded-xl text-sm font-semibold hover:bg-emerald-700 transition-colors">
               <Plus className="w-4 h-4" /> Add Slot
             </button>
@@ -2304,7 +2306,7 @@ const AdminDashboard = () => {
                     <Trash2 className="w-3.5 h-3.5" />
                   </button>
                 </div>
-                {s.teacher_name && <p className="text-xs text-stone-500">👤 {s.teacher_name}</p>}
+                {s.teacher_name && <p className="text-xs text-stone-500">{s.teacher_name}</p>}
                 {s.description && <p className="text-xs text-stone-400">{s.description}</p>}
               </div>
             ))}
@@ -2342,7 +2344,7 @@ const AdminDashboard = () => {
           {classSubTab === 'leaves' && (function(leaveApplications) {
             return (
         <div className="max-w-6xl mx-auto px-4 py-8 space-y-4">
-          <h2 className="font-bold text-xl text-stone-900">📝 Leave Applications</h2>
+          <h2 className="font-bold text-xl text-stone-900">Leave Applications</h2>
           {leaveApplications.length === 0 && <p className="text-stone-400 text-sm text-center py-12">No leave applications submitted yet.</p>}
           {leaveApplications.map(l => (
             <div key={l.id} className="bg-white rounded-2xl border border-stone-200 p-5 shadow-sm">

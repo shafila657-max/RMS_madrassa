@@ -54,7 +54,7 @@ export const login = async ({ email, password }) => {
     throw new Error(`Profile error: ${profileError.message}`);
   }
 
-  if (profile.status === 'pending') {
+  if (profile.status === 'pending' && profile.role !== 'teacher') {
     await supabase.auth.signOut();
     throw new Error('Your account is pending admin approval.');
   }
