@@ -83,6 +83,7 @@ const AdminStudentModal = ({ student, parents = [], open, onClose, onRefresh }) 
         admission_date: sData?.admission_date || '',
         user_id: sData?.user_id || '',
         status: sData?.status || 'active',
+        photo_url: sData?.photo_url || '',
       });
       setAttendance(attData || []);
       setScores(scData || []);
@@ -117,6 +118,7 @@ const AdminStudentModal = ({ student, parents = [], open, onClose, onRefresh }) 
           admission_date: profileForm.admission_date || null,
           user_id: profileForm.user_id || null,
           status: profileForm.status || 'active',
+          photo_url: profileForm.photo_url || null,
         })
         .eq('id', student.id);
 
@@ -430,6 +432,17 @@ const AdminStudentModal = ({ student, parents = [], open, onClose, onRefresh }) 
                           <input
                             value={profileForm.full_name}
                             onChange={e => setProfileForm(f => ({ ...f, full_name: e.target.value }))}
+                            className="w-full border border-stone-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                          />
+                        </div>
+
+                        <div>
+                          <label className="block text-xs font-medium text-stone-700 mb-1">Student Photo URL</label>
+                          <input
+                            type="url"
+                            placeholder="https://... image link"
+                            value={profileForm.photo_url || ''}
+                            onChange={e => setProfileForm(f => ({ ...f, photo_url: e.target.value }))}
                             className="w-full border border-stone-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
                           />
                         </div>

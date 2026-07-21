@@ -7,13 +7,15 @@ import {
   GraduationCap, ChevronDown, AlertCircle, RefreshCw,
   Bell, Megaphone, AlertTriangle, Trash2, Volume2, Edit3, Star,
   School, Camera, Phone, Mail, User, ClipboardList, Lightbulb,
-  FileText, Clock, BookOpenCheck, Wallet, PenLine
+  FileText, Clock, BookOpenCheck, Wallet, PenLine,
+  Trophy, Award, RotateCcw, Crown, Medal, Sparkles
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { logout, getCachedProfile, clearCachedProfile } from '@/utils/auth';
 import { supabase } from '@/lib/supabase';
 import { createClient } from '@supabase/supabase-js';
 import AdminStudentModal from '@/components/AdminStudentModal';
+import { computeStudentLeaderboard } from '@/utils/leaderboard';
 
 // ─── Reusable Modal ────────────────────────────────────────────────────────────
 const Modal = ({ open, onClose, title, children }) => (
@@ -181,6 +183,19 @@ const AdminDashboard = () => {
   const [classTaskForm, setClassTaskForm] = useState({ title: '', description: '', due_date: '' });
   const [classTaskLoading, setClassTaskLoading] = useState(false);
 
+  // Leaderboard System
+  const [disciplineRecords, setDisciplineRecords] = useState([]);
+  const [leaderboardScores, setLeaderboardScores] = useState([]);
+  const [leaderboardTasks, setLeaderboardTasks] = useState([]);
+  const [leaderboardAttendance, setLeaderboardAttendance] = useState([]);
+  const [leaderboardResetDate, setLeaderboardResetDate] = useState(null);
+  const [disciplineWeekDate, setDisciplineWeekDate] = useState(new Date().toISOString().split('T')[0]);
+  const [disciplineClassFilter, setDisciplineClassFilter] = useState('Class 1');
+  const [disciplineMap, setDisciplineMap] = useState({});
+  const [savingDiscipline, setSavingDiscipline] = useState(false);
+  const [showResetModal, setShowResetModal] = useState(false);
+  const [leaderboardClassFilter, setLeaderboardClassFilter] = useState('all');
+
   useEffect(() => { fetchAll(); }, []);
 
   // Auto-select first assigned class for teachers
@@ -298,6 +313,30 @@ const AdminDashboard = () => {
     const { data } = await supabase.from('profiles').select('*').eq('status', 'pending').order('created_at', { ascending: false });
     if (data) setPendingUsers(data);
   };
+  const fetchLeaderboardTab = async () => {
+    try {
+      const [
+        { data: disc },
+        { data: settings },
+        { data: tasks },
+        { data: sc },
+        { data: att },
+      ] = await Promise.all([
+        supabase.from('discipline_records').select('*'),
+        supabase.from('leaderboard_settings').select('*').single(),
+        supabase.from('student_tasks').select('*'),
+        supabase.from('scores').select('*'),
+        supabase.from('attendance').select('*'),
+      ]);
+      if (disc) setDisciplineRecords(disc);
+      if (settings?.last_reset_at) setLeaderboardResetDate(settings.last_reset_at);
+      if (tasks) setLeaderboardTasks(tasks);
+      if (sc) setLeaderboardScores(sc);
+      if (att) setLeaderboardAttendance(att);
+    } catch (e) {
+      console.error('Leaderboard fetch error:', e);
+    }
+  };
 
   const fetchAll = async () => {
     setLoading(true);
@@ -349,6 +388,7 @@ const AdminDashboard = () => {
     if (activeTab === 'alumni') { fetchAdminAlumni(); }
     if (activeTab === 'gallery') { fetchGalleryItems(); }
     if (activeTab === 'teachers') { fetchTeachers(); fetchClassTeachers(); }
+    if (activeTab === 'leaderboard') { fetchStudents(); fetchParents(); fetchLeaderboardTab(); }
     if (activeTab === 'classes') { 
       fetchStudents(); 
       fetchTeachers(); 
@@ -756,7 +796,10 @@ const AdminDashboard = () => {
   const pendingAlumniCount = alumniData.filter(a => a.status === 'pending').length;
 
   const tabs = isTeacher 
-    ? [{ id: 'classes', label: 'Classes' }] 
+    ? [
+        { id: 'classes', label: 'Classes' },
+        { id: 'leaderboard', label: '🏆 Leaderboard' }
+      ] 
     : [
         { id: 'overview', label: 'Overview' },
         { id: 'classes', label: 'Classes' },
@@ -766,6 +809,7 @@ const AdminDashboard = () => {
         { id: 'students', label: 'Students' },
         { id: 'gallery', label: 'Gallery' },
         { id: 'teachers', label: 'Teachers' },
+        { id: 'leaderboard', label: '🏆 Leaderboard' },
       ];
 
   if (loading) {
@@ -1849,6 +1893,363 @@ const AdminDashboard = () => {
           </Modal>
         </div>
       )}
+
+      {/* ══════════════════════════════════════════════════════════════ */}
+      {/* LEADERBOARD TAB                                                */}
+      {/* ══════════════════════════════════════════════════════════════ */}
+      {activeTab === 'leaderboard' && (() => {
+        const activeStandings = computeStudentLeaderboard({
+          students,
+          attendance: leaderboardAttendance.length > 0 ? leaderboardAttendance : [],
+          scores: leaderboardScores.length > 0 ? leaderboardScores : [],
+          tasks: leaderboardTasks.length > 0 ? leaderboardTasks : [],
+          disciplineRecords,
+          profiles: parents,
+          resetTimestamp: leaderboardResetDate,
+        });
+
+        const filteredStandings = leaderboardClassFilter === 'all'
+          ? activeStandings
+          : activeStandings.filter(s => (s.class_level || '').trim().toLowerCase() === leaderboardClassFilter.trim().toLowerCase());
+
+        const top3 = filteredStandings.slice(0, 3);
+        const rank1 = top3[0];
+        const rank2 = top3[1];
+        const rank3 = top3[2];
+
+        const discClassStudents = students.filter(s => (s.class_level || '').trim().toLowerCase() === disciplineClassFilter.trim().toLowerCase());
+
+        return (
+          <div className="max-w-6xl mx-auto px-4 py-8 space-y-8">
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white p-6 rounded-2xl border border-stone-200 shadow-sm">
+              <div>
+                <div className="flex items-center gap-2">
+                  <Trophy className="w-6 h-6 text-amber-500" />
+                  <h2 className="font-bold text-xl text-stone-900">Madrasa Leaderboard &amp; Discipline Ratings</h2>
+                </div>
+                <p className="text-xs text-stone-500 mt-1">
+                  Automated points: Attendance (+1), Exam Marks (+1 per 10 marks), Homework (+5), &amp; Weekly Discipline (0–10).
+                </p>
+              </div>
+              <div className="flex items-center gap-3">
+                <button
+                  onClick={fetchLeaderboardTab}
+                  className="flex items-center gap-1.5 px-3 py-2 bg-stone-100 hover:bg-stone-200 text-stone-700 text-xs font-bold rounded-xl transition-colors"
+                >
+                  <RefreshCw className="w-3.5 h-3.5" /> Refresh
+                </button>
+                {isAdmin && (
+                  <button
+                    onClick={() => setShowResetModal(true)}
+                    className="flex items-center gap-1.5 px-3.5 py-2 bg-red-50 hover:bg-red-100 text-red-600 text-xs font-bold rounded-xl border border-red-200 transition-colors"
+                  >
+                    <RotateCcw className="w-3.5 h-3.5" /> Reset Season Points
+                  </button>
+                )}
+              </div>
+            </div>
+
+            {filteredStandings.length > 0 && (
+              <div className="grid md:grid-cols-3 gap-6 pt-4">
+                <div className="order-2 md:order-1 bg-gradient-to-b from-slate-50 to-white border-2 border-slate-200 rounded-3xl p-6 shadow-md flex flex-col items-center text-center relative overflow-hidden">
+                  <div className="bg-slate-200 text-slate-800 text-xs font-bold px-3 py-1 rounded-full mb-3 flex items-center gap-1">
+                    <Medal className="w-4 h-4 text-slate-500" /> Rank #2 (Silver)
+                  </div>
+                  {rank2 ? (
+                    <>
+                      <div className="w-20 h-20 rounded-full bg-slate-100 border-4 border-slate-300 overflow-hidden mb-3 shadow-inner flex items-center justify-center">
+                        {rank2.photo_url ? (
+                          <img src={rank2.photo_url} alt={rank2.full_name} className="w-full h-full object-cover" />
+                        ) : (
+                          <User className="w-10 h-10 text-slate-400" />
+                        )}
+                      </div>
+                      <h4 className="font-bold text-stone-900 text-base">{rank2.full_name}</h4>
+                      <p className="text-xs text-stone-500">Father: {rank2.parent_name}</p>
+                      <span className="text-xs bg-slate-100 text-slate-700 font-semibold px-2.5 py-0.5 rounded-full mt-2">{rank2.class_level}</span>
+                      <div className="mt-4 pt-3 border-t border-slate-100 w-full">
+                        <span className="text-2xl font-black text-slate-700">{rank2.totalPoints} <span className="text-xs font-medium">pts</span></span>
+                      </div>
+                    </>
+                  ) : (
+                    <p className="text-xs text-stone-400 my-auto">No student yet</p>
+                  )}
+                </div>
+
+                <div className="order-1 md:order-2 bg-gradient-to-b from-amber-500/10 via-amber-50 to-white border-2 border-amber-400 rounded-3xl p-6 shadow-xl flex flex-col items-center text-center relative overflow-hidden md:-mt-4">
+                  <div className="bg-amber-400 text-amber-950 text-xs font-black px-3 py-1 rounded-full mb-3 flex items-center gap-1 shadow-sm">
+                    <Crown className="w-4 h-4 text-amber-900" /> RANK #1 (GOLD)
+                  </div>
+                  {rank1 ? (
+                    <>
+                      <div className="w-24 h-24 rounded-full bg-amber-100 border-4 border-amber-400 overflow-hidden mb-3 shadow-md flex items-center justify-center">
+                        {rank1.photo_url ? (
+                          <img src={rank1.photo_url} alt={rank1.full_name} className="w-full h-full object-cover" />
+                        ) : (
+                          <User className="w-12 h-12 text-amber-600" />
+                        )}
+                      </div>
+                      <h4 className="font-bold text-stone-900 text-lg">{rank1.full_name}</h4>
+                      <p className="text-xs text-stone-600 font-medium">Father: {rank1.parent_name}</p>
+                      <span className="text-xs bg-amber-100 text-amber-800 font-bold px-3 py-0.5 rounded-full mt-2">{rank1.class_level}</span>
+                      <div className="mt-4 pt-3 border-t border-amber-200/60 w-full">
+                        <span className="text-3xl font-black text-amber-700">{rank1.totalPoints} <span className="text-xs font-bold">pts</span></span>
+                      </div>
+                    </>
+                  ) : (
+                    <p className="text-xs text-stone-400 my-auto">No student yet</p>
+                  )}
+                </div>
+
+                <div className="order-3 bg-gradient-to-b from-amber-900/5 to-white border-2 border-amber-700/30 rounded-3xl p-6 shadow-md flex flex-col items-center text-center relative overflow-hidden">
+                  <div className="bg-amber-800/10 text-amber-900 text-xs font-bold px-3 py-1 rounded-full mb-3 flex items-center gap-1">
+                    <Medal className="w-4 h-4 text-amber-700" /> Rank #3 (Bronze)
+                  </div>
+                  {rank3 ? (
+                    <>
+                      <div className="w-20 h-20 rounded-full bg-amber-50 border-4 border-amber-700/40 overflow-hidden mb-3 shadow-inner flex items-center justify-center">
+                        {rank3.photo_url ? (
+                          <img src={rank3.photo_url} alt={rank3.full_name} className="w-full h-full object-cover" />
+                        ) : (
+                          <User className="w-10 h-10 text-amber-700" />
+                        )}
+                      </div>
+                      <h4 className="font-bold text-stone-900 text-base">{rank3.full_name}</h4>
+                      <p className="text-xs text-stone-500">Father: {rank3.parent_name}</p>
+                      <span className="text-xs bg-amber-50 text-amber-900 font-semibold px-2.5 py-0.5 rounded-full mt-2">{rank3.class_level}</span>
+                      <div className="mt-4 pt-3 border-t border-stone-100 w-full">
+                        <span className="text-2xl font-black text-amber-900">{rank3.totalPoints} <span className="text-xs font-medium">pts</span></span>
+                      </div>
+                    </>
+                  ) : (
+                    <p className="text-xs text-stone-400 my-auto">No student yet</p>
+                  )}
+                </div>
+              </div>
+            )}
+
+            <div className="bg-white rounded-2xl border border-stone-200 p-6 shadow-sm space-y-4">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-3 border-b border-stone-100">
+                <div>
+                  <h3 className="font-bold text-stone-900 text-base flex items-center gap-2">
+                    <ShieldCheck className="w-5 h-5 text-emerald-600" /> Weekly Discipline Ratings (Out of 10)
+                  </h3>
+                  <p className="text-xs text-stone-500">Award discipline points (0 to 10) to students for the selected week.</p>
+                </div>
+                <div className="flex items-center gap-2 flex-wrap">
+                  <select
+                    value={disciplineClassFilter}
+                    onChange={e => setDisciplineClassFilter(e.target.value)}
+                    className="border border-stone-200 rounded-xl px-3 py-1.5 text-xs font-bold bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                  >
+                    {['Class 1','Class 2','Class 3','Class 4','Class 5','Class 6','Class 7','Class 8','Class 9','Class 10'].map(c => (
+                      <option key={c} value={c}>{c}</option>
+                    ))}
+                  </select>
+                  <input
+                    type="date"
+                    value={disciplineWeekDate}
+                    onChange={e => setDisciplineWeekDate(e.target.value)}
+                    className="border border-stone-200 rounded-xl px-3 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                  />
+                  <button
+                    onClick={() => {
+                      const m = {};
+                      discClassStudents.forEach(s => m[s.id] = 10);
+                      setDisciplineMap(m);
+                    }}
+                    className="px-3 py-1.5 bg-emerald-50 text-emerald-700 border border-emerald-200 rounded-xl text-xs font-bold hover:bg-emerald-100"
+                  >
+                    All 10/10
+                  </button>
+                  <button
+                    disabled={savingDiscipline}
+                    onClick={async () => {
+                      setSavingDiscipline(true);
+                      try {
+                        const rows = discClassStudents.map(s => ({
+                          student_id: s.id,
+                          week_date: disciplineWeekDate,
+                          score: disciplineMap[s.id] !== undefined ? Number(disciplineMap[s.id]) : 10,
+                        }));
+                        if (rows.length === 0) { toast.error('No students in selected class'); setSavingDiscipline(false); return; }
+                        const { error } = await supabase.from('discipline_records').upsert(rows, { onConflict: 'student_id,week_date' });
+                        if (error) throw error;
+                        toast.success(`Discipline points saved for ${disciplineClassFilter}!`);
+                        fetchLeaderboardTab();
+                      } catch (err) {
+                        toast.error(err.message || 'Failed to save discipline records');
+                      } finally {
+                        setSavingDiscipline(false);
+                      }
+                    }}
+                    className="px-4 py-1.5 bg-emerald-600 text-white rounded-xl text-xs font-bold hover:bg-emerald-700 shadow-sm disabled:opacity-50"
+                  >
+                    {savingDiscipline ? 'Saving...' : 'Save Discipline'}
+                  </button>
+                </div>
+              </div>
+
+              {discClassStudents.length > 0 ? (
+                <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-3">
+                  {discClassStudents.map(s => {
+                    const currentScore = disciplineMap[s.id] !== undefined 
+                      ? disciplineMap[s.id] 
+                      : (disciplineRecords.find(d => d.student_id === s.id && d.week_date === disciplineWeekDate)?.score ?? 10);
+                    return (
+                      <div key={s.id} className="bg-stone-50 rounded-xl p-3 border border-stone-200 flex items-center justify-between gap-3">
+                        <div className="min-w-0">
+                          <p className="font-bold text-stone-900 text-xs truncate">{s.full_name}</p>
+                          <p className="text-[10px] text-stone-400">Class: {s.class_level}</p>
+                        </div>
+                        <div className="flex items-center gap-2 flex-shrink-0">
+                          <input
+                            type="number"
+                            min="0"
+                            max="10"
+                            value={currentScore}
+                            onChange={e => {
+                              const val = Math.min(10, Math.max(0, Number(e.target.value)));
+                              setDisciplineMap(m => ({ ...m, [s.id]: val }));
+                            }}
+                            className="w-14 border border-stone-300 rounded-lg text-center font-bold text-sm py-1 focus:outline-none focus:ring-2 focus:ring-emerald-500 bg-white"
+                          />
+                          <span className="text-xs text-stone-400 font-bold">/ 10</span>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              ) : (
+                <p className="text-xs text-stone-400 text-center py-6">No students enrolled in {disciplineClassFilter}.</p>
+              )}
+            </div>
+
+            <div className="bg-white rounded-2xl border border-stone-200 p-6 shadow-sm space-y-4">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-stone-100">
+                <div>
+                  <h3 className="font-bold text-stone-900 text-base flex items-center gap-2">
+                    <Trophy className="w-5 h-5 text-amber-500" /> Full Standings &amp; Score Breakdown
+                  </h3>
+                  <p className="text-xs text-stone-500">View overall rank, father's name, and breakdown across all point categories.</p>
+                </div>
+                <div className="flex items-center gap-2">
+                  <label className="text-xs font-semibold text-stone-600">Filter Class:</label>
+                  <select
+                    value={leaderboardClassFilter}
+                    onChange={e => setLeaderboardClassFilter(e.target.value)}
+                    className="border border-stone-200 rounded-xl px-3 py-1.5 text-xs font-bold bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                  >
+                    <option value="all">All Classes</option>
+                    {['Class 1','Class 2','Class 3','Class 4','Class 5','Class 6','Class 7','Class 8','Class 9','Class 10'].map(c => (
+                      <option key={c} value={c}>{c}</option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+
+              {filteredStandings.length > 0 ? (
+                <div className="overflow-x-auto">
+                  <table className="w-full text-left text-xs">
+                    <thead>
+                      <tr className="border-b border-stone-200 text-stone-500 uppercase tracking-wider bg-stone-50">
+                        <th className="py-3 px-3">Rank</th>
+                        <th className="py-3 px-3">Student</th>
+                        <th className="py-3 px-3">Father Name</th>
+                        <th className="py-3 px-3">Class</th>
+                        <th className="py-3 px-3 text-center">Attendance</th>
+                        <th className="py-3 px-3 text-center">Exams</th>
+                        <th className="py-3 px-3 text-center">Homework</th>
+                        <th className="py-3 px-3 text-center">Discipline</th>
+                        <th className="py-3 px-3 text-right">Total Points</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-stone-100">
+                      {filteredStandings.map(s => (
+                        <tr key={s.id} className="hover:bg-stone-50/80 transition-colors">
+                          <td className="py-3 px-3 font-bold text-stone-900">
+                            {s.rank === 1 && <span className="inline-flex items-center gap-1 bg-amber-100 text-amber-800 px-2 py-0.5 rounded-full font-black text-xs">🥇 #1</span>}
+                            {s.rank === 2 && <span className="inline-flex items-center gap-1 bg-slate-200 text-slate-800 px-2 py-0.5 rounded-full font-bold text-xs">🥈 #2</span>}
+                            {s.rank === 3 && <span className="inline-flex items-center gap-1 bg-amber-900/10 text-amber-900 px-2 py-0.5 rounded-full font-bold text-xs">🥉 #3</span>}
+                            {s.rank > 3 && <span className="text-stone-500 font-semibold px-2">#{s.rank}</span>}
+                          </td>
+                          <td className="py-3 px-3">
+                            <div className="flex items-center gap-2.5">
+                              <div className="w-8 h-8 rounded-full bg-stone-100 border border-stone-200 overflow-hidden flex items-center justify-center flex-shrink-0">
+                                {s.photo_url ? (
+                                  <img src={s.photo_url} alt={s.full_name} className="w-full h-full object-cover" />
+                                ) : (
+                                  <User className="w-4 h-4 text-stone-400" />
+                                )}
+                              </div>
+                              <span className="font-bold text-stone-900">{s.full_name}</span>
+                            </div>
+                          </td>
+                          <td className="py-3 px-3 text-stone-600 font-medium">{s.parent_name}</td>
+                          <td className="py-3 px-3"><span className="bg-stone-100 text-stone-700 px-2 py-0.5 rounded-full font-semibold">{s.class_level}</span></td>
+                          <td className="py-3 px-3 text-center text-stone-600 font-semibold">+{s.attendancePoints} <span className="text-[10px] text-stone-400">({s.presentDays}d)</span></td>
+                          <td className="py-3 px-3 text-center text-stone-600 font-semibold">+{s.examPoints} <span className="text-[10px] text-stone-400">({s.totalExamMarks}m)</span></td>
+                          <td className="py-3 px-3 text-center text-stone-600 font-semibold">+{s.taskPoints} <span className="text-[10px] text-stone-400">({s.completedTasks}t)</span></td>
+                          <td className="py-3 px-3 text-center text-stone-600 font-semibold">+{s.disciplinePoints}</td>
+                          <td className="py-3 px-3 text-right">
+                            <span className="bg-emerald-100 text-emerald-800 text-xs font-black px-2.5 py-1 rounded-full">
+                              {s.totalPoints} pts
+                            </span>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              ) : (
+                <p className="text-xs text-stone-400 text-center py-8">No students found.</p>
+              )}
+            </div>
+
+            <Modal open={showResetModal} onClose={() => setShowResetModal(false)} title="Reset Leaderboard Season">
+              <div className="space-y-4">
+                <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 flex items-start gap-3 text-amber-800 text-xs">
+                  <AlertTriangle className="w-5 h-5 text-amber-600 flex-shrink-0 mt-0.5" />
+                  <div>
+                    <p className="font-bold">Are you sure you want to reset the Leaderboard?</p>
+                    <p className="mt-1">
+                      This sets a new season timestamp (`last_reset_at = NOW()`). Points calculated from attendance, exams, homework, and discipline will start fresh from this moment. Past student records will remain completely safe.
+                    </p>
+                  </div>
+                </div>
+
+                <div className="flex gap-2 justify-end pt-2">
+                  <button
+                    onClick={() => setShowResetModal(false)}
+                    className="px-4 py-2 bg-stone-100 hover:bg-stone-200 text-stone-700 text-xs font-bold rounded-xl"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={async () => {
+                      try {
+                        const nowISO = new Date().toISOString();
+                        const { error } = await supabase
+                          .from('leaderboard_settings')
+                          .upsert({ id: 1, last_reset_at: nowISO, updated_at: nowISO });
+                        if (error) throw error;
+                        toast.success('Leaderboard season reset successfully!');
+                        setShowResetModal(false);
+                        fetchLeaderboardTab();
+                      } catch (err) {
+                        toast.error(err.message || 'Failed to reset leaderboard');
+                      }
+                    }}
+                    className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white text-xs font-bold rounded-xl"
+                  >
+                    Confirm Reset
+                  </button>
+                </div>
+              </div>
+            </Modal>
+          </div>
+        );
+      })()}
 
       {/* ══════════════════════════════════════════════════════════════ */}
       {/* LEAVES TAB                                                     */}

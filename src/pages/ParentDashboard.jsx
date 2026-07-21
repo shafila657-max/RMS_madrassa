@@ -3,11 +3,12 @@ import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import {
   BookOpen, LogOut, ChevronRight, Users, AlertCircle,
-  Calendar, TrendingUp, DollarSign, Award, Bell, Megaphone, AlertTriangle
+  Calendar, TrendingUp, DollarSign, Award, Bell, Megaphone, AlertTriangle, Trophy, ShieldCheck
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { logout, getCachedProfile, clearCachedProfile } from '@/utils/auth';
 import { supabase } from '@/lib/supabase';
+import { fetchFullLeaderboardData } from '@/utils/leaderboard';
 
 const ParentDashboard = () => {
   const navigate = useNavigate();
@@ -32,7 +33,9 @@ const ParentDashboard = () => {
 
       if (error) throw error;
 
-      // For each student, fetch quick summary stats
+      // Fetch full leaderboard rankings to get child rank & score breakdown
+      const { standings } = await fetchFullLeaderboardData();
+
       const enriched = await Promise.all(
         (students || []).map(async (student) => {
           const [
@@ -57,7 +60,16 @@ const ParentDashboard = () => {
             ? Math.round((scores || []).reduce((s, sc) => s + (sc.marks_obtained / sc.total_marks) * 100, 0) / scores.length)
             : null;
 
-          return { ...student, attendancePct, pendingFees, avgScore, totalFees: (fees || []).length };
+          const lbInfo = standings.find(s => s.id === student.id) || {
+            rank: '—',
+            totalPoints: 0,
+            attendancePoints: 0,
+            examPoints: 0,
+            taskPoints: 0,
+            disciplinePoints: 0,
+          };
+
+          return { ...student, attendancePct, pendingFees, avgScore, totalFees: (fees || []).length, lbInfo };
         })
       );
 
@@ -294,6 +306,37 @@ const ParentDashboard = () => {
                         {child.pendingFees > 0 ? `₹${child.pendingFees}` : '✓'}
                       </p>
                       <p className="text-xs text-stone-400">Fees Due</p>
+                    </div>
+                  </div>
+
+                  {/* Leaderboard & Points Breakdown Banner */}
+                  <div className="mx-5 mb-4 p-3 bg-amber-500/10 border border-amber-500/20 rounded-2xl flex flex-col gap-2">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <Trophy className="w-4 h-4 text-amber-600" />
+                        <span className="text-xs font-bold text-amber-900">Leaderboard Position</span>
+                      </div>
+                      <span className="bg-amber-500 text-white font-black text-xs px-2.5 py-0.5 rounded-full shadow-sm">
+                        Rank #{child.lbInfo.rank} ({child.lbInfo.totalPoints} pts)
+                      </span>
+                    </div>
+                    <div className="grid grid-cols-4 gap-1.5 text-center text-[10px] pt-1 border-t border-amber-500/10">
+                      <div className="bg-white/80 p-1 rounded-lg">
+                        <p className="font-bold text-stone-700">+{child.lbInfo.attendancePoints}</p>
+                        <p className="text-stone-400">Attendance</p>
+                      </div>
+                      <div className="bg-white/80 p-1 rounded-lg">
+                        <p className="font-bold text-stone-700">+{child.lbInfo.examPoints}</p>
+                        <p className="text-stone-400">Exams</p>
+                      </div>
+                      <div className="bg-white/80 p-1 rounded-lg">
+                        <p className="font-bold text-stone-700">+{child.lbInfo.taskPoints}</p>
+                        <p className="text-stone-400">Tasks</p>
+                      </div>
+                      <div className="bg-white/80 p-1 rounded-lg">
+                        <p className="font-bold text-stone-700">+{child.lbInfo.disciplinePoints}</p>
+                        <p className="text-stone-400">Discipline</p>
+                      </div>
                     </div>
                   </div>
 
