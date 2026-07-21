@@ -10,6 +10,7 @@ import {
 import { toast } from 'sonner';
 import { logout, getCachedProfile, clearCachedProfile } from '@/utils/auth';
 import { supabase } from '@/lib/supabase';
+import { createClient } from '@supabase/supabase-js';
 import AdminStudentModal from '@/components/AdminStudentModal';
 
 // ─── Reusable Modal ────────────────────────────────────────────────────────────
@@ -161,7 +162,7 @@ const AdminDashboard = () => {
   // Teachers
   const [teacherContacts, setTeacherContacts] = useState([]);
   const [showAddTeacher, setShowAddTeacher] = useState(false);
-  const [teacherForm, setTeacherForm] = useState({ full_name: '', subject: '', phone: '', email: '' });
+  const [teacherForm, setTeacherForm] = useState({ full_name: '', subject: '', phone: '', email: '', password: '', classes: [] });
 
   // Leaves
   const [leaveApplications, setLeaveApplications] = useState([]);
@@ -1645,17 +1646,91 @@ const AdminDashboard = () => {
           <Modal open={showAddTeacher} onClose={() => setShowAddTeacher(false)} title="Add Teacher Contact">
             <form onSubmit={async e => {
               e.preventDefault();
-              const { error } = await supabase.from('teacher_contacts').insert([teacherForm]);
-              if (error) { toast.error(error.message); return; }
-              toast.success('Teacher added');
+              if (!teacherForm.email || !teacherForm.password) {
+                toast.error("Email and password are required.");
+                return;
+              }
+              
+              // 1. Create a non-persisting Supabase client so Admin doesn't get logged out
+              const supabaseAdmin = createClient(
+                import.meta.env.VITE_SUPABASE_URL,
+                import.meta.env.VITE_SUPABASE_ANON_KEY,
+                { auth: { autoRefreshToken: false, persistSession: false } }
+              );
+
+              // 2. Create the auth user
+              const { data: authData, error: authError } = await supabaseAdmin.auth.signUp({
+                email: teacherForm.email,
+                password: teacherForm.password,
+                options: {
+                  data: { full_name: teacherForm.full_name, phone: teacherForm.phone, role: 'teacher' }
+                }
+              });
+
+              if (authError) { toast.error(authError.message); return; }
+              
+              const newUserId = authData?.user?.id;
+              
+              // 3. Update profile to approved (Wait briefly for trigger to finish)
+              if (newUserId) {
+                setTimeout(async () => {
+                   await supabase.from('profiles').update({ status: 'approved' }).eq('id', newUserId);
+                }, 1500);
+              }
+
+              // 4. Insert into teacher_contacts so it shows up in UI
+              const { error: tcError } = await supabase.from('teacher_contacts').insert([{
+                full_name: teacherForm.full_name,
+                subject: teacherForm.subject,
+                phone: teacherForm.phone,
+                email: teacherForm.email
+              }]);
+              if (tcError) { toast.error(tcError.message); return; }
+
+              // 5. Assign to selected classes
+              if (teacherForm.classes.length > 0) {
+                const classAssignments = teacherForm.classes.map(c => ({
+                  class_level: c,
+                  teacher_name: teacherForm.full_name
+                }));
+                // We use upsert in case the class already has a teacher.
+                await supabase.from('class_teachers').upsert(classAssignments, { onConflict: 'class_level' });
+              }
+
+              toast.success('Teacher created and assigned successfully!');
               setShowAddTeacher(false);
-              setTeacherForm({ full_name: '', subject: '', phone: '', email: '' });
+              setTeacherForm({ full_name: '', subject: '', phone: '', email: '', password: '', classes: [] });
               fetchTeachers();
+              fetchClassTeachers();
             }} className="space-y-3">
               <Input label="Full Name *" value={teacherForm.full_name} onChange={e => setTeacherForm(f => ({...f, full_name: e.target.value}))} placeholder="e.g. Ustadh Ahmed Ali" required />
               <Input label="Subject *" value={teacherForm.subject} onChange={e => setTeacherForm(f => ({...f, subject: e.target.value}))} placeholder="e.g. Quran Memorization" required />
               <Input label="Phone" type="tel" value={teacherForm.phone} onChange={e => setTeacherForm(f => ({...f, phone: e.target.value}))} placeholder="+91 9876543210" />
-              <Input label="Email" type="email" value={teacherForm.email} onChange={e => setTeacherForm(f => ({...f, email: e.target.value}))} placeholder="teacher@rmsmadrasa.edu" />
+              <Input label="Email *" type="email" value={teacherForm.email} onChange={e => setTeacherForm(f => ({...f, email: e.target.value}))} placeholder="teacher@rmsmadrasa.edu" required />
+              <Input label="Password *" type="password" value={teacherForm.password} onChange={e => setTeacherForm(f => ({...f, password: e.target.value}))} placeholder="Min 6 characters" required minLength={6} />
+              
+              <div className="mb-4">
+                <label className="block text-sm font-medium text-stone-700 mb-2">Assign Classes</label>
+                <div className="grid grid-cols-2 gap-2 max-h-40 overflow-y-auto p-2 border border-stone-200 rounded-xl bg-stone-50">
+                  {['Class 1','Class 2','Class 3','Class 4','Class 5','Class 6','Class 7','Class 8','Class 9','Class 10'].map(cls => (
+                    <label key={cls} className="flex items-center gap-2 text-xs font-medium text-stone-700 cursor-pointer p-1">
+                      <input 
+                        type="checkbox" 
+                        checked={teacherForm.classes.includes(cls)}
+                        onChange={(e) => {
+                          if (e.target.checked) {
+                            setTeacherForm(f => ({...f, classes: [...f.classes, cls]}));
+                          } else {
+                            setTeacherForm(f => ({...f, classes: f.classes.filter(c => c !== cls)}));
+                          }
+                        }}
+                        className="rounded text-emerald-600 focus:ring-emerald-500"
+                      />
+                      {cls}
+                    </label>
+                  ))}
+                </div>
+              </div>
               <button type="submit" className="w-full bg-emerald-600 text-white py-2.5 rounded-xl font-semibold text-sm hover:bg-emerald-700 transition-colors">Add Teacher</button>
             </form>
           </Modal>

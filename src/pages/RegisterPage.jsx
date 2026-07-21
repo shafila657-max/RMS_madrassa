@@ -54,14 +54,14 @@ const RegisterPage = () => {
               <span className="font-heading text-2xl font-bold text-stone-900">RMS Madrasa</span>
             </div>
             <h2 className="font-heading text-3xl text-stone-900 mb-2">
-              {userType === 'parent' ? 'Parent' : userType === 'teacher' ? 'Teacher' : 'Student'} Registration
+              {userType === 'parent' ? 'Parent' : 'Student'} Registration
             </h2>
             <p className="text-stone-600">Create your account to get started</p>
           </div>
 
           {/* User Type Toggle */}
           <div className="flex justify-center gap-2 mb-6">
-            {['parent', 'student', 'teacher'].map((type) => (
+            {['parent', 'student'].map((type) => (
               <button
                 key={type}
                 onClick={() => navigate(`/register?type=${type}`)}
