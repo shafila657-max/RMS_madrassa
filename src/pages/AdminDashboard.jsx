@@ -1687,11 +1687,21 @@ const AdminDashboard = () => {
               
               const newUserId = authData?.user?.id;
               
-              // 3. Update profile to approved (Wait briefly for trigger to finish)
+              // 3. Wait for trigger to create the profile, then approve it
               if (newUserId) {
-                setTimeout(async () => {
-                   await supabase.from('profiles').update({ status: 'approved' }).eq('id', newUserId);
-                }, 1500);
+                let approved = false;
+                for (let attempt = 0; attempt < 5; attempt++) {
+                  await new Promise(r => setTimeout(r, 1000)); // wait 1s
+                  const { data: prof } = await supabase.from('profiles').select('id').eq('id', newUserId).single();
+                  if (prof) {
+                    await supabase.from('profiles').update({ status: 'approved', role: 'teacher' }).eq('id', newUserId);
+                    approved = true;
+                    break;
+                  }
+                }
+                if (!approved) {
+                  toast.error('Profile creation delayed. Please manually approve this teacher in the Approvals tab.');
+                }
               }
 
               // 4. Insert into teacher_contacts so it shows up in UI
