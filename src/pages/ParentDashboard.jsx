@@ -9,6 +9,12 @@ import { toast } from 'sonner';
 import { logout, getCachedProfile, clearCachedProfile } from '@/utils/auth';
 import { supabase } from '@/lib/supabase';
 import { fetchFullLeaderboardData } from '@/utils/leaderboard';
+import {
+  filterAnnouncementsForParent,
+  getNotificationPermission,
+  requestNotificationPermission,
+  sendPushNotification
+} from '@/utils/notifications';
 
 const ParentDashboard = () => {
   const navigate = useNavigate();
@@ -16,6 +22,7 @@ const ParentDashboard = () => {
   const [children, setChildren] = useState([]);
   const [announcements, setAnnouncements] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [pushPermission, setPushPermission] = useState(getNotificationPermission());
 
   useEffect(() => { fetchChildren(); }, []);
 
@@ -75,18 +82,25 @@ const ParentDashboard = () => {
 
       setChildren(enriched);
 
-      // Fetch announcements
+      // Fetch announcements filtered strictly for parent's linked child classes
       const childClasses = (students || []).map(s => s.class_level).filter(Boolean);
       const { data: allAnnouncements } = await supabase
         .from('announcements')
         .select('*')
         .order('created_at', { ascending: false });
 
-      const filtered = (allAnnouncements || []).filter(a =>
-        a.target_class === 'All' || childClasses.includes(a.target_class)
-      );
-
+      const filtered = filterAnnouncementsForParent(allAnnouncements, childClasses);
       setAnnouncements(filtered);
+
+      // Trigger browser push notification for newest targeted announcement if permission granted
+      if (filtered.length > 0 && Notification.permission === 'granted') {
+        const latest = filtered[0];
+        // Send push notification if posted within the last 15 minutes
+        const diffMinutes = (new Date() - new Date(latest.created_at)) / (1000 * 60);
+        if (diffMinutes <= 15) {
+          sendPushNotification(latest.title, { body: latest.message });
+        }
+      }
     } catch (error) {
       toast.error('Failed to load children profiles');
       console.error(error);
@@ -160,6 +174,36 @@ const ParentDashboard = () => {
               : `${children.length} ${children.length === 1 ? 'child' : 'children'} enrolled`}
           </p>
         </motion.div>
+
+        {/* ── PUSH NOTIFICATION PERMISSION BANNER ── */}
+        {pushPermission === 'default' && (
+          <div className="bg-gradient-to-r from-emerald-600 to-teal-700 text-white rounded-2xl p-4 shadow-md flex items-center justify-between gap-4">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-white/20 flex items-center justify-center flex-shrink-0">
+                <Bell className="w-5 h-5 text-white animate-pulse" />
+              </div>
+              <div>
+                <p className="font-bold text-xs">Enable Audience Push Notifications</p>
+                <p className="text-[11px] text-emerald-100 mt-0.5">Receive instant alerts for your child's class homework &amp; notices.</p>
+              </div>
+            </div>
+            <button
+              onClick={async () => {
+                const res = await requestNotificationPermission();
+                setPushPermission(res);
+                if (res === 'granted') {
+                  toast.success('Push notifications enabled!');
+                  sendPushNotification('RMS Madrasa Push Notifications Enabled', {
+                    body: 'You will now receive instant alerts for your child’s class homework and announcements.',
+                  });
+                }
+              }}
+              className="bg-white text-emerald-800 text-xs font-bold px-3.5 py-2 rounded-xl hover:bg-emerald-50 transition-colors flex-shrink-0 shadow-sm"
+            >
+              Enable
+            </button>
+          </div>
+        )}
 
         {/* ── ANNOUNCEMENTS / NOTIFICATIONS SECTION ── */}
         {announcements.length > 0 && (

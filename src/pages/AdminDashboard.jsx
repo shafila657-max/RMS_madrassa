@@ -2503,7 +2503,18 @@ const AdminDashboard = () => {
                       if (taskRows.length === 0) { toast.error('No students in this class to assign tasks to'); setClassTaskLoading(false); return; }
                       const { error } = await supabase.from('student_tasks').insert(taskRows);
                       if (error) throw error;
-                      toast.success(`Homework assigned to all ${clsStudents.length} students in ${selectedClassLevel}!`);
+
+                      // Auto-publish targeted push notification for parents of this class
+                      const { data: { session } } = await supabase.auth.getSession();
+                      await supabase.from('announcements').insert([{
+                        title: `📚 New Homework: ${classTaskForm.title}`,
+                        message: `${classTaskForm.description || 'New homework task assigned.'}${classTaskForm.due_date ? ` (Due: ${classTaskForm.due_date})` : ''}`,
+                        target_class: selectedClassLevel,
+                        severity: 'medium',
+                        created_by: session?.user?.id,
+                      }]);
+
+                      toast.success(`Homework & targeted parent notification assigned for ${selectedClassLevel}!`);
                       setShowAddClassTask(false);
                       setClassTaskForm({ title: '', description: '', due_date: '' });
                     } catch (err) {
