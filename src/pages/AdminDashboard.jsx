@@ -845,7 +845,7 @@ const AdminDashboard = () => {
   }
 
   return (
-    <div className="min-h-screen bg-stone-50">
+    <div className="min-h-screen bg-stone-50 pb-24 md:pb-0">
       {/* Header */}
       <header className="sticky top-0 z-40 bg-white border-b border-stone-200 shadow-sm">
         <div className="max-w-6xl mx-auto px-4 py-4 flex items-center justify-between">
