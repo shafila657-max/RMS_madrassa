@@ -2337,7 +2337,7 @@ const AdminDashboard = () => {
             const clsSubjects = subjectsList.filter(s => s.class_level === selectedClassLevel);
 
             return (
-              <div className="bg-gradient-to-br from-stone-900 via-emerald-950 to-stone-900 text-white rounded-3xl p-6 shadow-xl space-y-4 border border-white/10">
+              <div className={`bg-gradient-to-br from-stone-900 via-emerald-950 to-stone-900 text-white rounded-3xl p-6 shadow-xl space-y-4 border border-white/10 ${isTeacher ? 'hidden md:block' : ''}`}>
                 <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                   <div>
                     <span className="text-[10px] uppercase font-bold tracking-widest text-emerald-400 bg-emerald-500/20 px-3 py-1 rounded-full border border-emerald-500/30">
@@ -3015,28 +3015,56 @@ const AdminDashboard = () => {
       )}
 
       {/* ── MOBILE QUICK DOCK (Sticky Bottom Navigation for Mobile Phones) ── */}
-      <div className="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-white/95 backdrop-blur-md border-t border-stone-200 px-3 py-2 flex items-center justify-around shadow-lg">
-        {[
-          { id: isTeacher ? 'classes' : 'overview', label: isTeacher ? 'Classes' : 'Overview', icon: isTeacher ? School : TrendingUp },
-          { id: 'classes', label: 'Classes', icon: School },
-          { id: 'students', label: 'Students', icon: Users },
-          { id: 'leaderboard', label: 'Leaderboard', icon: Trophy },
-          { id: isTeacher ? 'leaderboard' : 'approvals', label: isTeacher ? 'Standings' : 'Approvals', icon: isTeacher ? Award : UserCheck },
-        ].map(({ id, label, icon: Icon }) => {
-          const isActive = activeTab === id;
-          return (
-            <button
-              key={id}
-              onClick={() => setActiveTab(id)}
-              className={`flex flex-col items-center gap-0.5 px-2 py-1 rounded-xl transition-all ${
-                isActive ? 'text-emerald-700 font-bold scale-105' : 'text-stone-400 hover:text-stone-700 font-medium'
-              }`}
-            >
-              <Icon className={`w-5 h-5 ${isActive ? 'text-emerald-600' : 'text-stone-400'}`} />
-              <span className="text-[10px] tracking-tight">{label}</span>
-            </button>
-          );
-        })}
+      <div className="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-white/95 backdrop-blur-md border-t border-stone-200 px-2 py-2 flex items-center justify-between overflow-x-auto no-scrollbar shadow-lg">
+        {isTeacher ? (
+          [
+            { id: 'students', label: 'Students', icon: Users },
+            { id: 'attendance', label: 'Attendance', icon: UserCheck },
+            { id: 'tasks', label: 'Homework', icon: ClipboardList },
+            { id: 'discipline', label: 'Discipline', icon: ShieldCheck },
+            { id: 'timetable', label: 'Timetable', icon: Clock },
+            { id: 'leaves', label: 'Leaves', icon: Calendar },
+          ].map(({ id, label, icon: Icon }) => {
+            const isActive = classSubTab === id;
+            return (
+              <button
+                key={id}
+                onClick={() => {
+                  setActiveTab('classes');
+                  setClassSubTab(id);
+                }}
+                className={`flex flex-col items-center gap-1 px-3 py-1 rounded-xl transition-all flex-shrink-0 ${
+                  isActive ? 'text-emerald-700 font-bold scale-105' : 'text-stone-400 hover:text-stone-700 font-medium'
+                }`}
+              >
+                <Icon className={`w-5 h-5 ${isActive ? 'text-emerald-600' : 'text-stone-400'}`} />
+                <span className="text-[9px] tracking-tight">{label}</span>
+              </button>
+            );
+          })
+        ) : (
+          [
+            { id: 'overview', label: 'Overview', icon: TrendingUp },
+            { id: 'classes', label: 'Classes', icon: School },
+            { id: 'students', label: 'Students', icon: Users },
+            { id: 'leaderboard', label: 'Leaderboard', icon: Trophy },
+            { id: 'approvals', label: 'Approvals', icon: UserCheck },
+          ].map(({ id, label, icon: Icon }) => {
+            const isActive = activeTab === id;
+            return (
+              <button
+                key={id}
+                onClick={() => setActiveTab(id)}
+                className={`flex flex-col items-center gap-1 px-3 py-1 rounded-xl transition-all flex-shrink-0 ${
+                  isActive ? 'text-emerald-700 font-bold scale-105' : 'text-stone-400 hover:text-stone-700 font-medium'
+                }`}
+              >
+                <Icon className={`w-5 h-5 ${isActive ? 'text-emerald-600' : 'text-stone-400'}`} />
+                <span className="text-[9px] tracking-tight">{label}</span>
+              </button>
+            );
+          })
+        )}
       </div>
     </div>
   );
