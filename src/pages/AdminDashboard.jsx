@@ -593,22 +593,17 @@ const AdminDashboard = () => {
     }
   };
 
-  const handleDeleteAnnouncement = (id) => {
-    toast('Delete this announcement?', {
-      action: {
-        label: 'Delete',
-        onClick: async () => {
-          try {
-            const { error } = await supabase.from('announcements').delete().eq('id', id);
-            if (error) throw error;
-            toast.success('Announcement deleted');
-            fetchAnnouncements();
-          } catch (err) {
-            toast.error('Failed to delete announcement');
-          }
-        }
-      }
-    });
+  const handleDeleteAnnouncement = async (id) => {
+    if (!window.confirm("Are you sure you want to delete this announcement? This action cannot be undone.")) return;
+    try {
+      const { error } = await supabase.from('announcements').delete().eq('id', id);
+      if (error) throw error;
+      toast.success('Announcement deleted');
+      fetchAnnouncements();
+    } catch (err) {
+      toast.error('Failed to delete announcement');
+      console.error(err);
+    }
   };
 
   const handleApproveAlumni = async (id) => {
