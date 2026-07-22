@@ -100,13 +100,15 @@ const LandingPage = () => {
 
   // Leaderboard data
   const [leaderboardData, setLeaderboardData] = useState([]);
+  const [leaderboardLoading, setLeaderboardLoading] = useState(true);
 
   useEffect(() => {
     fetchFullLeaderboardData().then(res => {
       if (res?.standings) {
         setLeaderboardData(res.standings);
       }
-    });
+    }).catch(err => console.error(err))
+      .finally(() => setLeaderboardLoading(false));
   }, []);
 
   // PWA install prompt
@@ -411,8 +413,14 @@ const LandingPage = () => {
                 </div>
               )}
             </div>
+          ) : leaderboardLoading ? (
+            <p className="text-center text-stone-400 text-sm animate-pulse">Leaderboard standings updating...</p>
           ) : (
-            <p className="text-center text-stone-400 text-sm">Leaderboard standings updating...</p>
+            <div className="bg-stone-900/50 backdrop-blur-sm border border-white/10 rounded-2xl p-8 max-w-lg mx-auto text-center">
+              <Trophy className="w-12 h-12 text-stone-600 mx-auto mb-4" />
+              <p className="text-stone-300 font-medium">New academic year started!</p>
+              <p className="text-stone-500 text-xs mt-1">Scores and rankings will appear here once students start earning points.</p>
+            </div>
           )}
         </div>
       </section>
