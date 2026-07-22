@@ -818,8 +818,7 @@ const AdminDashboard = () => {
 
   const tabs = isTeacher 
     ? [
-        { id: 'classes', label: 'Classes' },
-        { id: 'leaderboard', label: '🏆 Leaderboard' }
+        { id: 'classes', label: 'Classes' }
       ] 
     : [
         { id: 'overview', label: 'Overview' },
