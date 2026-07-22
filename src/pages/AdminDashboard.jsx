@@ -2349,48 +2349,50 @@ const AdminDashboard = () => {
                     </p>
                   </div>
 
-                  {/* Assign Class Teacher Form */}
-                  <div className="bg-white/10 backdrop-blur-md p-4 rounded-2xl border border-white/15 space-y-2 min-w-[280px]">
-                    <p className="text-xs font-bold text-emerald-300 flex items-center gap-1">
-                      Assigned Class Teacher
-                    </p>
-                    <select
-                      value={currentCT?.teacher_name || ''}
-                      onChange={async (e) => {
-                        const val = e.target.value;
-                        const { error } = await supabase
-                          .from('class_teachers')
-                          .upsert({ class_level: selectedClassLevel, teacher_name: val }, { onConflict: 'class_level' });
-                        if (error) { toast.error(error.message); return; }
-                        toast.success(`Assigned ${val || 'None'} to ${selectedClassLevel}`);
-                        fetchClassTeachers();
-                      }}
-                      className="w-full bg-stone-800 text-white border border-white/20 rounded-xl px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-emerald-400"
-                    >
-                      <option value="">-- No Teacher Assigned --</option>
-                      {teacherContacts.map(t => (
-                        <option key={t.id} value={t.full_name}>{t.full_name} ({t.subject})</option>
-                      ))}
-                    </select>
-                  </div>
+                  {/* Assign Class Teacher Form (Admin Only) */}
+                  {!isTeacher && (
+                    <div className="bg-white/10 backdrop-blur-md p-4 rounded-2xl border border-white/15 space-y-2 min-w-[280px]">
+                      <p className="text-xs font-bold text-emerald-300 flex items-center gap-1">
+                        Assigned Class Teacher
+                      </p>
+                      <select
+                        value={currentCT?.teacher_name || ''}
+                        onChange={async (e) => {
+                          const val = e.target.value;
+                          const { error } = await supabase
+                            .from('class_teachers')
+                            .upsert({ class_level: selectedClassLevel, teacher_name: val }, { onConflict: 'class_level' });
+                          if (error) { toast.error(error.message); return; }
+                          toast.success(`Assigned ${val || 'None'} to ${selectedClassLevel}`);
+                          fetchClassTeachers();
+                        }}
+                        className="w-full bg-stone-800 text-white border border-white/20 rounded-xl px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-emerald-400"
+                      >
+                        <option value="">-- No Teacher Assigned --</option>
+                        {teacherContacts.map(t => (
+                          <option key={t.id} value={t.full_name}>{t.full_name} ({t.subject})</option>
+                        ))}
+                      </select>
+                    </div>
+                  )}
                 </div>
 
                 {/* Sub-tabs Inside Class Manager */}
-                <div className="flex gap-2 border-t border-white/10 pt-4 overflow-x-auto no-scrollbar touch-pan-x flex-nowrap">
+                <div className="flex gap-2 border-t border-white/10 pt-4 pb-2 overflow-x-auto no-scrollbar touch-pan-x flex-nowrap snap-x snap-mandatory">
                   {[
                     { id: 'students', label: `Students Roster (${clsStudents.length})` },
                     { id: 'attendance', label: 'Attendance' },
-                    { id: 'fees', label: 'Fees' },
+                    { id: 'fees', label: 'Fees', adminOnly: true },
                     { id: 'tasks', label: 'Homework' },
                     { id: 'discipline', label: 'Discipline' },
                     { id: 'timetable', label: 'Timetable' },
-                    { id: 'subjects', label: '📚 Subjects' },
+                    { id: 'subjects', label: '📚 Subjects', adminOnly: true },
                     { id: 'leaves', label: 'Leaves' },
-                  ].map(st => (
+                  ].filter(st => !st.adminOnly || !isTeacher).map(st => (
                     <button
                       key={st.id}
                       onClick={() => setClassSubTab(st.id)}
-                      className={`px-4 py-2 rounded-xl text-xs font-bold transition-colors ${
+                      className={`px-4 py-2 rounded-xl text-xs font-bold transition-colors snap-start whitespace-nowrap ${
                         classSubTab === st.id
                           ? 'bg-emerald-500 text-stone-950 shadow-md'
                           : 'bg-white/10 text-stone-300 hover:bg-white/20'
@@ -2408,7 +2410,7 @@ const AdminDashboard = () => {
           {classSubTab === 'students' && (() => {
             const clsStudents = students.filter(s => (s.class_level || '').trim().toLowerCase() === (selectedClassLevel || '').trim().toLowerCase());
             return (
-              <div className="bg-white rounded-2xl border border-stone-200 p-6 shadow-sm space-y-4">
+              <div className="bg-white rounded-2xl border border-stone-200 p-4 sm:p-6 shadow-sm space-y-4 relative">
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-2 border-b border-stone-100">
                   <h4 className="font-bold text-stone-900 text-base">Class Roster &amp; Batch Attendance</h4>
                   <div className="flex items-center gap-2">
@@ -2416,28 +2418,74 @@ const AdminDashboard = () => {
                       type="date"
                       value={classAttendanceDate}
                       onChange={e => setClassAttendanceDate(e.target.value)}
-                      className="border border-stone-200 rounded-xl px-3 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                      className="border border-stone-200 rounded-xl px-3 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-emerald-500 w-full sm:w-auto"
                     />
-                    <button
-                      onClick={() => {
-                        const m = {};
-                        clsStudents.forEach(s => m[s.id] = 'present');
-                        setClassAttendanceMap(m);
-                      }}
-                      className="px-3 py-1.5 bg-emerald-50 text-emerald-700 border border-emerald-200 rounded-xl text-xs font-bold hover:bg-emerald-100"
-                    >
-                      All Present
-                    </button>
-                    <button
-                      onClick={() => {
-                        const m = {};
-                        clsStudents.forEach(s => m[s.id] = 'absent');
-                        setClassAttendanceMap(m);
-                      }}
-                      className="px-3 py-1.5 bg-red-50 text-red-700 border border-red-200 rounded-xl text-xs font-bold hover:bg-red-100"
-                    >
-                      All Absent
-                    </button>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                  {clsStudents.map(s => {
+                    const attStatus = classAttendanceMap[s.id] || 'present';
+                    return (
+                      <div key={s.id} className="border border-stone-200 rounded-2xl p-4 flex flex-col gap-3 bg-stone-50/50 hover:bg-stone-50 transition-colors">
+                        <div className="flex justify-between items-start">
+                          <div>
+                            <h5 className="font-bold text-stone-900 text-sm mb-0.5 line-clamp-1">{s.full_name}</h5>
+                            <button onClick={() => { setSelectedStudent(s); setShow360Modal(true); }} className="text-[10px] font-bold text-emerald-600 hover:underline">
+                              View 360° Profile
+                            </button>
+                          </div>
+                          <span className={`text-[9px] font-bold px-2 py-0.5 rounded-full uppercase ${s.status === 'active' ? 'bg-emerald-100 text-emerald-700' : 'bg-stone-200 text-stone-600'}`}>
+                            {s.status}
+                          </span>
+                        </div>
+                        <div className="flex gap-2 pt-2 border-t border-stone-100">
+                          <button
+                            onClick={() => setClassAttendanceMap(m => ({ ...m, [s.id]: 'present' }))}
+                            className={`flex-1 py-1.5 rounded-xl text-xs font-bold transition-all ${attStatus === 'present' ? 'bg-emerald-500 text-white shadow-md' : 'bg-white border border-stone-200 text-stone-500 hover:bg-stone-100'}`}
+                          >
+                            Present
+                          </button>
+                          <button
+                            onClick={() => setClassAttendanceMap(m => ({ ...m, [s.id]: 'absent' }))}
+                            className={`flex-1 py-1.5 rounded-xl text-xs font-bold transition-all ${attStatus === 'absent' ? 'bg-red-500 text-white shadow-md' : 'bg-white border border-stone-200 text-stone-500 hover:bg-stone-100'}`}
+                          >
+                            Absent
+                          </button>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+                {clsStudents.length === 0 && (
+                  <p className="text-stone-400 text-xs text-center py-8">No students currently enrolled in {selectedClassLevel}.</p>
+                )}
+
+                {/* Sticky Action Bar for Mobile Attendance */}
+                {clsStudents.length > 0 && (
+                  <div className="sticky bottom-4 z-10 bg-white/95 backdrop-blur-md p-3 rounded-2xl shadow-xl border border-stone-200 flex items-center justify-between gap-3 mt-8 max-w-sm mx-auto w-full">
+                    <div className="flex gap-2 flex-1">
+                      <button
+                        onClick={() => {
+                          const m = {};
+                          clsStudents.forEach(s => m[s.id] = 'present');
+                          setClassAttendanceMap(m);
+                        }}
+                        className="px-2 py-2 bg-emerald-50 text-emerald-700 border border-emerald-200 rounded-xl text-[11px] font-bold hover:bg-emerald-100 shadow-sm flex-1 text-center"
+                      >
+                        All Pre
+                      </button>
+                      <button
+                        onClick={() => {
+                          const m = {};
+                          clsStudents.forEach(s => m[s.id] = 'absent');
+                          setClassAttendanceMap(m);
+                        }}
+                        className="px-2 py-2 bg-red-50 text-red-700 border border-red-200 rounded-xl text-[11px] font-bold hover:bg-red-100 shadow-sm flex-1 text-center"
+                      >
+                        All Abs
+                      </button>
+                    </div>
                     <button
                       onClick={async () => {
                         const rows = Object.entries(classAttendanceMap).map(([sid, status]) => ({
@@ -2450,66 +2498,11 @@ const AdminDashboard = () => {
                         if (error) { toast.error(error.message); return; }
                         toast.success(`Attendance saved for ${selectedClassLevel} on ${classAttendanceDate}`);
                       }}
-                      className="px-4 py-1.5 bg-emerald-600 text-white rounded-xl text-xs font-bold hover:bg-emerald-700 shadow-sm"
+                      className="px-4 py-2 bg-emerald-600 text-white rounded-xl text-xs font-bold hover:bg-emerald-700 shadow-md whitespace-nowrap"
                     >
-                      Save Attendance
+                      Save
                     </button>
                   </div>
-                </div>
-
-                <div className="overflow-x-auto">
-                  <table className="w-full text-sm text-left">
-                    <thead>
-                      <tr className="border-b border-stone-100 text-stone-400 text-xs uppercase font-bold">
-                        <th className="py-2.5 px-3">Student Name</th>
-                        <th className="py-2.5 px-3">Status</th>
-                        <th className="py-2.5 px-3">Attendance Toggle ({classAttendanceDate})</th>
-                        <th className="py-2.5 px-3 text-right">Actions</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {clsStudents.map(s => {
-                        const attStatus = classAttendanceMap[s.id] || 'present';
-                        return (
-                          <tr key={s.id} className="border-b border-stone-50 hover:bg-stone-50">
-                            <td className="py-3 px-3 font-semibold text-stone-900">{s.full_name}</td>
-                            <td className="py-3 px-3">
-                              <span className={`text-[10px] font-bold px-2.5 py-0.5 rounded-full ${s.status === 'active' ? 'bg-emerald-100 text-emerald-700' : 'bg-stone-100 text-stone-500'}`}>
-                                {s.status?.toUpperCase()}
-                              </span>
-                            </td>
-                            <td className="py-3 px-3">
-                              <div className="flex gap-2">
-                                <button
-                                  onClick={() => setClassAttendanceMap(m => ({ ...m, [s.id]: 'present' }))}
-                                  className={`px-3 py-1 rounded-lg text-xs font-bold transition-colors ${attStatus === 'present' ? 'bg-emerald-600 text-white shadow-sm' : 'bg-stone-100 text-stone-500 hover:bg-stone-200'}`}
-                                >
-                                  Present
-                                </button>
-                                <button
-                                  onClick={() => setClassAttendanceMap(m => ({ ...m, [s.id]: 'absent' }))}
-                                  className={`px-3 py-1 rounded-lg text-xs font-bold transition-colors ${attStatus === 'absent' ? 'bg-red-600 text-white shadow-sm' : 'bg-stone-100 text-stone-500 hover:bg-stone-200'}`}
-                                >
-                                  Absent
-                                </button>
-                              </div>
-                            </td>
-                            <td className="py-3 px-3 text-right">
-                              <button
-                                onClick={() => { setSelectedStudent(s); setShow360Modal(true); }}
-                                className="text-xs font-semibold text-emerald-600 hover:underline"
-                              >
-                                View 360° Profile
-                              </button>
-                            </td>
-                          </tr>
-                        );
-                      })}
-                    </tbody>
-                  </table>
-                </div>
-                {clsStudents.length === 0 && (
-                  <p className="text-stone-400 text-xs text-center py-8">No students currently enrolled in {selectedClassLevel}.</p>
                 )}
               </div>
             );
