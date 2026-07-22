@@ -2296,8 +2296,8 @@ const AdminDashboard = () => {
       {/* LEAVES TAB                                                     */}
       {/* ══════════════════════════════════════════════════════════════ */}
       {activeTab === 'classes' && (
-        <div className="max-w-6xl mx-auto px-4 py-8 space-y-6">
-          <div className="flex items-center justify-between">
+        <div className={`max-w-6xl mx-auto px-4 space-y-4 md:space-y-6 ${isTeacher ? 'py-4 md:py-8' : 'py-8'}`}>
+          <div className={`flex items-center justify-between ${isTeacher ? 'hidden md:flex' : ''}`}>
             <div>
               <h2 className="font-bold text-xl text-stone-900">Class Level Management</h2>
               <p className="text-xs text-stone-500">Manage Class 1 to Class 10 roster, teachers, attendance & homework</p>
