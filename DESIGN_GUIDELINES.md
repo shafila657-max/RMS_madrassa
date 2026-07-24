@@ -17,6 +17,26 @@ This document is the reference for design, structure, and implementation decisio
 - Use contrast to create hierarchy, not random color changes.
 - Avoid introducing new accent colors unless they are part of a deliberate redesign.
 
+## Color Theme
+
+- Primary color: `emerald` tones for the main brand actions, active states, success states, and primary navigation highlights.
+- Secondary color: `amber` tones for ranks, leaderboard emphasis, awards, and callout moments.
+- Support colors:
+  - `sky` for informational emphasis
+  - `rose` or `red` for warnings and destructive states
+  - `slate` and `stone` for text, borders, cards, and neutral backgrounds
+- Backgrounds:
+  - use light neutral gradients or soft tinted surfaces for general screens
+  - use deep slate/emerald backgrounds only for special showcase sections
+- State usage:
+  - primary buttons and active pills should use the primary emerald family
+  - badges and highlights should use the most fitting semantic color, not decoration-only color changes
+  - keep text on colored backgrounds readable with strong contrast
+- Avoid:
+  - random purple/blue replacement themes
+  - using too many saturated colors in one screen
+  - mixing competing accent colors in the same hierarchy level
+
 ## Layout Rules
 
 - Use full-width mobile sections with safe-area padding where appropriate.
@@ -105,4 +125,3 @@ This document is the reference for design, structure, and implementation decisio
 - If you are adding a new screen or major UI refactor, update this file if the visual rules change.
 - If a design pattern becomes repeated, promote it to a shared component.
 - When in doubt, preserve consistency with the rest of the app rather than introducing a new style.
-
