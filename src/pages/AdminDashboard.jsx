@@ -1454,7 +1454,10 @@ const AdminDashboard = () => {
               {parents.map(p => (
                 <button
                   key={p.id}
-                  onClick={() => setLinkParentEmail(p.full_name)} // We'll use ID directly below
+                  onClick={() => {
+                    setSelectedParentId(p.id);
+                    setLinkParentEmail('');
+                  }}
                   className="w-full text-left px-3 py-2 rounded-lg hover:bg-stone-100 text-sm flex items-center gap-2"
                 >
                   <div className="w-6 h-6 bg-emerald-100 rounded-lg flex items-center justify-center text-emerald-700 font-bold text-xs flex-shrink-0">
@@ -1466,16 +1469,6 @@ const AdminDashboard = () => {
             </div>
           </div>
         )}
-
-        <div className="bg-blue-50 rounded-xl p-3 mb-4">
-          <p className="text-xs text-blue-700">
-            If you select from the list above, the link will use the parent's ID directly. 
-            Alternatively, run this SQL in Supabase:
-          </p>
-          <code className="text-xs text-blue-600 block mt-1 break-all">
-            UPDATE students SET user_id = (SELECT id FROM auth.users WHERE email = 'EMAIL') WHERE id = '{selectedStudent?.id}';
-          </code>
-        </div>
 
         <div className="flex gap-2">
           <Btn className="flex-1" onClick={handleLinkParent} loading={formLoading}>
