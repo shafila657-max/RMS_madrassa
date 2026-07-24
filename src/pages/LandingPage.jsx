@@ -3,7 +3,7 @@ import { motion } from 'framer-motion';
 import {
   BookOpen, Users, Award, GraduationCap, ArrowRight,
   Sparkles, HeartHandshake, Briefcase, QrCode,
-  Play, Image as ImageIcon, Download
+  Play, Image as ImageIcon, Download, Trophy
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { Link } from 'react-router-dom';
