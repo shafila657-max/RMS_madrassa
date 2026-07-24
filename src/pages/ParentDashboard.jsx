@@ -10,6 +10,7 @@ import { logout, clearCachedProfile } from '@/utils/auth';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/context/AuthContext';
 import { fetchFullLeaderboardData } from '@/utils/leaderboard';
+import LeaderboardShowcase from '@/components/LeaderboardShowcase';
 import {
   filterAnnouncementsForParent,
   getNotificationPermission,
@@ -21,6 +22,7 @@ const ParentDashboard = () => {
   const navigate = useNavigate();
   const { session, profile } = useAuth();
   const [children, setChildren] = useState([]);
+  const [leaderboardStandings, setLeaderboardStandings] = useState([]);
   const [announcements, setAnnouncements] = useState([]);
   const [loading, setLoading] = useState(true);
   const [pushPermission, setPushPermission] = useState(getNotificationPermission());
@@ -49,6 +51,7 @@ const ParentDashboard = () => {
 
       // Fetch full leaderboard rankings to get child rank & score breakdown
       const { standings } = await fetchFullLeaderboardData();
+      setLeaderboardStandings(standings || []);
 
       const enriched = await Promise.all(
         (students || []).map(async (student) => {
@@ -358,6 +361,13 @@ const ParentDashboard = () => {
         {/* Children Cards */}
         {children.length > 0 && (
           <div className="space-y-4">
+            {leaderboardStandings.length > 0 && (
+              <LeaderboardShowcase
+                standings={leaderboardStandings}
+                highlightIds={children.map(child => child.id)}
+                title="Your Students & Top Performers"
+              />
+            )}
             <h2 className="text-base font-bold text-stone-900">Enrolled Children ({children.length})</h2>
             {children.map((child, idx) => {
               const palette = palettes[idx % palettes.length];

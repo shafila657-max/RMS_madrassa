@@ -17,6 +17,16 @@ import { createClient } from '@supabase/supabase-js';
 import AdminStudentModal from '@/components/AdminStudentModal';
 import { computeStudentLeaderboard } from '@/utils/leaderboard';
 
+const DISCIPLINE_DAYS = [
+  { value: 0, label: 'Sunday' },
+  { value: 1, label: 'Monday' },
+  { value: 2, label: 'Tuesday' },
+  { value: 3, label: 'Wednesday' },
+  { value: 4, label: 'Thursday' },
+  { value: 5, label: 'Friday' },
+  { value: 6, label: 'Saturday' },
+];
+
 // ─── Reusable Modal ────────────────────────────────────────────────────────────
 const Modal = ({ open, onClose, title, children }) => (
   <AnimatePresence>
@@ -195,6 +205,8 @@ const AdminDashboard = () => {
   const [disciplineClassFilter, setDisciplineClassFilter] = useState('Class 1');
   const [disciplineMap, setDisciplineMap] = useState({});
   const [savingDiscipline, setSavingDiscipline] = useState(false);
+  const [disciplineAllowedDay, setDisciplineAllowedDay] = useState(1);
+  const [savingDisciplineDay, setSavingDisciplineDay] = useState(false);
   const [showResetModal, setShowResetModal] = useState(false);
   const [leaderboardClassFilter, setLeaderboardClassFilter] = useState('all');
 
@@ -346,6 +358,9 @@ const AdminDashboard = () => {
       ]);
       if (disc) setDisciplineRecords(disc);
       if (settings?.last_reset_at) setLeaderboardResetDate(settings.last_reset_at);
+      if (Number.isInteger(settings?.discipline_day_of_week)) {
+        setDisciplineAllowedDay(settings.discipline_day_of_week);
+      }
       if (tasks) setLeaderboardTasks(tasks);
       if (sc) setLeaderboardScores(sc);
       if (att) setLeaderboardAttendance(att);
@@ -460,6 +475,21 @@ const AdminDashboard = () => {
     await supabase.from('profiles').update({ status: 'rejected' }).eq('id', userId);
     toast.success('User rejected');
     fetchAll();
+  };
+
+  const handleSaveDisciplineDay = async () => {
+    setSavingDisciplineDay(true);
+    try {
+      const { error } = await supabase
+        .from('leaderboard_settings')
+        .upsert({ id: 1, discipline_day_of_week: Number(disciplineAllowedDay) }, { onConflict: 'id' });
+      if (error) throw error;
+      toast.success(`Teachers can now assign discipline scores on ${DISCIPLINE_DAYS[disciplineAllowedDay].label}s.`);
+    } catch (err) {
+      toast.error(`Failed to save scoring day: ${err.message}`);
+    } finally {
+      setSavingDisciplineDay(false);
+    }
   };
 
   const handleAddStudent = async () => {
@@ -2019,6 +2049,33 @@ const AdminDashboard = () => {
               </div>
             </div>
 
+            {isAdmin && (
+              <div className="bg-emerald-50 border border-emerald-200 rounded-2xl p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                <div>
+                  <h3 className="font-bold text-emerald-900 text-sm">Discipline scoring day</h3>
+                  <p className="text-xs text-emerald-700 mt-1">
+                    Teachers can enter or update discipline scores only on the selected day. Admins can score anytime.
+                  </p>
+                </div>
+                <div className="flex items-center gap-2 flex-shrink-0">
+                  <select
+                    value={disciplineAllowedDay}
+                    onChange={e => setDisciplineAllowedDay(Number(e.target.value))}
+                    className="border border-emerald-200 rounded-xl px-3 py-2 text-xs font-bold text-emerald-900 bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                  >
+                    {DISCIPLINE_DAYS.map(day => <option key={day.value} value={day.value}>{day.label}</option>)}
+                  </select>
+                  <button
+                    onClick={handleSaveDisciplineDay}
+                    disabled={savingDisciplineDay}
+                    className="px-4 py-2 bg-emerald-600 text-white rounded-xl text-xs font-bold hover:bg-emerald-700 disabled:opacity-60"
+                  >
+                    {savingDisciplineDay ? 'Saving...' : 'Save day'}
+                  </button>
+                </div>
+              </div>
+            )}
+
             {filteredStandings.length > 0 && (
               <div className="grid md:grid-cols-3 gap-6 pt-4">
                 <div className="order-2 md:order-1 bg-gradient-to-b from-slate-50 to-white border-2 border-slate-200 rounded-3xl p-6 shadow-md flex flex-col items-center text-center relative overflow-hidden">
@@ -2684,6 +2741,8 @@ const AdminDashboard = () => {
           {/* SUB-TAB: DISCIPLINE RATINGS */}
           {classSubTab === 'discipline' && (() => {
             const discClassStudents = students.filter(s => (s.class_level || '').trim().toLowerCase() === (selectedClassLevel || '').trim().toLowerCase());
+            const disciplineDayIsOpen = !isTeacher || new Date().getDay() === disciplineAllowedDay;
+            const disciplineDayLabel = DISCIPLINE_DAYS.find(day => day.value === disciplineAllowedDay)?.label || 'the permitted day';
             return (
               <motion.div key="discipline" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
                 <div className="bg-white rounded-2xl border border-stone-200 p-6 shadow-sm space-y-4">
@@ -2693,6 +2752,13 @@ const AdminDashboard = () => {
                         <ShieldCheck className="w-5 h-5 text-emerald-600" /> Weekly Discipline Ratings
                       </h3>
                       <p className="text-xs text-stone-500">Award discipline points (0 to 10) to {selectedClassLevel} students for the week.</p>
+                      {isTeacher && (
+                        <div className={`mt-2 text-xs rounded-xl px-3 py-2 ${disciplineDayIsOpen ? 'bg-emerald-50 text-emerald-700' : 'bg-amber-50 text-amber-700'}`}>
+                          {disciplineDayIsOpen
+                            ? `Scoring is open today (${disciplineDayLabel}).`
+                            : `Scoring is locked. Teachers can update scores on ${disciplineDayLabel}.`}
+                        </div>
+                      )}
                     </div>
                     <div className="flex items-center gap-2 flex-wrap">
                       <input
@@ -2702,18 +2768,23 @@ const AdminDashboard = () => {
                         className="border border-stone-200 rounded-xl px-3 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-emerald-500"
                       />
                       <button
+                        disabled={!disciplineDayIsOpen}
                         onClick={() => {
                           const m = {};
                           discClassStudents.forEach(s => m[s.id] = 10);
                           setDisciplineMap(m);
                         }}
-                        className="px-3 py-1.5 bg-emerald-50 text-emerald-700 border border-emerald-200 rounded-xl text-xs font-bold hover:bg-emerald-100"
+                        className="px-3 py-1.5 bg-emerald-50 text-emerald-700 border border-emerald-200 rounded-xl text-xs font-bold hover:bg-emerald-100 disabled:opacity-50 disabled:cursor-not-allowed"
                       >
                         All 10/10
                       </button>
                       <button
-                        disabled={savingDiscipline}
+                        disabled={savingDiscipline || !disciplineDayIsOpen}
                         onClick={async () => {
+                          if (!disciplineDayIsOpen) {
+                            toast.error(`Teachers can only update scores on ${disciplineDayLabel}.`);
+                            return;
+                          }
                           setSavingDiscipline(true);
                           try {
                             const rows = discClassStudents.map(s => ({
@@ -2732,7 +2803,7 @@ const AdminDashboard = () => {
                             setSavingDiscipline(false);
                           }
                         }}
-                        className="px-4 py-1.5 bg-emerald-600 text-white rounded-xl text-xs font-bold hover:bg-emerald-700 shadow-sm disabled:opacity-50"
+                        className="px-4 py-1.5 bg-emerald-600 text-white rounded-xl text-xs font-bold hover:bg-emerald-700 shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
                       >
                         {savingDiscipline ? 'Saving...' : 'Save Discipline'}
                       </button>
@@ -2756,11 +2827,12 @@ const AdminDashboard = () => {
                                 min="0"
                                 max="10"
                                 value={currentScore}
+                                disabled={!disciplineDayIsOpen}
                                 onChange={e => {
                                   const val = Math.min(10, Math.max(0, Number(e.target.value)));
                                   setDisciplineMap(m => ({ ...m, [s.id]: val }));
                                 }}
-                                className="w-14 border border-stone-300 rounded-lg text-center font-bold text-sm py-1 focus:outline-none focus:ring-2 focus:ring-emerald-500 bg-white"
+                                className="w-14 border border-stone-300 rounded-lg text-center font-bold text-sm py-1 focus:outline-none focus:ring-2 focus:ring-emerald-500 bg-white disabled:bg-stone-100 disabled:text-stone-400"
                               />
                               <span className="text-xs text-stone-400 font-bold">/ 10</span>
                             </div>

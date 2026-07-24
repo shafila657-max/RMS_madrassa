@@ -10,6 +10,7 @@ import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { supabase } from '@/lib/supabase';
 import { fetchFullLeaderboardData } from '@/utils/leaderboard';
+import LeaderboardShowcase from '@/components/LeaderboardShowcase';
 
 // Lazy-load heavy modals — they're NOT needed on first paint
 const AlumniRegisterModal = lazy(() => import('@/components/AlumniRegisterModal'));
@@ -301,6 +302,9 @@ const LandingPage = () => {
           </motion.div>
 
           {leaderboardData.length > 0 ? (
+            <>
+              <LeaderboardShowcase standings={leaderboardData} />
+              <div className="hidden">
             <div className="space-y-16">
               {/* TOP 3 PODIUM */}
               <div className="grid md:grid-cols-3 gap-8 items-end max-w-5xl mx-auto">
@@ -413,6 +417,8 @@ const LandingPage = () => {
                 </div>
               )}
             </div>
+              </div>
+            </>
           ) : leaderboardLoading ? (
             <p className="text-center text-stone-400 text-sm animate-pulse">Leaderboard standings updating...</p>
           ) : (
