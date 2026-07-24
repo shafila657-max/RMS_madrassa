@@ -2,9 +2,30 @@ import React from 'react';
 import { Crown, Medal, Trophy, User } from 'lucide-react';
 
 const podium = [
-  { rank: 2, label: 'SECOND', card: 'order-2 md:order-1 bg-white/10 border-white/15', badge: 'bg-slate-300 text-slate-900', ring: 'border-sky-400', points: 'text-sky-300' },
-  { rank: 1, label: 'CHAMPION', card: 'order-1 md:order-2 bg-gradient-to-b from-amber-500/25 to-white/10 border-amber-400/70 md:-mt-6', badge: 'bg-amber-400 text-amber-950', ring: 'border-amber-400', points: 'text-amber-300' },
-  { rank: 3, label: 'THIRD', card: 'order-3 bg-white/10 border-emerald-400/50', badge: 'bg-emerald-400/90 text-emerald-950', ring: 'border-emerald-400', points: 'text-emerald-300' },
+  {
+    rank: 3,
+    label: 'THIRD',
+    card: 'order-1 bg-white/10 border-emerald-400/50 md:translate-y-6',
+    badge: 'bg-emerald-400/90 text-emerald-950',
+    ring: 'border-emerald-400',
+    points: 'text-emerald-300'
+  },
+  {
+    rank: 1,
+    label: 'CHAMPION',
+    card: 'order-2 bg-gradient-to-b from-amber-500/25 to-white/10 border-amber-400/70 md:-translate-y-3',
+    badge: 'bg-amber-400 text-amber-950',
+    ring: 'border-amber-400',
+    points: 'text-amber-300'
+  },
+  {
+    rank: 2,
+    label: 'SECOND',
+    card: 'order-3 bg-white/10 border-white/15 md:translate-y-6',
+    badge: 'bg-slate-300 text-slate-900',
+    ring: 'border-sky-400',
+    points: 'text-sky-300'
+  },
 ];
 
 const Avatar = ({ student, size = 'w-16 h-16' }) => (
@@ -37,21 +58,27 @@ const LeaderboardShowcase = ({ standings = [], highlightIds = [], title = 'Top P
         <Trophy className="w-6 h-6 text-amber-400" />
       </div>
 
-      <div className="grid grid-cols-3 gap-2 sm:gap-4 items-end mb-5">
+      <div className="grid grid-cols-3 gap-2 sm:gap-4 items-end mb-5 pt-4">
         {podium.map(({ rank, label, card, badge, ring, points }) => {
           const student = standings[rank - 1];
           if (!student) return <div key={rank} />;
+          const isChampion = rank === 1;
           return (
-            <div key={student.id} className={`rounded-2xl border p-3 sm:p-4 text-center min-w-0 ${card}`}>
+            <div
+              key={student.id}
+              className={`rounded-2xl border p-3 sm:p-4 text-center min-w-0 shadow-lg ${
+                isChampion ? 'pb-6 sm:pb-7 min-h-[240px] sm:min-h-[270px]' : 'pb-4 sm:pb-5 min-h-[210px] sm:min-h-[230px]'
+              } ${card}`}
+            >
               <span className={`inline-flex items-center gap-1 rounded-full px-2 py-1 text-[9px] font-black ${badge}`}>
                 {rank === 1 ? <Crown className="w-3 h-3" /> : <Medal className="w-3 h-3" />} #{rank}
               </span>
-              <div className="flex justify-center my-3">
-                <Avatar student={student} size={rank === 1 ? 'w-20 h-20 sm:w-24 sm:h-24' : 'w-14 h-14 sm:w-16 sm:h-16'} />
+              <div className={`flex justify-center ${isChampion ? 'my-4' : 'my-3'}`}>
+                <Avatar student={student} size={isChampion ? 'w-20 h-20 sm:w-24 sm:h-24' : 'w-14 h-14 sm:w-16 sm:h-16'} />
               </div>
-              <p className="font-bold text-xs sm:text-sm truncate">{student.full_name}</p>
+              <p className={`font-bold truncate ${isChampion ? 'text-sm sm:text-base' : 'text-xs sm:text-sm'}`}>{student.full_name}</p>
               <p className="text-[10px] text-stone-400 truncate mt-1">{student.class_level}</p>
-              <p className={`font-black text-lg sm:text-xl mt-2 ${points}`}>{student.totalPoints}</p>
+              <p className={`font-black ${isChampion ? 'text-2xl sm:text-3xl mt-3' : 'text-lg sm:text-xl mt-2'} ${points}`}>{student.totalPoints}</p>
               <p className="text-[9px] text-stone-400">points</p>
             </div>
           );
