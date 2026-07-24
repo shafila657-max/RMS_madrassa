@@ -130,6 +130,7 @@ const AdminDashboard = () => {
   const [attendanceMap, setAttendanceMap] = useState({});
   const [attendanceSaving, setAttendanceSaving] = useState(false);
   const [attendanceLoaded, setAttendanceLoaded] = useState(false);
+  const [attendanceSearch, setAttendanceSearch] = useState('');
 
   // Fees
   const [feeStudents, setFeeStudents] = useState([]);
@@ -244,7 +245,6 @@ const AdminDashboard = () => {
       .eq('date', date);
 
     const map = {};
-    (studentsData || []).forEach(s => { map[s.id] = 'present'; }); // default present
     (existing || []).forEach(r => { map[r.student_id] = r.status; });
     setAttendanceMap(map);
     setAttendanceLoaded(true);
@@ -419,6 +419,36 @@ const AdminDashboard = () => {
     }
   }, [activeTab, fetchGalleryItems, selectedClassLevel, classSubTab]);
 
+  // Restore quick-attendance values whenever its class or date changes.
+  // Without this, a new date appeared as all-present and could overwrite saved data.
+  useEffect(() => {
+    if (activeTab !== 'classes' || classSubTab !== 'students') return;
+
+    const classStudentIds = students
+      .filter(s => (s.class_level || '').trim().toLowerCase() === (selectedClassLevel || '').trim().toLowerCase())
+      .map(s => s.id);
+
+    if (classStudentIds.length === 0) {
+      setClassAttendanceMap({});
+      return;
+    }
+
+    supabase
+      .from('attendance')
+      .select('student_id, status')
+      .eq('date', classAttendanceDate)
+      .in('student_id', classStudentIds)
+      .then(({ data, error }) => {
+        if (error) {
+          toast.error('Failed to load attendance');
+          return;
+        }
+        const map = {};
+        (data || []).forEach(row => { map[row.student_id] = row.status; });
+        setClassAttendanceMap(map);
+      });
+  }, [activeTab, classSubTab, classAttendanceDate, selectedClassLevel, students]);
+
   // ─── Handlers ───────────────────────────────────────────────────────────────
   const handleApprove = async (userId) => {
     await supabase.from('profiles').update({ status: 'approved' }).eq('id', userId);
@@ -515,11 +545,18 @@ const AdminDashboard = () => {
   const handleSaveAttendance = async () => {
     setAttendanceSaving(true);
     try {
-      const rows = Object.entries(attendanceMap).map(([student_id, status]) => ({
-        student_id,
-        date: attendanceDate,
-        status,
-      }));
+      const selectedClassStudents = attendanceStudents.filter(s =>
+        (s.class_level || '').trim().toLowerCase() === (selectedClassLevel || '').trim().toLowerCase()
+      );
+      const selectedClassStudentIds = new Set(selectedClassStudents.map(s => s.id));
+      const rows = Object.entries(attendanceMap)
+        .filter(([student_id, status]) => selectedClassStudentIds.has(student_id) && status)
+        .map(([student_id, status]) => ({ student_id, date: attendanceDate, status }));
+
+      if (rows.length === 0) {
+        toast.error('Mark at least one student before saving');
+        return;
+      }
 
       // Upsert (insert or update for that date)
       const { error } = await supabase
@@ -527,7 +564,7 @@ const AdminDashboard = () => {
         .upsert(rows, { onConflict: 'student_id,date' });
 
       if (error) throw error;
-      toast.success(`Attendance saved for ${attendanceDate}`);
+      toast.success(`Attendance saved for ${selectedClassLevel} on ${attendanceDate}`);
     } catch (err) {
       toast.error('Failed to save: ' + err.message);
     } finally {
@@ -2417,7 +2454,7 @@ const AdminDashboard = () => {
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
                   {clsStudents.map(s => {
-                    const attStatus = classAttendanceMap[s.id] || 'present';
+                    const attStatus = classAttendanceMap[s.id] || 'unmarked';
                     return (
                       <div key={s.id} className="border border-stone-200 rounded-2xl p-4 flex flex-col gap-3 bg-stone-50/50 hover:bg-stone-50 transition-colors">
                         <div className="flex justify-between items-start">
@@ -2732,28 +2769,78 @@ const AdminDashboard = () => {
 
 
           {classSubTab === 'attendance' && (() => {
-            const clsAttendanceStudents = attendanceStudents.filter(s => s.class_level === selectedClassLevel);
+            const clsAttendanceStudents = attendanceStudents.filter(s =>
+              (s.class_level || '').trim().toLowerCase() === (selectedClassLevel || '').trim().toLowerCase()
+            );
+            const visibleAttendanceStudents = clsAttendanceStudents.filter(s =>
+              s.full_name.toLowerCase().includes(attendanceSearch.toLowerCase())
+            );
+            const attendanceCounts = clsAttendanceStudents.reduce((counts, student) => {
+              const status = attendanceMap[student.id];
+              if (status === 'present') counts.present += 1;
+              if (status === 'absent') counts.absent += 1;
+              if (status === 'late') counts.late += 1;
+              if (!status) counts.unmarked += 1;
+              return counts;
+            }, { present: 0, absent: 0, late: 0, unmarked: 0 });
             return (
             <motion.div key="attendance" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
-              <div className="flex items-center justify-between mb-5 flex-wrap gap-3">
-                <h2 className="text-xl font-bold text-stone-900">Mark Attendance</h2>
-                <div className="flex items-center gap-3">
+              <div className="bg-white rounded-2xl border border-stone-200 shadow-sm p-4 sm:p-5 mb-5">
+                <div className="flex items-start justify-between gap-4 flex-wrap">
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <div className="w-9 h-9 rounded-xl bg-emerald-100 text-emerald-700 flex items-center justify-center">
+                        <UserCheck className="w-5 h-5" />
+                      </div>
+                      <div>
+                        <h2 className="text-xl font-bold text-stone-900">Daily Attendance</h2>
+                        <p className="text-xs text-stone-500">{selectedClassLevel} · {clsAttendanceStudents.length} students</p>
+                      </div>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2 w-full sm:w-auto">
                   <input
                     type="date"
                     value={attendanceDate}
                     onChange={e => { setAttendanceDate(e.target.value); fetchAttendanceForDate(e.target.value); }}
-                    className="border border-stone-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                    max={new Date().toISOString().split('T')[0]}
+                    className="border border-stone-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 w-full sm:w-auto"
                   />
-                  <Btn onClick={handleSaveAttendance} loading={attendanceSaving}>
-                    <CheckCircle className="w-4 h-4" /> Save Attendance
-                  </Btn>
+                    <Btn className="whitespace-nowrap" onClick={handleSaveAttendance} loading={attendanceSaving}>
+                      <CheckCircle className="w-4 h-4" /> Save
+                    </Btn>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mt-5">
+                  {[
+                    ['Present', attendanceCounts.present, 'text-emerald-700 bg-emerald-50'],
+                    ['Absent', attendanceCounts.absent, 'text-red-700 bg-red-50'],
+                    ['Late', attendanceCounts.late, 'text-amber-700 bg-amber-50'],
+                    ['Unmarked', attendanceCounts.unmarked, 'text-stone-600 bg-stone-100'],
+                  ].map(([label, count, color]) => (
+                    <div key={label} className={`rounded-xl px-3 py-2 ${color}`}>
+                      <p className="text-[10px] font-bold uppercase tracking-wide opacity-75">{label}</p>
+                      <p className="text-lg font-bold">{count}</p>
+                    </div>
+                  ))}
                 </div>
               </div>
 
               {clsAttendanceStudents.length > 0 ? (
                 <div className="bg-white rounded-2xl border border-stone-100 shadow-sm overflow-hidden">
                   {/* Quick toggle all */}
-                  <div className="p-3 border-b border-stone-50 flex gap-2">
+                  <div className="p-3 border-b border-stone-50 flex flex-col sm:flex-row gap-2 sm:items-center sm:justify-between">
+                    <div className="relative flex-1 max-w-sm">
+                      <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-stone-400" />
+                      <input
+                        value={attendanceSearch}
+                        onChange={e => setAttendanceSearch(e.target.value)}
+                        placeholder="Search students..."
+                        className="w-full pl-9 pr-3 py-2 text-xs border border-stone-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                      />
+                    </div>
+                    <div className="flex gap-2">
                     <button
                       onClick={() => { const m = {}; clsAttendanceStudents.forEach(s => m[s.id] = 'present'); setAttendanceMap(m); }}
                       className="text-xs px-3 py-1.5 bg-emerald-100 text-emerald-700 rounded-lg font-medium hover:bg-emerald-200"
@@ -2762,9 +2849,10 @@ const AdminDashboard = () => {
                       onClick={() => { const m = {}; clsAttendanceStudents.forEach(s => m[s.id] = 'absent'); setAttendanceMap(m); }}
                       className="text-xs px-3 py-1.5 bg-red-100 text-red-700 rounded-lg font-medium hover:bg-red-200"
                     >All Absent</button>
+                    </div>
                   </div>
                   <div className="divide-y divide-stone-50">
-                    {clsAttendanceStudents.map((s) => (
+                    {visibleAttendanceStudents.map((s) => (
                       <div key={s.id} className="p-4 flex items-center justify-between">
                         <div className="flex items-center gap-3">
                           <div className="w-9 h-9 bg-stone-100 rounded-xl flex items-center justify-center font-bold text-stone-600 flex-shrink-0">
@@ -2794,6 +2882,9 @@ const AdminDashboard = () => {
                         </div>
                       </div>
                     ))}
+                    {visibleAttendanceStudents.length === 0 && (
+                      <p className="text-sm text-stone-400 text-center py-8">No students match your search.</p>
+                    )}
                   </div>
                 </div>
               ) : (
