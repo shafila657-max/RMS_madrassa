@@ -104,12 +104,30 @@ const LandingPage = () => {
   const [leaderboardLoading, setLeaderboardLoading] = useState(true);
 
   useEffect(() => {
-    fetchFullLeaderboardData().then(res => {
-      if (res?.standings) {
-        setLeaderboardData(res.standings);
+    let alive = true;
+
+    const loadLeaderboard = async () => {
+      try {
+        const res = await fetchFullLeaderboardData();
+        if (alive) {
+          setLeaderboardData(res?.standings || []);
+        }
+      } catch (err) {
+        console.error(err);
+      } finally {
+        if (alive) {
+          setLeaderboardLoading(false);
+        }
       }
-    }).catch(err => console.error(err))
-      .finally(() => setLeaderboardLoading(false));
+    };
+
+    loadLeaderboard();
+    const timer = setInterval(loadLeaderboard, 30000);
+
+    return () => {
+      alive = false;
+      clearInterval(timer);
+    };
   }, []);
 
   // PWA install prompt

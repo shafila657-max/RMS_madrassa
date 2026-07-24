@@ -102,43 +102,58 @@ export function computeStudentLeaderboard({
  * Fetches all necessary data from Supabase and computes the leaderboard standings
  */
 export async function fetchFullLeaderboardData() {
-  try {
-    const [
-      { data: students },
-      { data: attendance },
-      { data: scores },
-      { data: tasks },
-      { data: disciplineRecords },
-      { data: profiles },
-      { data: settings },
-    ] = await Promise.all([
-      supabase.from('students').select('*'),
-      supabase.from('attendance').select('*'),
-      supabase.from('scores').select('*'),
-      supabase.from('student_tasks').select('*'),
-      supabase.from('discipline_records').select('*'),
-      supabase.from('profiles').select('id, full_name').eq('role', 'parent'),
-      supabase.from('leaderboard_settings').select('*').single(),
-    ]);
+  const results = await Promise.allSettled([
+    supabase.from('students').select('*'),
+    supabase.from('attendance').select('*'),
+    supabase.from('scores').select('*'),
+    supabase.from('student_tasks').select('*'),
+    supabase.from('discipline_records').select('*'),
+    supabase.from('profiles').select('id, full_name').eq('role', 'parent'),
+    supabase.from('leaderboard_settings').select('*').maybeSingle(),
+  ]);
 
-    const resetTimestamp = settings?.last_reset_at || null;
+  const readData = (result, label) => {
+    if (result.status === 'fulfilled') {
+      const { data, error } = result.value || {};
+      if (error) {
+        console.error(`Leaderboard ${label} query error:`, error);
+        return [];
+      }
+      return data || [];
+    }
 
-    const standings = computeStudentLeaderboard({
-      students: students || [],
-      attendance: attendance || [],
-      scores: scores || [],
-      tasks: tasks || [],
-      disciplineRecords: disciplineRecords || [],
-      profiles: profiles || [],
-      resetTimestamp,
-    });
+    console.error(`Leaderboard ${label} query failed:`, result.reason);
+    return [];
+  };
 
-    return {
-      standings,
-      resetTimestamp,
-    };
-  } catch (error) {
-    console.error('Error fetching leaderboard data:', error);
-    return { standings: [], resetTimestamp: null };
+  const students = readData(results[0], 'students');
+  const attendance = readData(results[1], 'attendance');
+  const scores = readData(results[2], 'scores');
+  const tasks = readData(results[3], 'tasks');
+  const disciplineRecords = readData(results[4], 'discipline');
+  const profiles = readData(results[5], 'profiles');
+
+  let resetTimestamp = null;
+  if (results[6].status === 'fulfilled') {
+    const { data: settings, error } = results[6].value || {};
+    if (error) {
+      console.error('Leaderboard settings query error:', error);
+    } else {
+      resetTimestamp = settings?.last_reset_at || null;
+    }
+  } else {
+    console.error('Leaderboard settings query failed:', results[6].reason);
   }
+
+  const standings = computeStudentLeaderboard({
+    students,
+    attendance,
+    scores,
+    tasks,
+    disciplineRecords,
+    profiles,
+    resetTimestamp,
+  });
+
+  return { standings, resetTimestamp };
 }

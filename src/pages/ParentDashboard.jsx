@@ -31,6 +31,29 @@ const ParentDashboard = () => {
   const [userId, setUserId] = useState(null);
 
   useEffect(() => { fetchChildren(); }, [session?.user?.id]);
+  useEffect(() => {
+    let alive = true;
+
+    const loadLeaderboard = async () => {
+      if (!session?.user) return;
+      try {
+        const { standings } = await fetchFullLeaderboardData();
+        if (alive) {
+          setLeaderboardStandings(standings || []);
+        }
+      } catch (error) {
+        console.error(error);
+      }
+    };
+
+    loadLeaderboard();
+    const timer = setInterval(loadLeaderboard, 30000);
+
+    return () => {
+      alive = false;
+      clearInterval(timer);
+    };
+  }, [session?.user?.id]);
 
   const fetchChildren = async () => {
     try {
@@ -49,9 +72,8 @@ const ParentDashboard = () => {
 
       if (error) throw error;
 
-      // Fetch full leaderboard rankings to get child rank & score breakdown
-      const { standings } = await fetchFullLeaderboardData();
-      setLeaderboardStandings(standings || []);
+      // Read a fresh snapshot for rank badges and child leaderboard cards.
+      const { standings: currentStandings } = await fetchFullLeaderboardData();
 
       const enriched = await Promise.all(
         (students || []).map(async (student) => {
@@ -77,7 +99,7 @@ const ParentDashboard = () => {
             ? Math.round((scores || []).reduce((s, sc) => s + (sc.marks_obtained / sc.total_marks) * 100, 0) / scores.length)
             : null;
 
-          const lbInfo = standings.find(s => s.id === student.id) || {
+          const lbInfo = currentStandings.find(s => s.id === student.id) || {
             rank: '—',
             totalPoints: 0,
             attendancePoints: 0,
