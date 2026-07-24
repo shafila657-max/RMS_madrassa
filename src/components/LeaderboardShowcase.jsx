@@ -186,7 +186,7 @@ const LeaderboardShowcase = ({
         </div>
       )}
 
-      <section className={`relative overflow-hidden ${isScreen ? 'bg-[linear-gradient(180deg,#dff7ee_0%,#c9eadb_46%,#b4d1c5_100%)] px-4 pb-20 pt-6 sm:pb-24 sm:pt-8' : 'bg-[linear-gradient(180deg,#eff9f5_0%,#d9eee4_100%)] px-4 pb-20 pt-4 sm:pb-20'}`}>
+      <section className={`relative z-10 overflow-hidden ${isScreen ? 'bg-[linear-gradient(180deg,#dff7ee_0%,#c9eadb_46%,#b4d1c5_100%)] px-4 pb-20 pt-6 sm:pb-24 sm:pt-8' : 'bg-[linear-gradient(180deg,#eff9f5_0%,#d9eee4_100%)] px-4 pb-20 pt-4 sm:pb-20'}`}>
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(255,255,255,0.45),transparent_35%),radial-gradient(circle_at_top_right,rgba(255,255,255,0.32),transparent_28%)]" />
         <div className={`relative mx-auto max-w-md sm:max-w-2xl ${isScreen ? 'pt-28 sm:pt-32' : 'pt-20 sm:pt-24'}`}>
           <div className="grid grid-cols-3 items-end gap-2 sm:gap-4">
@@ -197,9 +197,9 @@ const LeaderboardShowcase = ({
         </div>
       </section>
 
-      <section className={`px-4 pb-[max(env(safe-area-inset-bottom),1rem)] ${isScreen ? '-mt-10 sm:-mt-12' : '-mt-8 sm:-mt-10'}`}>
+      <section className={`relative z-20 px-4 pb-[max(env(safe-area-inset-bottom),1rem)] ${isScreen ? '-mt-10 sm:-mt-12' : '-mt-8 sm:-mt-10'}`}>
         <div className={`overflow-hidden rounded-t-[2rem] rounded-b-[2rem] bg-white shadow-[0_-18px_50px_rgba(15,23,42,0.15)] ring-1 ring-slate-200 ${!isScreen ? 'mx-auto max-w-md sm:max-w-2xl' : ''}`}>
-          <div className="px-4 pt-4">
+          <div className="px-4 pt-6">
             <div className="mx-auto flex max-w-sm items-center justify-between rounded-full bg-emerald-700 p-1 shadow-sm">
               {filterTabs.map(tab => {
                 const active = activeTab === tab.id;
@@ -220,7 +220,7 @@ const LeaderboardShowcase = ({
           </div>
 
           <div className="mt-4 divide-y divide-slate-200">
-            {rankedList.length > 0 ? rankedList.map((student, index) => {
+            {rankedList.map((student, index) => {
               const rank = index + 4;
               const isHighlighted = highlighted.has(student.id);
               return (
@@ -250,11 +250,7 @@ const LeaderboardShowcase = ({
                   </div>
                 </div>
               );
-            }) : (
-              <div className="px-4 py-12 text-center text-sm text-slate-400">
-                No ranked list available
-              </div>
-            )}
+            })}
           </div>
         </div>
       </section>
