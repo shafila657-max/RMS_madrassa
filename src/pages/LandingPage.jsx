@@ -3,7 +3,7 @@ import { motion } from 'framer-motion';
 import {
   BookOpen, Users, Award, GraduationCap, ArrowRight,
   Sparkles, HeartHandshake, Briefcase, QrCode,
-  Play, Image as ImageIcon, Download, Trophy, Crown, Medal, User
+  Play, Image as ImageIcon, Download
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { Link } from 'react-router-dom';
@@ -286,139 +286,10 @@ const LandingPage = () => {
       </section>
 
       {/* ── HALL OF FAME LEADERBOARD ────────────────────────────────────────────── */}
-      <section className="py-24 bg-gradient-to-b from-stone-900 via-stone-900 to-emerald-950 text-white section-lazy">
+      <section className="py-8 text-white section-lazy">
         <div className="container mx-auto px-6 md:px-12">
-          <motion.div
-            variants={fadeUp} initial="hidden" whileInView="visible" viewport={VIEWPORT}
-            className="text-center max-w-3xl mx-auto mb-16"
-          >
-            <div className="inline-flex items-center gap-2 bg-amber-500/20 border border-amber-500/30 px-4 py-1.5 rounded-full text-xs text-amber-300 font-bold mb-4">
-              <Trophy className="w-4 h-4 text-amber-400" /> Madrasa Hall of Fame
-            </div>
-            <h2 className="font-heading text-4xl md:text-5xl text-white mb-4">Top Performing Students</h2>
-            <p className="text-stone-300 text-base leading-relaxed">
-              Recognizing excellence in Attendance, Exam Performance, Homework Completion, and Discipline.
-            </p>
-          </motion.div>
-
           {leaderboardData.length > 0 ? (
-            <>
-              <LeaderboardShowcase standings={leaderboardData} />
-              <div className="hidden">
-            <div className="space-y-16">
-              {/* TOP 3 PODIUM */}
-              <div className="grid md:grid-cols-3 gap-8 items-end max-w-5xl mx-auto">
-                {/* RANK 2 (Silver) */}
-                {leaderboardData[1] && (
-                  <motion.div
-                    variants={fadeUp} initial="hidden" whileInView="visible" viewport={VIEWPORT}
-                    className="order-2 md:order-1 bg-white/10 backdrop-blur-md border border-white/20 rounded-3xl p-6 text-center flex flex-col items-center relative shadow-xl"
-                  >
-                    <div className="bg-slate-300 text-slate-900 text-xs font-extrabold px-3.5 py-1 rounded-full mb-4 flex items-center gap-1">
-                      <Medal className="w-4 h-4 text-slate-700" /> RANK #2
-                    </div>
-                    <div className="w-24 h-24 rounded-full bg-stone-800 border-4 border-slate-300 overflow-hidden mb-4 shadow-lg flex items-center justify-center">
-                      {leaderboardData[1].photo_url ? (
-                        <img src={leaderboardData[1].photo_url} alt={leaderboardData[1].full_name} className="w-full h-full object-cover" />
-                      ) : (
-                        <User className="w-12 h-12 text-slate-400" />
-                      )}
-                    </div>
-                    <h3 className="font-heading text-xl font-bold text-white mb-1">{leaderboardData[1].full_name}</h3>
-                    <p className="text-xs text-emerald-300 font-medium mb-2">Father: {leaderboardData[1].parent_name}</p>
-                    <span className="text-xs bg-white/10 px-3 py-0.5 rounded-full text-stone-200 border border-white/10 mb-4">{leaderboardData[1].class_level}</span>
-                    <div className="w-full pt-3 border-t border-white/10 text-amber-300 font-black text-2xl">
-                      {leaderboardData[1].totalPoints} <span className="text-xs text-stone-300 font-normal">pts</span>
-                    </div>
-                  </motion.div>
-                )}
-
-                {/* RANK 1 (Gold) */}
-                {leaderboardData[0] && (
-                  <motion.div
-                    variants={fadeUp} initial="hidden" whileInView="visible" viewport={VIEWPORT}
-                    className="order-1 md:order-2 bg-gradient-to-b from-amber-500/20 to-white/10 backdrop-blur-md border-2 border-amber-400/80 rounded-3xl p-8 text-center flex flex-col items-center relative shadow-2xl md:-mt-6"
-                  >
-                    <div className="bg-amber-400 text-amber-950 text-xs font-black px-4 py-1.5 rounded-full mb-4 flex items-center gap-1.5 shadow-lg">
-                      <Crown className="w-4 h-4 text-amber-950" /> 🏆 RANK #1 (GOLD)
-                    </div>
-                    <div className="w-28 h-28 rounded-full bg-stone-900 border-4 border-amber-400 overflow-hidden mb-4 shadow-2xl flex items-center justify-center">
-                      {leaderboardData[0].photo_url ? (
-                        <img src={leaderboardData[0].photo_url} alt={leaderboardData[0].full_name} className="w-full h-full object-cover" />
-                      ) : (
-                        <User className="w-14 h-14 text-amber-400" />
-                      )}
-                    </div>
-                    <h3 className="font-heading text-2xl font-bold text-white mb-1">{leaderboardData[0].full_name}</h3>
-                    <p className="text-sm text-amber-300 font-bold mb-2">Father: {leaderboardData[0].parent_name}</p>
-                    <span className="text-xs bg-amber-400/20 text-amber-200 border border-amber-400/40 px-3.5 py-0.5 rounded-full font-bold mb-4">{leaderboardData[0].class_level}</span>
-                    <div className="w-full pt-4 border-t border-amber-400/30 text-amber-400 font-black text-3xl">
-                      {leaderboardData[0].totalPoints} <span className="text-xs text-stone-200 font-normal">pts</span>
-                    </div>
-                  </motion.div>
-                )}
-
-                {/* RANK 3 (Bronze) */}
-                {leaderboardData[2] && (
-                  <motion.div
-                    variants={fadeUp} initial="hidden" whileInView="visible" viewport={VIEWPORT}
-                    className="order-3 bg-white/10 backdrop-blur-md border border-white/20 rounded-3xl p-6 text-center flex flex-col items-center relative shadow-xl"
-                  >
-                    <div className="bg-amber-800 text-amber-100 text-xs font-extrabold px-3.5 py-1 rounded-full mb-4 flex items-center gap-1">
-                      <Medal className="w-4 h-4 text-amber-300" /> RANK #3
-                    </div>
-                    <div className="w-24 h-24 rounded-full bg-stone-800 border-4 border-amber-700/60 overflow-hidden mb-4 shadow-lg flex items-center justify-center">
-                      {leaderboardData[2].photo_url ? (
-                        <img src={leaderboardData[2].photo_url} alt={leaderboardData[2].full_name} className="w-full h-full object-cover" />
-                      ) : (
-                        <User className="w-12 h-12 text-amber-600" />
-                      )}
-                    </div>
-                    <h3 className="font-heading text-xl font-bold text-white mb-1">{leaderboardData[2].full_name}</h3>
-                    <p className="text-xs text-emerald-300 font-medium mb-2">Father: {leaderboardData[2].parent_name}</p>
-                    <span className="text-xs bg-white/10 px-3 py-0.5 rounded-full text-stone-200 border border-white/10 mb-4">{leaderboardData[2].class_level}</span>
-                    <div className="w-full pt-3 border-t border-white/10 text-amber-300 font-black text-2xl">
-                      {leaderboardData[2].totalPoints} <span className="text-xs text-stone-300 font-normal">pts</span>
-                    </div>
-                  </motion.div>
-                )}
-              </div>
-
-              {/* TOP 4-10 STANDINGS TABLE */}
-              {leaderboardData.length > 3 && (
-                <div className="max-w-4xl mx-auto bg-white/5 border border-white/10 rounded-2xl p-6 backdrop-blur-sm">
-                  <h4 className="font-bold text-base text-stone-200 mb-4 flex items-center gap-2">
-                    <Trophy className="w-4 h-4 text-amber-400" /> Top Ranked Performers
-                  </h4>
-                  <div className="overflow-x-auto">
-                    <table className="w-full text-left text-xs">
-                      <thead>
-                        <tr className="border-b border-white/10 text-stone-400 uppercase tracking-wider">
-                          <th className="py-2.5 px-3">Rank</th>
-                          <th className="py-2.5 px-3">Student Name</th>
-                          <th className="py-2.5 px-3">Father Name</th>
-                          <th className="py-2.5 px-3">Class</th>
-                          <th className="py-2.5 px-3 text-right">Total Points</th>
-                        </tr>
-                      </thead>
-                      <tbody className="divide-y divide-white/5 text-stone-200">
-                        {leaderboardData.slice(3, 10).map((s) => (
-                          <tr key={s.id} className="hover:bg-white/5 transition-colors">
-                            <td className="py-2.5 px-3 font-bold text-amber-300">#{s.rank}</td>
-                            <td className="py-2.5 px-3 font-semibold">{s.full_name}</td>
-                            <td className="py-2.5 px-3 text-stone-400">{s.parent_name}</td>
-                            <td className="py-2.5 px-3"><span className="bg-white/10 px-2 py-0.5 rounded text-[11px]">{s.class_level}</span></td>
-                            <td className="py-2.5 px-3 text-right font-black text-emerald-400">{s.totalPoints} pts</td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
-                </div>
-              )}
-            </div>
-              </div>
-            </>
+            <LeaderboardShowcase standings={leaderboardData} />
           ) : leaderboardLoading ? (
             <p className="text-center text-stone-400 text-sm animate-pulse">Leaderboard standings updating...</p>
           ) : (
