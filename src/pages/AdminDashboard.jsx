@@ -936,7 +936,7 @@ const AdminDashboard = () => {
         </div>
       </header>
 
-      <div className="max-w-6xl mx-auto px-4 py-6">
+      <div className={`max-w-6xl mx-auto px-4 ${isTeacher ? 'py-2 md:py-6' : 'py-6'}`}>
         <AnimatePresence mode="wait">
 
           {/* ── OVERVIEW ── */}
@@ -2325,7 +2325,7 @@ const AdminDashboard = () => {
       {/* LEAVES TAB                                                     */}
       {/* ══════════════════════════════════════════════════════════════ */}
       {activeTab === 'classes' && (
-        <div className={`max-w-6xl mx-auto px-4 space-y-4 md:space-y-6 ${isTeacher ? 'py-4 md:py-8' : 'py-8'}`}>
+        <div className={`max-w-6xl mx-auto px-4 space-y-4 md:space-y-6 ${isTeacher ? 'py-0 md:py-8' : 'py-8'}`}>
           <div className={`flex items-center justify-between ${isTeacher ? 'hidden md:flex' : ''}`}>
             <div>
               <h2 className="font-bold text-xl text-stone-900">Class Level Management</h2>

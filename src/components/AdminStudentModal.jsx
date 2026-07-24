@@ -29,7 +29,9 @@ const AdminStudentModal = ({ student, parents = [], open, onClose, onRefresh }) 
   const [tasks, setTasks] = useState([]);
 
   // Edit Profile Form
-  const [profileForm, setProfileForm] = useState({ full_name: '', class_level: '', admission_date: '', user_id: '' });
+  const [profileForm, setProfileForm] = useState({ full_name: '', class_level: '', admission_date: '', user_id: '', photo_url: '' });
+  const [photoFile, setPhotoFile] = useState(null);
+  const [photoPreview, setPhotoPreview] = useState('');
   const [savingProfile, setSavingProfile] = useState(false);
 
   // Attendance Form
@@ -85,6 +87,8 @@ const AdminStudentModal = ({ student, parents = [], open, onClose, onRefresh }) 
         status: sData?.status || 'active',
         photo_url: sData?.photo_url || '',
       });
+      setPhotoFile(null);
+      setPhotoPreview(sData?.photo_url || '');
       setAttendance(attData || []);
       setScores(scData || []);
       setFees(feeData || []);
@@ -110,6 +114,21 @@ const AdminStudentModal = ({ student, parents = [], open, onClose, onRefresh }) 
   const handleUpdateProfile = async () => {
     setSavingProfile(true);
     try {
+      let photoUrl = profileForm.photo_url || null;
+
+      if (photoFile) {
+        const fileExt = photoFile.name.split('.').pop()?.toLowerCase() || 'jpg';
+        const filePath = `students/${student.id}-${Date.now()}.${fileExt}`;
+        const { error: uploadError } = await supabase.storage
+          .from('gallery')
+          .upload(filePath, photoFile, { upsert: true, contentType: photoFile.type });
+
+        if (uploadError) throw uploadError;
+
+        const { data: publicUrlData } = supabase.storage.from('gallery').getPublicUrl(filePath);
+        photoUrl = publicUrlData.publicUrl;
+      }
+
       const { error } = await supabase
         .from('students')
         .update({
@@ -118,7 +137,7 @@ const AdminStudentModal = ({ student, parents = [], open, onClose, onRefresh }) 
           admission_date: profileForm.admission_date || null,
           user_id: profileForm.user_id || null,
           status: profileForm.status || 'active',
-          photo_url: profileForm.photo_url || null,
+          photo_url: photoUrl,
         })
         .eq('id', student.id);
 
@@ -437,14 +456,44 @@ const AdminStudentModal = ({ student, parents = [], open, onClose, onRefresh }) 
                         </div>
 
                         <div>
-                          <label className="block text-xs font-medium text-stone-700 mb-1">Student Photo URL</label>
-                          <input
-                            type="url"
-                            placeholder="https://... image link"
-                            value={profileForm.photo_url || ''}
-                            onChange={e => setProfileForm(f => ({ ...f, photo_url: e.target.value }))}
-                            className="w-full border border-stone-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
-                          />
+                          <label className="block text-xs font-medium text-stone-700 mb-1">Student Photo <span className="text-stone-400 font-normal">(Optional)</span></label>
+                          <div className="flex items-center gap-3">
+                            <div className="w-14 h-14 rounded-xl bg-stone-100 border border-stone-200 overflow-hidden flex items-center justify-center flex-shrink-0">
+                              {photoPreview ? (
+                                <img src={photoPreview} alt="Student preview" className="w-full h-full object-cover" />
+                              ) : (
+                                <User className="w-6 h-6 text-stone-300" />
+                              )}
+                            </div>
+                            <div className="min-w-0 flex-1">
+                              <input
+                                id="student-photo-upload"
+                                type="file"
+                                accept="image/*"
+                                onChange={e => {
+                                  const file = e.target.files?.[0];
+                                  if (!file) return;
+                                  setPhotoFile(file);
+                                  setPhotoPreview(URL.createObjectURL(file));
+                                }}
+                                className="block w-full text-xs text-stone-500 file:mr-2 file:rounded-lg file:border-0 file:bg-emerald-50 file:px-3 file:py-2 file:text-xs file:font-semibold file:text-emerald-700 hover:file:bg-emerald-100"
+                              />
+                              <p className="text-[10px] text-stone-400 mt-1">Choose an image from your device. You can leave this empty.</p>
+                              {(photoPreview || profileForm.photo_url) && (
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    setPhotoFile(null);
+                                    setPhotoPreview('');
+                                    setProfileForm(f => ({ ...f, photo_url: '' }));
+                                  }}
+                                  className="text-[10px] text-red-600 font-semibold hover:underline mt-1"
+                                >
+                                  Remove photo
+                                </button>
+                              )}
+                            </div>
+                          </div>
                         </div>
 
                         <div>
