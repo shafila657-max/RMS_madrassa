@@ -449,8 +449,9 @@ const LandingPage = () => {
             <div>
               <h4 className="font-heading text-lg mb-4 text-emerald-400">Contact</h4>
               <ul className="space-y-2 text-sm text-stone-400">
-                <li>123 Madrasa Street</li>
-                <li>City, State 12345</li>
+                <li>Vilayil,</li>
+                <li>673641,</li>
+                <li>Malappuram,kerala</li>
                 <li>contact@rmsmadrasa.edu</li>
                 <li>(123) 456-7890</li>
               </ul>
