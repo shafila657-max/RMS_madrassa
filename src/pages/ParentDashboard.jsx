@@ -6,8 +6,9 @@ import {
   Calendar, TrendingUp, DollarSign, Award, Bell, Megaphone, AlertTriangle, Trophy, ShieldCheck, X
 } from 'lucide-react';
 import { toast } from 'sonner';
-import { logout, getCachedProfile, clearCachedProfile } from '@/utils/auth';
+import { logout, clearCachedProfile } from '@/utils/auth';
 import { supabase } from '@/lib/supabase';
+import { useAuth } from '@/context/AuthContext';
 import { fetchFullLeaderboardData } from '@/utils/leaderboard';
 import {
   filterAnnouncementsForParent,
@@ -18,7 +19,7 @@ import {
 
 const ParentDashboard = () => {
   const navigate = useNavigate();
-  const profile = getCachedProfile();
+  const { session, profile } = useAuth();
   const [children, setChildren] = useState([]);
   const [announcements, setAnnouncements] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -27,12 +28,11 @@ const ParentDashboard = () => {
   const [showNotifications, setShowNotifications] = useState(false);
   const [userId, setUserId] = useState(null);
 
-  useEffect(() => { fetchChildren(); }, []);
+  useEffect(() => { fetchChildren(); }, [session?.user?.id]);
 
   const fetchChildren = async () => {
     try {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) { navigate('/login'); return; }
+      if (!session?.user) return;
       
       setUserId(session.user.id);
       const storedDismissed = JSON.parse(localStorage.getItem(`dismissed_notifs_${session.user.id}`) || '[]');

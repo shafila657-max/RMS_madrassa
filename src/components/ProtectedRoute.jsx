@@ -1,75 +1,13 @@
-import React, { useEffect, useState } from 'react';
+import React from 'react';
 import { Navigate } from 'react-router-dom';
-import { supabase } from '@/lib/supabase';
-import { setCachedProfile, clearCachedProfile } from '@/utils/auth';
+import { useAuth } from '@/context/AuthContext';
 
 /**
  * Route protection wrapper component
  * Verifies active session, user profile, status, and role.
  */
 const ProtectedRoute = ({ children, allowedRoles = [] }) => {
-  const [loading, setLoading] = useState(true);
-  const [authorized, setAuthorized] = useState(false);
-  const [userRole, setUserRole] = useState(null);
-
-  useEffect(() => {
-    let isMounted = true;
-
-    const checkAuth = async () => {
-      try {
-        const { data: { session } } = await supabase.auth.getSession();
-
-        if (!session?.user) {
-          if (isMounted) {
-            clearCachedProfile();
-            setAuthorized(false);
-            setLoading(false);
-          }
-          return;
-        }
-
-        // Fetch user profile from Supabase
-        const { data: profile, error } = await supabase
-          .from('profiles')
-          .select('*')
-          .eq('id', session.user.id)
-          .single();
-
-        if (error || !profile) {
-          if (isMounted) {
-            setAuthorized(false);
-            setLoading(false);
-          }
-          return;
-        }
-
-        // Cache valid profile
-        setCachedProfile(profile);
-
-        // Check status approval (teachers and approved users pass)
-        const isApproved = profile.status === 'approved' || profile.role === 'teacher';
-        const roleAllowed = allowedRoles.length === 0 || allowedRoles.includes(profile.role);
-
-        if (isMounted) {
-          setUserRole(profile.role);
-          setAuthorized(isApproved && roleAllowed);
-          setLoading(false);
-        }
-      } catch (err) {
-        console.error('ProtectedRoute check error:', err);
-        if (isMounted) {
-          setAuthorized(false);
-          setLoading(false);
-        }
-      }
-    };
-
-    checkAuth();
-
-    return () => {
-      isMounted = false;
-    };
-  }, [allowedRoles]);
+  const { session, profile, loading } = useAuth();
 
   if (loading) {
     return (
@@ -82,12 +20,27 @@ const ProtectedRoute = ({ children, allowedRoles = [] }) => {
     );
   }
 
-  if (!authorized) {
+  if (!session?.user) {
+    return <Navigate to="/login" replace />;
+  }
+
+  if (!profile) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-stone-50 p-6 text-center">
+        <p className="text-sm font-semibold text-stone-600">We’re having trouble loading your account. Please try again.</p>
+      </div>
+    );
+  }
+
+  const isApproved = profile.status === 'approved' || profile.role === 'teacher';
+  const roleAllowed = allowedRoles.length === 0 || allowedRoles.includes(profile.role);
+
+  if (!isApproved || !roleAllowed) {
     // Redirect based on role if logged in, otherwise send to login
-    if (userRole === 'admin' || userRole === 'teacher') {
+    if (profile.role === 'admin' || profile.role === 'teacher') {
       return <Navigate to="/admin" replace />;
     }
-    if (userRole === 'parent') {
+    if (profile.role === 'parent') {
       return <Navigate to="/parent" replace />;
     }
     return <Navigate to="/login" replace />;

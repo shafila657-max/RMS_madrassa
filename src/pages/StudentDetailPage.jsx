@@ -9,6 +9,7 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { supabase } from '@/lib/supabase';
+import { useAuth } from '@/context/AuthContext';
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 const getGrade = (pct) => {
@@ -37,6 +38,7 @@ const RingProgress = ({ value, size = 80, stroke = 7, color = '#fff' }) => {
 const StudentDetailPage = () => {
   const { studentId } = useParams();
   const navigate = useNavigate();
+  const { session } = useAuth();
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('overview');
@@ -51,12 +53,11 @@ const StudentDetailPage = () => {
   const [classLevel, setClassLevel] = useState('');
   const [studentIdState, setStudentIdState] = useState(null);
 
-  useEffect(() => { fetchStudentData(); }, [studentId]);
+  useEffect(() => { fetchStudentData(); }, [studentId, session?.user?.id]);
 
   const fetchStudentData = async () => {
     try {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) { navigate('/login'); return; }
+      if (!session?.user) return;
 
       // Security: verify this student belongs to the logged-in parent
       const { data: student, error: sErr } = await supabase

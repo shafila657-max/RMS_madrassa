@@ -12,11 +12,13 @@ import ResetPasswordPage from './pages/ResetPasswordPage';
 import ProtectedRoute from './components/ProtectedRoute';
 import { Toaster } from './components/ui/toaster';
 import PWAInstallPrompt from './components/PWAInstallPrompt';
+import AuthProvider from './context/AuthContext';
 
 function App() {
     return (
         <Router>
-            <div className="App">
+            <AuthProvider>
+              <div className="App">
                 <Routes>
                     <Route path="/" element={<LandingPage />} />
                     <Route path="/login" element={<LoginPage />} />
@@ -52,7 +54,8 @@ function App() {
                 </Routes>
                 <Toaster />
                 <PWAInstallPrompt />
-            </div>
+              </div>
+            </AuthProvider>
         </Router>
     );
 }

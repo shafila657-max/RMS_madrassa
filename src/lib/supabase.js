@@ -11,5 +11,13 @@ if (!supabaseUrl || !supabaseAnonKey) {
 
 export const supabase = createClient(
   supabaseUrl || 'https://placeholder.supabase.co',
-  supabaseAnonKey || 'placeholder_key'
+  supabaseAnonKey || 'placeholder_key',
+  {
+    auth: {
+      // Keep users signed in across browser/PWA restarts and refresh tokens automatically.
+      persistSession: true,
+      autoRefreshToken: true,
+      detectSessionInUrl: true,
+    },
+  }
 );
