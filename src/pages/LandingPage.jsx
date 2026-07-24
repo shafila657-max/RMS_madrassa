@@ -287,9 +287,9 @@ const LandingPage = () => {
 
       {/* ── HALL OF FAME LEADERBOARD ────────────────────────────────────────────── */}
       <section className="py-8 text-white section-lazy">
-        <div className="container mx-auto px-6 md:px-12">
+        <div className="mx-auto w-full px-0">
           {leaderboardData.length > 0 ? (
-            <LeaderboardShowcase standings={leaderboardData} />
+            <LeaderboardShowcase standings={leaderboardData} variant="screen" title="Top Performers" />
           ) : leaderboardLoading ? (
             <p className="text-center text-stone-400 text-sm animate-pulse">Leaderboard standings updating...</p>
           ) : (
