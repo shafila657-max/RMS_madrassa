@@ -2456,13 +2456,24 @@ const AdminDashboard = () => {
                   {clsStudents.map(s => {
                     const attStatus = classAttendanceMap[s.id] || 'unmarked';
                     return (
-                      <div key={s.id} className="border border-stone-200 rounded-2xl p-4 flex flex-col gap-3 bg-stone-50/50 hover:bg-stone-50 transition-colors">
+                      <div
+                        key={s.id}
+                        role="button"
+                        tabIndex={0}
+                        onClick={() => { setSelectedStudent(s); setShow360Modal(true); }}
+                        onKeyDown={e => {
+                          if (e.key === 'Enter' || e.key === ' ') {
+                            e.preventDefault();
+                            setSelectedStudent(s);
+                            setShow360Modal(true);
+                          }
+                        }}
+                        className="border border-stone-200 rounded-2xl p-4 flex flex-col gap-3 bg-stone-50/50 hover:bg-emerald-50 hover:border-emerald-200 cursor-pointer transition-colors focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                      >
                         <div className="flex justify-between items-start">
                           <div>
                             <h5 className="font-bold text-stone-900 text-sm mb-0.5 line-clamp-1">{s.full_name}</h5>
-                            <button onClick={() => { setSelectedStudent(s); setShow360Modal(true); }} className="text-[10px] font-bold text-emerald-600 hover:underline">
-                              View 360° Profile
-                            </button>
+                            <p className="text-[10px] font-medium text-emerald-600">Click to view profile</p>
                           </div>
                           <span className={`text-[9px] font-bold px-2 py-0.5 rounded-full uppercase ${s.status === 'active' ? 'bg-emerald-100 text-emerald-700' : 'bg-stone-200 text-stone-600'}`}>
                             {s.status}
@@ -2470,13 +2481,13 @@ const AdminDashboard = () => {
                         </div>
                         <div className="flex gap-2 pt-2 border-t border-stone-100">
                           <button
-                            onClick={() => setClassAttendanceMap(m => ({ ...m, [s.id]: 'present' }))}
+                            onClick={e => { e.stopPropagation(); setClassAttendanceMap(m => ({ ...m, [s.id]: 'present' })); }}
                             className={`flex-1 py-1.5 rounded-xl text-xs font-bold transition-all ${attStatus === 'present' ? 'bg-emerald-500 text-white shadow-md' : 'bg-white border border-stone-200 text-stone-500 hover:bg-stone-100'}`}
                           >
                             Present
                           </button>
                           <button
-                            onClick={() => setClassAttendanceMap(m => ({ ...m, [s.id]: 'absent' }))}
+                            onClick={e => { e.stopPropagation(); setClassAttendanceMap(m => ({ ...m, [s.id]: 'absent' })); }}
                             className={`flex-1 py-1.5 rounded-xl text-xs font-bold transition-all ${attStatus === 'absent' ? 'bg-red-500 text-white shadow-md' : 'bg-white border border-stone-200 text-stone-500 hover:bg-stone-100'}`}
                           >
                             Absent
