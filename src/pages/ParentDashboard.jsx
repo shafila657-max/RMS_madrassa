@@ -365,7 +365,7 @@ const ParentDashboard = () => {
               <LeaderboardShowcase
                 standings={leaderboardStandings}
                 highlightIds={children.map(child => child.id)}
-                title="Your Students & Top Performers"
+                title="Top Performers"
               />
             )}
             <h2 className="text-base font-bold text-stone-900">Enrolled Children ({children.length})</h2>

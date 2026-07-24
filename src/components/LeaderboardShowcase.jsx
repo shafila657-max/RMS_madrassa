@@ -5,7 +5,7 @@ const podium = [
   {
     rank: 3,
     label: 'THIRD',
-    card: 'order-1 bg-white/10 border-emerald-400/50 md:translate-y-6',
+    card: 'order-1 bg-white/10 border-emerald-400/50',
     badge: 'bg-emerald-400/90 text-emerald-950',
     ring: 'border-emerald-400',
     points: 'text-emerald-300'
@@ -13,7 +13,7 @@ const podium = [
   {
     rank: 1,
     label: 'CHAMPION',
-    card: 'order-2 bg-gradient-to-b from-amber-500/25 to-white/10 border-amber-400/70 md:-translate-y-3',
+    card: 'order-2 bg-gradient-to-b from-amber-500/25 to-white/10 border-amber-400/70',
     badge: 'bg-amber-400 text-amber-950',
     ring: 'border-amber-400',
     points: 'text-amber-300'
@@ -21,7 +21,7 @@ const podium = [
   {
     rank: 2,
     label: 'SECOND',
-    card: 'order-3 bg-white/10 border-white/15 md:translate-y-6',
+    card: 'order-3 bg-white/10 border-white/15',
     badge: 'bg-slate-300 text-slate-900',
     ring: 'border-sky-400',
     points: 'text-sky-300'
@@ -63,13 +63,20 @@ const LeaderboardShowcase = ({ standings = [], highlightIds = [], title = 'Top P
           const student = standings[rank - 1];
           if (!student) return <div key={rank} />;
           const isChampion = rank === 1;
+          const stageHeight = isChampion
+            ? 'min-h-[250px] sm:min-h-[290px]'
+            : rank === 2
+            ? 'min-h-[205px] sm:min-h-[235px]'
+            : 'min-h-[190px] sm:min-h-[220px]';
           return (
             <div
               key={student.id}
               className={`rounded-2xl border p-3 sm:p-4 text-center min-w-0 shadow-lg ${
-                isChampion ? 'pb-6 sm:pb-7 min-h-[240px] sm:min-h-[270px]' : 'pb-4 sm:pb-5 min-h-[210px] sm:min-h-[230px]'
+                isChampion ? 'pb-6 sm:pb-7' : 'pb-4 sm:pb-5'
               } ${card}`}
+              style={{ height: '100%' }}
             >
+              <div className={`flex h-full flex-col ${stageHeight}`}>
               <span className={`inline-flex items-center gap-1 rounded-full px-2 py-1 text-[9px] font-black ${badge}`}>
                 {rank === 1 ? <Crown className="w-3 h-3" /> : <Medal className="w-3 h-3" />} #{rank}
               </span>
@@ -80,6 +87,7 @@ const LeaderboardShowcase = ({ standings = [], highlightIds = [], title = 'Top P
               <p className="text-[10px] text-stone-400 truncate mt-1">{student.class_level}</p>
               <p className={`font-black ${isChampion ? 'text-2xl sm:text-3xl mt-3' : 'text-lg sm:text-xl mt-2'} ${points}`}>{student.totalPoints}</p>
               <p className="text-[9px] text-stone-400">points</p>
+              </div>
             </div>
           );
         })}
