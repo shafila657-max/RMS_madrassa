@@ -508,11 +508,11 @@ const LandingPage = () => {
               </div>
               <Link
                 to="/gallery"
-                className="flex items-center gap-2 px-5 py-2.5 rounded-full bg-white/10 hover:bg-emerald-600 text-white text-sm font-semibold border border-white/10 hover:border-emerald-600 transition-colors group"
+                className="shrink-0 whitespace-nowrap flex items-center gap-1.5 sm:gap-2 px-3 sm:px-5 py-2 sm:py-2.5 rounded-full bg-white/10 hover:bg-emerald-600 text-white text-xs sm:text-sm font-semibold border border-white/10 hover:border-emerald-600 transition-colors group"
               >
-                <ImageIcon className="w-4 h-4" />
+                <ImageIcon className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
                 <span>View Gallery</span>
-                <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+                <ArrowRight className="w-3.5 h-3.5 sm:w-4 sm:h-4 group-hover:translate-x-1 transition-transform" />
               </Link>
             </div>
           </div>
