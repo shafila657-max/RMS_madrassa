@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import {
   GraduationCap, Search, Phone, MessageSquare, MapPin, Briefcase,
-  Building, BookOpen, Plus, Sparkles, Users, Award, Calendar, ChevronRight, ArrowLeft,
+  Building, Plus, Sparkles, Users, Award, Calendar, ChevronRight, ArrowLeft,
   X, CheckCircle2, RefreshCw, Send, Check, Lock, ShieldCheck, KeyRound, LogIn, AlertTriangle
 } from 'lucide-react';
 import { toast } from 'sonner';
@@ -20,7 +20,7 @@ const AlumniPage = () => {
   const [industryFilter, setIndustryFilter] = useState('All');
   const [showRegisterModal, setShowRegisterModal] = useState(false);
 
-  // Privacy & Auth Check
+  // Privacy & Auth Check. Directory details are only fetched for approved members.
   const [isApprovedAlumni, setIsApprovedAlumni] = useState(false);
   const [checkingAuth, setCheckingAuth] = useState(true);
   const [userStatusMsg, setUserStatusMsg] = useState('');
@@ -46,6 +46,7 @@ const AlumniPage = () => {
     try {
       const { data: { session } } = await supabase.auth.getSession();
       setCurrentUser(session?.user || null);
+      let directoryAccess = false;
 
       if (!session?.user) {
         setIsApprovedAlumni(false);
@@ -53,18 +54,22 @@ const AlumniPage = () => {
       } else {
         const uid = session.user.id;
 
-        // Check 1: Admin profile
+        // Any approved signed-in member (admin, parent, student, teacher, or alumni)
+        // can view the directory. Teachers are treated as approved by auth rules.
         const { data: prof } = await supabase
           .from('profiles')
-          .select('role')
+          .select('role, status')
           .eq('id', uid)
           .maybeSingle();
 
-        if (prof?.role === 'admin') {
+        const approvedMember = prof?.status === 'approved' || prof?.role === 'teacher';
+
+        if (approvedMember) {
+          directoryAccess = true;
           setIsApprovedAlumni(true);
-          setUserStatusMsg('admin');
+          setUserStatusMsg(prof.role === 'admin' ? 'admin' : 'approved');
         } else {
-          // Check 2: Alumni profile approved
+          // Alumni profiles are separately approved and may be linked to a parent/student account.
           const { data: alumProf } = await supabase
             .from('alumni_profiles')
             .select('status')
@@ -72,6 +77,7 @@ const AlumniPage = () => {
             .maybeSingle();
 
           if (alumProf?.status === 'approved') {
+            directoryAccess = true;
             setIsApprovedAlumni(true);
             setUserStatusMsg('approved');
           } else if (alumProf?.status === 'pending') {
@@ -91,14 +97,19 @@ const AlumniPage = () => {
         .order('event_date', { ascending: true });
       setEvents(eventsData || []);
 
-      // Fetch Alumni directory if accessible
-      const { data: alumniData } = await supabase
-        .from('alumni_profiles')
-        .select('*')
-        .eq('status', 'approved')
-        .order('created_at', { ascending: false });
+      // Never fetch directory records for guests, pending users, or unapproved accounts.
+      // The public page remains a showcase with registration and event actions only.
+      if (directoryAccess) {
+        const { data: alumniData } = await supabase
+          .from('alumni_profiles')
+          .select('*')
+          .eq('status', 'approved')
+          .order('created_at', { ascending: false });
 
-      setAlumniList(alumniData || []);
+        setAlumniList(alumniData || []);
+      } else {
+        setAlumniList([]);
+      }
     } catch (err) {
       console.error(err);
     } finally {
@@ -172,9 +183,7 @@ const AlumniPage = () => {
               <ArrowLeft className="w-4 h-4" />
             </button>
             <div className="flex items-center gap-2">
-              <div className="w-8 h-8 bg-emerald-600 rounded-xl flex items-center justify-center text-white">
-                <GraduationCap className="w-4 h-4" />
-              </div>
+              <img src="/apple-touch-icon.png" alt="RMS Madrasa" className="w-8 h-8 rounded-xl object-cover" />
               <div>
                 <p className="font-bold text-stone-900 text-sm leading-tight">RMS Alumni Community</p>
                 <p className="text-[10px] text-stone-400 leading-tight">Madrasa Network & Directory</p>
@@ -226,7 +235,7 @@ const AlumniPage = () => {
               </span>
               <h2 className="text-2xl font-extrabold text-stone-900 mt-2">Alumni Directory is Private</h2>
               <p className="text-stone-600 text-sm leading-relaxed mt-2 max-w-md mx-auto">
-                To protect our graduates' privacy, full contact numbers, WhatsApp links, and working details are <strong>only visible to verified & approved alumni</strong>.
+                To protect our graduates' privacy, alumni names, contact numbers, WhatsApp links, and working details are <strong>only visible to approved RMS members</strong>.
               </p>
             </div>
 
@@ -235,7 +244,7 @@ const AlumniPage = () => {
               <div className="p-4 bg-amber-50 rounded-2xl border border-amber-200 text-left flex items-start gap-3">
                 <AlertTriangle className="w-5 h-5 text-amber-600 flex-shrink-0 mt-0.5" />
                 <p className="text-xs text-amber-900 leading-relaxed">
-                  <strong>Approval Pending:</strong> Your alumni registration has been submitted and is currently being reviewed by the admin. Once approved, you will get instant full access.
+                  <strong>Approval Pending:</strong> Your alumni registration has been submitted and is currently being reviewed by the admin. Once approved, you will get access to the private directory.
                 </p>
               </div>
             )}
@@ -455,7 +464,7 @@ const AlumniPage = () => {
               <button
                 onClick={() => {
                   if (!isApprovedAlumni) {
-                    toast.error('Directory access is exclusive to approved alumni & admins');
+                    toast.error('Directory access is limited to approved RMS members');
                     return;
                   }
                   setShowMentorsModal(true);

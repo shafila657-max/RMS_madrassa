@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate, useSearchParams, Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { BookOpen, UserPlus } from 'lucide-react';
+import { UserPlus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -50,7 +50,7 @@ const RegisterPage = () => {
         <div className="bg-white rounded-xl p-8 border border-stone-200 shadow-lg">
           <div className="text-center mb-8">
             <div className="flex items-center justify-center gap-2 mb-4">
-              <BookOpen className="w-8 h-8 text-primary" />
+              <img src="/apple-touch-icon.png" alt="RMS Madrasa" className="w-10 h-10 rounded-xl object-cover" />
               <span className="font-heading text-2xl font-bold text-stone-900">RMS Madrasa</span>
             </div>
             <h2 className="font-heading text-3xl text-stone-900 mb-2">

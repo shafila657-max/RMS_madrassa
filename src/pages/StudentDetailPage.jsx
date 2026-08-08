@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate, useParams } from 'react-router-dom';
 import {
-  BookOpen, ArrowLeft, Calendar, Award, TrendingUp,
+  ArrowLeft, Calendar, Award, TrendingUp,
   DollarSign, BarChart2, CheckCircle2, Clock, AlertCircle, Star,
   Bell, Megaphone, AlertTriangle, ListTodo, Check,
   Table, BookMarked, Phone, FileText, Settings2, UserRound
@@ -212,9 +212,7 @@ const StudentDetailPage = () => {
             <ArrowLeft className="w-4 h-4" />
           </button>
           <div className="flex items-center gap-2 flex-1 min-w-0">
-            <div className="w-7 h-7 bg-emerald-600 rounded-lg flex items-center justify-center flex-shrink-0">
-              <BookOpen className="w-3.5 h-3.5 text-white" />
-            </div>
+            <img src="/apple-touch-icon.png" alt="RMS Madrasa" className="w-7 h-7 rounded-lg object-cover flex-shrink-0" />
             <div className="min-w-0">
               <p className="font-bold text-stone-900 text-sm truncate">{student.full_name}</p>
               <p className="text-xs text-stone-400 truncate">{student.class_level}</p>

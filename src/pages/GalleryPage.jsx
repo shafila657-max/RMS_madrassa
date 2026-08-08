@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { BookOpen, Play, X, ArrowLeft, ArrowRight, Image as ImageIcon } from 'lucide-react';
+import { Play, X, ArrowLeft, ArrowRight, Image as ImageIcon } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 
 // Helper to extract YouTube video ID
@@ -70,7 +70,7 @@ export default function GalleryPage() {
       <header className="sticky top-0 z-40 bg-white/80 backdrop-blur-xl border-b border-stone-200">
         <div className="container mx-auto px-6 py-4 flex items-center justify-between">
           <Link to="/" className="flex items-center gap-2">
-            <BookOpen className="w-7 h-7 text-emerald-600" />
+            <img src="/apple-touch-icon.png" alt="RMS Madrasa" className="w-8 h-8 rounded-lg object-cover" />
             <span className="font-heading text-xl font-bold tracking-tight text-stone-900">RMS Madrasa</span>
           </Link>
           <Link

@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import {
-  BookOpen, LogOut, ChevronRight, Users, AlertCircle,
+  LogOut, ChevronRight, Users, AlertCircle,
   Calendar, TrendingUp, DollarSign, Award, Bell, Megaphone, AlertTriangle, Trophy, ShieldCheck, X
 } from 'lucide-react';
 import { toast } from 'sonner';
@@ -187,9 +187,7 @@ const ParentDashboard = () => {
       <header className="sticky top-0 z-50 bg-white/80 backdrop-blur-xl border-b border-stone-100 shadow-sm">
         <div className="max-w-2xl mx-auto px-4 py-3 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-emerald-600 rounded-2xl flex items-center justify-center text-white font-bold shadow-md shadow-emerald-200">
-              <BookOpen className="w-5 h-5" />
-            </div>
+            <img src="/apple-touch-icon.png" alt="RMS Madrasa" className="w-10 h-10 rounded-2xl object-cover shadow-md shadow-emerald-200" />
             <div>
               <span className="font-bold text-stone-900 text-sm">RMS Madrasa</span>
               <p className="text-[11px] text-stone-400 font-medium">Parent Family Portal</p>

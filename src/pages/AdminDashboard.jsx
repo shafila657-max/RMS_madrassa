@@ -2,7 +2,7 @@ import React, { useEffect, useState, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import {
-  BookOpen, LogOut, Users, UserCheck, DollarSign, TrendingUp,
+  LogOut, Users, UserCheck, DollarSign, TrendingUp,
   CheckCircle, XCircle, Plus, X, Link, Calendar, Search,
   GraduationCap, ChevronDown, AlertCircle, RefreshCw,
   Bell, Megaphone, AlertTriangle, Trash2, Volume2, Edit3, Star,
@@ -916,9 +916,7 @@ const AdminDashboard = () => {
       <header className="sticky top-0 z-40 bg-white border-b border-stone-200 shadow-sm">
         <div className="max-w-6xl mx-auto px-4 py-4 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-emerald-600 rounded-xl flex items-center justify-center shadow-sm">
-              <BookOpen className="w-5 h-5 text-white" />
-            </div>
+            <img src="/apple-touch-icon.png" alt="RMS Madrasa" className="w-10 h-10 rounded-xl object-cover shadow-sm" />
             <div>
               <p className="font-bold text-stone-900 text-lg leading-tight">RMS Madrasa</p>
               <p className="text-sm text-emerald-700 font-semibold leading-tight">{isTeacher ? 'Teacher Dashboard' : 'Admin Dashboard'}</p>

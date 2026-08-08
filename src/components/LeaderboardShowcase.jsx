@@ -134,6 +134,8 @@ const LeaderboardShowcase = ({
   onBack,
   onSearch,
   variant = 'compact',
+  showScreenHeader = true,
+  showRankedList = true,
 }) => {
   const [activeTab, setActiveTab] = useState('all');
   const isScreen = variant === 'screen';
@@ -150,7 +152,7 @@ const LeaderboardShowcase = ({
 
   const content = (
     <div className="relative overflow-visible">
-      {isScreen && (
+      {isScreen && showScreenHeader && (
         <header className="flex items-center justify-between px-4 pb-4 pt-[max(env(safe-area-inset-top),1rem)]">
           <button
             type="button"
@@ -197,7 +199,7 @@ const LeaderboardShowcase = ({
         </div>
       </section>
 
-      <section className={`relative z-20 px-4 pb-[max(env(safe-area-inset-bottom),1rem)] ${isScreen ? '-mt-10 sm:-mt-12' : '-mt-8 sm:-mt-10'}`}>
+      {showRankedList && <section className={`relative z-20 px-4 pb-[max(env(safe-area-inset-bottom),1rem)] ${isScreen ? '-mt-10 sm:-mt-12' : '-mt-8 sm:-mt-10'}`}>
         <div className={`overflow-hidden rounded-t-[2rem] rounded-b-[2rem] bg-white shadow-[0_-18px_50px_rgba(15,23,42,0.15)] ring-1 ring-slate-200 ${!isScreen ? 'mx-auto max-w-md sm:max-w-2xl' : ''}`}>
           <div className="px-4 pt-6">
             <div className="mx-auto flex max-w-sm items-center justify-between rounded-full bg-emerald-700 p-1 shadow-sm">
@@ -253,7 +255,7 @@ const LeaderboardShowcase = ({
             })}
           </div>
         </div>
-      </section>
+      </section>}
     </div>
   );
 

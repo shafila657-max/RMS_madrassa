@@ -162,7 +162,7 @@ const LandingPage = () => {
         <div className="container mx-auto px-6 py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <BookOpen className="w-8 h-8 text-primary" />
+              <img src="/apple-touch-icon.png" alt="RMS Madrasa" className="w-9 h-9 rounded-xl object-cover" />
               <span className="font-heading text-2xl font-bold text-stone-900">RMS Madrasa</span>
             </div>
             <nav className="flex items-center gap-4 md:gap-8">
@@ -307,7 +307,7 @@ const LandingPage = () => {
       <section className="py-8 text-white section-lazy">
         <div className="mx-auto w-full px-0">
           {leaderboardData.length > 0 ? (
-            <LeaderboardShowcase standings={leaderboardData} variant="screen" title="Top Performers" />
+            <LeaderboardShowcase standings={leaderboardData} variant="screen" showScreenHeader={false} showRankedList={false} />
           ) : leaderboardLoading ? (
             <p className="text-center text-stone-400 text-sm animate-pulse">Leaderboard standings updating...</p>
           ) : (
