@@ -21,7 +21,7 @@ const ProtectedRoute = ({ children, allowedRoles = [] }) => {
   }
 
   if (!session?.user) {
-    return <Navigate to="/login" replace />;
+    return <Navigate to="/login" state={{ loginIntent: true }} replace />;
   }
 
   if (!profile) {
@@ -43,7 +43,7 @@ const ProtectedRoute = ({ children, allowedRoles = [] }) => {
     if (profile.role === 'parent') {
       return <Navigate to="/parent" replace />;
     }
-    return <Navigate to="/login" replace />;
+    return <Navigate to="/login" state={{ loginIntent: true }} replace />;
   }
 
   return children;

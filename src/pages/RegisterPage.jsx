@@ -32,7 +32,7 @@ const RegisterPage = () => {
     try {
       await register({ ...formData, role: userType });
       toast.success('Registration successful! Please wait for admin approval.');
-      setTimeout(() => navigate('/login'), 2000);
+      setTimeout(() => navigate('/login', { state: { loginIntent: true } }), 2000);
     } catch (error) {
       toast.error(error.message || 'Registration failed');
     } finally {
@@ -151,7 +151,7 @@ const RegisterPage = () => {
           <div className="mt-6 text-center">
             <p className="text-sm text-stone-600">
               Already have an account?{' '}
-              <Link to="/login" className="text-primary hover:underline font-medium">
+              <Link to="/login" state={{ loginIntent: true }} className="text-primary hover:underline font-medium">
                 Login here
               </Link>
             </p>

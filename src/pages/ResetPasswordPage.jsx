@@ -45,7 +45,7 @@ const ResetPasswordPage = () => {
       if (error) throw error;
       setDone(true);
       toast.success('Password updated successfully!');
-      setTimeout(() => navigate('/login'), 3000);
+      setTimeout(() => navigate('/login', { state: { loginIntent: true } }), 3000);
     } catch (err) {
       toast.error(err.message || 'Failed to reset password');
     } finally {
@@ -82,7 +82,7 @@ const ResetPasswordPage = () => {
               <p className="text-stone-500 text-sm">
                 This link has expired or is invalid. Please request a new password reset from the login page.
               </p>
-              <Button onClick={() => navigate('/login')} className="rounded-full mt-2">
+              <Button onClick={() => navigate('/login', { state: { loginIntent: true } })} className="rounded-full mt-2">
                 Back to Login
               </Button>
             </div>

@@ -181,7 +181,7 @@ const LandingPage = () => {
               >
                 <QrCode className="w-4 h-4 text-emerald-600" /> Scan QR
               </Button>
-              <Link to="/login">
+              <Link to="/login" state={{ loginIntent: true }}>
                 <Button variant="outline" className="rounded-full" data-testid="header-login-button">Login</Button>
               </Link>
             </nav>
@@ -443,7 +443,7 @@ const LandingPage = () => {
                 <li><a href="#programs" className="hover:text-white transition-colors">Programs</a></li>
                 <li><Link to="/alumni"  className="hover:text-emerald-300 transition-colors font-medium">Alumni Directory</Link></li>
                 <li><button onClick={() => setShowAlumniModal(true)} className="hover:text-emerald-300 transition-colors">Register as Alumni</button></li>
-                <li><Link to="/login"   className="hover:text-white transition-colors">Login</Link></li>
+                <li><Link to="/login" state={{ loginIntent: true }} className="hover:text-white transition-colors">Login</Link></li>
               </ul>
             </div>
             <div>

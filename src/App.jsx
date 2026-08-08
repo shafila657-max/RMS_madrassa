@@ -1,5 +1,5 @@
 import React from 'react';
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import LandingPage from './pages/LandingPage';
 import LoginPage from './pages/LoginPage';
 import RegisterPage from './pages/RegisterPage';
@@ -14,6 +14,18 @@ import { Toaster } from './components/ui/toaster';
 import PWAInstallPrompt from './components/PWAInstallPrompt';
 import AuthProvider from './context/AuthContext';
 
+// `/login` is only a destination for an intentional in-app login action.
+// This keeps copied/bookmarked login URLs from bypassing the public landing page.
+function LoginRoute() {
+    const location = useLocation();
+
+    if (!location.state?.loginIntent) {
+        return <Navigate to="/" replace />;
+    }
+
+    return <LoginPage />;
+}
+
 function App() {
     return (
         <Router>
@@ -21,7 +33,7 @@ function App() {
               <div className="App">
                 <Routes>
                     <Route path="/" element={<LandingPage />} />
-                    <Route path="/login" element={<LoginPage />} />
+                    <Route path="/login" element={<LoginRoute />} />
                     <Route path="/register" element={<RegisterPage />} />
                     
                     {/* Protected Admin & Teacher Routes */}

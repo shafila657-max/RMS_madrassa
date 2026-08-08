@@ -256,7 +256,7 @@ const AlumniPage = () => {
 
               {!currentUser ? (
                 <button
-                  onClick={() => navigate('/login')}
+                  onClick={() => navigate('/login', { state: { loginIntent: true } })}
                   className="px-6 py-3 rounded-2xl bg-stone-100 hover:bg-stone-200 text-stone-800 font-bold text-sm transition-colors flex items-center justify-center gap-2"
                 >
                   <LogIn className="w-4 h-4" /> Login to Account
