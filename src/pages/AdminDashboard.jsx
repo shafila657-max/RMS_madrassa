@@ -1259,12 +1259,12 @@ const AdminDashboard = () => {
           {/* ── STUDENTS ── */}
           {activeTab === 'students' && (
             <motion.div key="students" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="space-y-4">
-              <div className="flex items-center justify-between">
-                <div>
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                <div className="min-w-0">
                   <h2 className="text-xl font-bold text-stone-900">Student Directory ({filteredStudents.length})</h2>
                   <p className="text-xs text-stone-400">Default view shows active enrolled students</p>
                 </div>
-                <Btn onClick={() => setShowAddStudent(true)}>
+                <Btn className="w-full sm:w-auto flex-shrink-0" onClick={() => setShowAddStudent(true)}>
                   <Plus className="w-4 h-4" /> Add Student
                 </Btn>
               </div>
@@ -1313,9 +1313,9 @@ const AdminDashboard = () => {
                     {filteredStudents.map((s) => {
                       const stStatus = s.status || 'active';
                       return (
-                        <div key={s.id} className="p-4 flex flex-wrap items-center justify-between gap-3 hover:bg-stone-50/80 transition-colors">
+                        <div key={s.id} className="p-3 sm:p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 min-w-0 hover:bg-stone-50/80 transition-colors">
                           <div
-                            className="flex items-center gap-3 flex-1 min-w-[200px] cursor-pointer"
+                            className="flex items-center gap-3 w-full sm:flex-1 min-w-0 cursor-pointer"
                             onClick={() => { setSelectedStudent(s); setShow360Modal(true); }}
                           >
                             <div className="w-10 h-10 bg-emerald-100 rounded-xl flex items-center justify-center font-bold text-emerald-700 flex-shrink-0">
@@ -1339,11 +1339,11 @@ const AdminDashboard = () => {
                           </div>
 
                           {/* Quick Lifecycle Status Selector */}
-                          <div className="flex items-center gap-2 flex-shrink-0">
+                          <div className="w-full sm:w-auto flex flex-wrap items-center gap-2 min-w-0">
                             <select
                               value={stStatus}
                               onChange={(e) => handleQuickStudentStatusChange(s.id, e.target.value)}
-                              className={`text-xs font-bold px-2.5 py-1.5 rounded-xl border focus:outline-none ${
+                              className={`w-full sm:w-auto flex-1 sm:flex-none min-w-0 text-xs font-bold px-2.5 py-1.5 rounded-xl border focus:outline-none ${
                                 stStatus === 'completed'
                                   ? 'bg-purple-50 text-purple-800 border-purple-200'
                                   : stStatus === 'dropped'
@@ -1358,18 +1358,21 @@ const AdminDashboard = () => {
 
                             <Btn
                               variant="primary"
+                              className="flex-1 sm:flex-none min-w-0 px-3 sm:px-4"
                               onClick={() => { setSelectedStudent(s); setShow360Modal(true); }}
                             >
                               <Edit3 className="w-3.5 h-3.5" /> Manage
                             </Btn>
                             <Btn
                               variant="ghost"
+                              className="flex-1 sm:flex-none min-w-0 px-3 sm:px-4"
                               onClick={() => { setSelectedStudent(s); setShowLinkParent(true); }}
                             >
                               <Link className="w-3.5 h-3.5" /> Link Parent
                             </Btn>
                             <Btn
                               variant="danger"
+                              className="flex-none px-3 sm:px-4"
                               onClick={() => handleDeleteStudent(s.id, s.full_name)}
                             >
                               <X className="w-3.5 h-3.5" />
