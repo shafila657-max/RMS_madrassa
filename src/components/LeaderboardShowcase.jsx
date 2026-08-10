@@ -134,6 +134,7 @@ const LeaderboardShowcase = ({
   onBack,
   onSearch,
   variant = 'compact',
+  screenTone = 'emerald',
   showScreenHeader = true,
   showRankedList = true,
 }) => {
@@ -149,6 +150,9 @@ const LeaderboardShowcase = ({
     3: standings[2] || null,
   };
   const rankedList = standings.slice(3);
+  const screenSurface = screenTone === 'neutral'
+    ? 'bg-[linear-gradient(180deg,#f5f5f4_0%,#e7e5e4_46%,#d6d3d1_100%)]'
+    : 'bg-[linear-gradient(180deg,#dff7ee_0%,#c9eadb_46%,#b4d1c5_100%)]';
 
   const content = (
     <div className="relative overflow-visible">
@@ -188,7 +192,7 @@ const LeaderboardShowcase = ({
         </div>
       )}
 
-      <section className={`relative z-10 overflow-hidden ${isScreen ? 'bg-[linear-gradient(180deg,#dff7ee_0%,#c9eadb_46%,#b4d1c5_100%)] px-4 pb-20 pt-6 sm:pb-24 sm:pt-8' : 'bg-[linear-gradient(180deg,#eff9f5_0%,#d9eee4_100%)] px-4 pb-20 pt-4 sm:pb-20'}`}>
+      <section className={`relative z-10 overflow-hidden ${isScreen ? `${screenSurface} px-4 pb-20 pt-6 sm:pb-24 sm:pt-8` : 'bg-[linear-gradient(180deg,#eff9f5_0%,#d9eee4_100%)] px-4 pb-20 pt-4 sm:pb-20'}`}>
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(255,255,255,0.45),transparent_35%),radial-gradient(circle_at_top_right,rgba(255,255,255,0.32),transparent_28%)]" />
         <div className={`relative mx-auto max-w-md sm:max-w-2xl ${isScreen ? 'pt-28 sm:pt-32' : 'pt-20 sm:pt-24'}`}>
           <div className="grid grid-cols-3 items-end gap-2 sm:gap-4">
