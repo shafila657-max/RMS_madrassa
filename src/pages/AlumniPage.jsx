@@ -38,6 +38,12 @@ const AlumniPage = () => {
 
   useEffect(() => {
     checkUserAccessAndFetch();
+
+    const handlePullRefresh = () => {
+      checkUserAccessAndFetch();
+    };
+    window.addEventListener('app-pull-refresh', handlePullRefresh);
+    return () => window.removeEventListener('app-pull-refresh', handlePullRefresh);
   }, []);
 
   const checkUserAccessAndFetch = async () => {

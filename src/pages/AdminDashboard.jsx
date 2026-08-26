@@ -436,6 +436,22 @@ const AdminDashboard = () => {
     }
   }, [activeTab, fetchGalleryItems, selectedClassLevel, classSubTab]);
 
+  // Pull-to-refresh listener
+  useEffect(() => {
+    const handlePullRefresh = () => {
+      if (activeTab === 'alumni') fetchAdminAlumni();
+      else if (activeTab === 'overview') { fetchStudents(); fetchParents(); }
+      else if (activeTab === 'approvals') fetchPendingUsers();
+      else if (activeTab === 'announcements') fetchAnnouncements();
+      else if (activeTab === 'gallery') fetchGalleryItems();
+      else if (activeTab === 'teachers') { fetchTeachers(); fetchClassTeachers(); }
+      else if (activeTab === 'leaderboard') { fetchStudents(); fetchLeaderboardTab(); }
+      else { fetchStudents(); fetchParents(); fetchTeachers(); }
+    };
+    window.addEventListener('app-pull-refresh', handlePullRefresh);
+    return () => window.removeEventListener('app-pull-refresh', handlePullRefresh);
+  }, [activeTab, fetchAdminAlumni, fetchAnnouncements, fetchGalleryItems, fetchPendingUsers, fetchStudents, fetchParents, fetchTeachers, fetchClassTeachers, fetchLeaderboardTab]);
+
   // Restore quick-attendance values whenever its class or date changes.
   // Without this, a new date appeared as all-present and could overwrite saved data.
   useEffect(() => {

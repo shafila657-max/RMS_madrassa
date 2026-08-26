@@ -13,6 +13,7 @@ import ProtectedRoute from './components/ProtectedRoute';
 import { Toaster } from './components/ui/toaster';
 import PWAInstallPrompt from './components/PWAInstallPrompt';
 import AuthProvider from './context/AuthContext';
+import PullToRefresh from './components/PullToRefresh';
 
 // `/login` is only a destination for an intentional in-app login action.
 // This keeps copied/bookmarked login URLs from bypassing the public landing page.
@@ -30,43 +31,45 @@ function App() {
     return (
         <Router>
             <AuthProvider>
-              <div className="App">
-                <Routes>
-                    <Route path="/" element={<LandingPage />} />
-                    <Route path="/login" element={<LoginRoute />} />
-                    <Route path="/register" element={<RegisterPage />} />
-                    
-                    {/* Protected Admin & Teacher Routes */}
-                    <Route path="/admin" element={
-                        <ProtectedRoute allowedRoles={['admin', 'teacher']}>
-                            <AdminDashboard />
-                        </ProtectedRoute>
-                    } />
-                    
-                    {/* Alumni Community & Directory */}
-                    <Route path="/alumni" element={<AlumniPage />} />
-                    
-                    {/* Public Media Gallery */}
-                    <Route path="/gallery" element={<GalleryPage />} />
-                    
-                    {/* Protected Parent Routes */}
-                    <Route path="/parent" element={
-                        <ProtectedRoute allowedRoles={['parent']}>
-                            <ParentDashboard />
-                        </ProtectedRoute>
-                    } />
-                    <Route path="/parent/:studentId" element={
-                        <ProtectedRoute allowedRoles={['parent', 'admin']}>
-                            <StudentDetailPage />
-                        </ProtectedRoute>
-                    } />
-                    
-                    {/* Password reset */}
-                    <Route path="/reset-password" element={<ResetPasswordPage />} />
-                </Routes>
-                <Toaster />
-                <PWAInstallPrompt />
-              </div>
+              <PullToRefresh>
+                <div className="App">
+                  <Routes>
+                      <Route path="/" element={<LandingPage />} />
+                      <Route path="/login" element={<LoginRoute />} />
+                      <Route path="/register" element={<RegisterPage />} />
+                      
+                      {/* Protected Admin & Teacher Routes */}
+                      <Route path="/admin" element={
+                          <ProtectedRoute allowedRoles={['admin', 'teacher']}>
+                              <AdminDashboard />
+                          </ProtectedRoute>
+                      } />
+                      
+                      {/* Alumni Community & Directory */}
+                      <Route path="/alumni" element={<AlumniPage />} />
+                      
+                      {/* Public Media Gallery */}
+                      <Route path="/gallery" element={<GalleryPage />} />
+                      
+                      {/* Protected Parent Routes */}
+                      <Route path="/parent" element={
+                          <ProtectedRoute allowedRoles={['parent']}>
+                              <ParentDashboard />
+                          </ProtectedRoute>
+                      } />
+                      <Route path="/parent/:studentId" element={
+                          <ProtectedRoute allowedRoles={['parent', 'admin']}>
+                              <StudentDetailPage />
+                          </ProtectedRoute>
+                      } />
+                      
+                      {/* Password reset */}
+                      <Route path="/reset-password" element={<ResetPasswordPage />} />
+                  </Routes>
+                  <Toaster />
+                  <PWAInstallPrompt />
+                </div>
+              </PullToRefresh>
             </AuthProvider>
         </Router>
     );
