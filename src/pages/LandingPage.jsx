@@ -144,7 +144,7 @@ const LandingPage = () => {
   const [alumniPreview, setAlumniPreview] = useState([]);
   const [liveCounts, setLiveCounts] = useState({
     students: 100,
-    teachers: 25,
+    teachers: 5,
     years: 50,
     alumni: 1000,
   });
@@ -488,7 +488,7 @@ const LandingPage = () => {
               {[
                 { value: liveCounts.students, label: 'Active Students Enrolled' },
                 { value: liveCounts.teachers, label: 'Certified Asatidha & Scholars' },
-                { value: liveCounts.years,    label: 'Years of Excellence' },
+                { value: liveCounts.years,    label: 'Years of Legacy' },
                 { value: liveCounts.alumni,   label: 'Alumni Worldwide' },
               ].map(({ value, label }, idx) => (
                 <div key={label} className={`p-2 sm:p-3 ${idx % 2 !== 0 ? 'border-l border-white/10' : ''} ${idx > 0 ? 'lg:border-l lg:border-white/10' : ''}`}>
