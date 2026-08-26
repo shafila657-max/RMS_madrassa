@@ -13,8 +13,9 @@ import { fetchFullLeaderboardData } from '@/utils/leaderboard';
 import LeaderboardShowcase from '@/components/LeaderboardShowcase';
 
 // Lazy-load heavy modals — they're NOT needed on first paint
-const AlumniRegisterModal = lazy(() => import('@/components/AlumniRegisterModal'));
-const MobileQRModal       = lazy(() => import('@/components/MobileQRModal'));
+const AlumniRegisterModal    = lazy(() => import('@/components/AlumniRegisterModal'));
+const MobileQRModal          = lazy(() => import('@/components/MobileQRModal'));
+const AlumniOrbitalShowcase  = lazy(() => import('@/components/AlumniOrbitalShowcase'));
 
 // ─── Framer Motion variants (defined OUTSIDE component to prevent re-creation) ──
 const fadeUp = {
@@ -88,7 +89,19 @@ const LandingPage = () => {
   const [deferredPrompt,  setDeferredPrompt]  = useState(null);
   const [showInstallBanner, setShowInstallBanner] = useState(false);
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
+  const [alumniPreview, setAlumniPreview] = useState([]);
   const location = useLocation();
+
+  // Fetch 4 approved alumni for the orbital showcase (public fields only)
+  useEffect(() => {
+    supabase
+      .from('alumni_profiles')
+      .select('id, full_name, working_area, passout_year, location')
+      .eq('status', 'approved')
+      .order('created_at', { ascending: false })
+      .limit(4)
+      .then(({ data }) => { if (data) setAlumniPreview(data); });
+  }, []);
 
   // Fetch featured gallery items
   useEffect(() => {
@@ -392,25 +405,15 @@ const LandingPage = () => {
 
             <motion.div
               variants={fadeScale} initial="hidden" whileInView="visible" viewport={VIEWPORT}
-              className="space-y-6 rounded-3xl border border-white/15 bg-white/10 p-7 text-white shadow-2xl backdrop-blur-sm md:p-8"
+              className="flex items-center justify-center py-4"
             >
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <div className="w-12 h-12 bg-emerald-500 rounded-2xl flex items-center justify-center font-bold text-xl text-stone-950">M</div>
-                  <div>
-                    <h4 className="font-bold text-lg">Muhammed Fasil</h4>
-                    <p className="text-xs text-emerald-300">Batch of 2016 · Business</p>
-                  </div>
+              <Suspense fallback={
+                <div className="w-[340px] h-[340px] max-w-full flex items-center justify-center">
+                  <div className="w-16 h-16 rounded-full border-4 border-emerald-400/30 border-t-emerald-400 animate-spin" />
                 </div>
-                <span className="text-[10px] uppercase font-bold bg-emerald-500/20 text-emerald-300 px-3 py-1 rounded-full border border-emerald-500/30">Approved Alumni</span>
-              </div>
-              <p className="text-xs text-stone-200 italic bg-black/20 p-4 rounded-2xl border border-white/10 leading-relaxed">
-                "RMS Madrasa shaped my morals and career. Always proud to give back to the community!"
-              </p>
-              <div className="flex items-center justify-between text-xs text-stone-300 border-t border-white/10 pt-4">
-                <span>📍 Dubai, UAE</span>
-                <span className="text-emerald-400 font-semibold">📱 Direct WhatsApp Available</span>
-              </div>
+              }>
+                <AlumniOrbitalShowcase alumni={alumniPreview} />
+              </Suspense>
             </motion.div>
           </div>
         </div>
