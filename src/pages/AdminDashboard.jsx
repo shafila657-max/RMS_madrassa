@@ -731,6 +731,28 @@ const AdminDashboard = () => {
     }
   };
 
+  const handleOpenCreateAlumni = () => {
+    setEditingAlumni({ id: null, is_new: true });
+    setEditAlumniPhotoFile(null);
+    setEditAlumniPhotoPreview('');
+    setEditAlumniForm({
+      full_name: '',
+      passout_year: '',
+      working_area: '',
+      company_org: '',
+      whatsapp_number: '',
+      phone: '',
+      email: '',
+      location: '',
+      linkedin_url: '',
+      bio: '',
+      status: 'approved',
+      is_mentor: false,
+      mentor_topics: 'Career Guidance, Higher Education',
+      photo_url: '',
+    });
+  };
+
   const handleOpenEditAlumni = (alumniObj) => {
     setEditingAlumni(alumniObj);
     setEditAlumniPhotoFile(null);
@@ -778,9 +800,8 @@ const AdminDashboard = () => {
         }
       }
 
-      const { error } = await supabase
-        .from('alumni_profiles')
-        .update({
+      if (editingAlumni.is_new) {
+        const { error } = await supabase.from('alumni_profiles').insert([{
           full_name: editAlumniForm.full_name,
           passout_year: editAlumniForm.passout_year,
           working_area: editAlumniForm.working_area,
@@ -791,20 +812,43 @@ const AdminDashboard = () => {
           location: editAlumniForm.location,
           linkedin_url: editAlumniForm.linkedin_url,
           bio: editAlumniForm.bio,
-          status: editAlumniForm.status,
+          status: editAlumniForm.status || 'approved',
           is_mentor: editAlumniForm.is_mentor,
           mentor_topics: editAlumniForm.mentor_topics,
           photo_url: photoUrl,
-        })
-        .eq('id', editingAlumni.id);
+        }]);
 
-      if (error) throw error;
+        if (error) throw error;
+        toast.success(`Alumni member "${editAlumniForm.full_name}" added successfully!`);
+      } else {
+        const { error } = await supabase
+          .from('alumni_profiles')
+          .update({
+            full_name: editAlumniForm.full_name,
+            passout_year: editAlumniForm.passout_year,
+            working_area: editAlumniForm.working_area,
+            company_org: editAlumniForm.company_org,
+            whatsapp_number: editAlumniForm.whatsapp_number,
+            phone: editAlumniForm.phone,
+            email: editAlumniForm.email,
+            location: editAlumniForm.location,
+            linkedin_url: editAlumniForm.linkedin_url,
+            bio: editAlumniForm.bio,
+            status: editAlumniForm.status,
+            is_mentor: editAlumniForm.is_mentor,
+            mentor_topics: editAlumniForm.mentor_topics,
+            photo_url: photoUrl,
+          })
+          .eq('id', editingAlumni.id);
 
-      toast.success(`Alumni member "${editAlumniForm.full_name}" updated successfully!`);
+        if (error) throw error;
+        toast.success(`Alumni member "${editAlumniForm.full_name}" updated successfully!`);
+      }
+
       setEditingAlumni(null);
       fetchAdminAlumni();
     } catch (err) {
-      toast.error('Failed to update alumni: ' + err.message);
+      toast.error('Failed to save alumni: ' + err.message);
     } finally {
       setSavingAlumni(false);
     }
@@ -1114,11 +1158,19 @@ const AdminDashboard = () => {
           {/* ── ALUMNI MANAGEMENT ── */}
           {activeTab === 'alumni' && (
             <motion.div key="alumni" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="space-y-6">
-              <div className="flex items-center justify-between">
-                <h2 className="text-xl font-bold text-stone-900">Alumni Directory & Registration Approvals</h2>
-                <span className="text-xs font-semibold px-3 py-1 bg-emerald-100 text-emerald-800 rounded-full">
-                  {alumniData.filter(a => a.status === 'approved').length} Approved Alumni
-                </span>
+              <div className="flex flex-wrap items-center justify-between gap-3 bg-white rounded-2xl p-5 border border-stone-100 shadow-sm">
+                <div>
+                  <h2 className="text-xl font-bold text-stone-900">Alumni Directory & Management</h2>
+                  <p className="text-xs text-stone-500 mt-0.5">Manage alumni profiles, edit member details, approve registrations & post alumni events</p>
+                </div>
+                <div className="flex items-center gap-3">
+                  <span className="text-xs font-semibold px-3 py-1.5 bg-emerald-100 text-emerald-800 rounded-full">
+                    {alumniData.filter(a => a.status === 'approved').length} Approved Alumni
+                  </span>
+                  <Btn variant="primary" onClick={handleOpenCreateAlumni} className="flex items-center gap-1.5">
+                    <Plus className="w-4 h-4" /> Add Alumni Member
+                  </Btn>
+                </div>
               </div>
 
               {/* Pending Alumni Approvals */}
