@@ -7,7 +7,7 @@ import {
   GraduationCap, ChevronDown, AlertCircle, RefreshCw,
   Bell, Megaphone, AlertTriangle, Trash2, Volume2, Edit3, Star,
   School, Camera, Phone, Mail, User, ClipboardList, Lightbulb,
-  FileText, Clock, BookOpenCheck, Wallet, PenLine,
+  FileText, Clock, BookOpenCheck, Wallet, PenLine, Pencil, Upload,
   Trophy, Award, RotateCcw, Crown, Medal, Sparkles, ShieldCheck
 } from 'lucide-react';
 import { toast } from 'sonner';
@@ -731,6 +731,85 @@ const AdminDashboard = () => {
     }
   };
 
+  const handleOpenEditAlumni = (alumniObj) => {
+    setEditingAlumni(alumniObj);
+    setEditAlumniPhotoFile(null);
+    setEditAlumniPhotoPreview(alumniObj.photo_url || '');
+    setEditAlumniForm({
+      full_name: alumniObj.full_name || '',
+      passout_year: alumniObj.passout_year || '',
+      working_area: alumniObj.working_area || '',
+      company_org: alumniObj.company_org || '',
+      whatsapp_number: alumniObj.whatsapp_number || '',
+      phone: alumniObj.phone || '',
+      email: alumniObj.email || '',
+      location: alumniObj.location || '',
+      linkedin_url: alumniObj.linkedin_url || '',
+      bio: alumniObj.bio || '',
+      status: alumniObj.status || 'approved',
+      is_mentor: alumniObj.is_mentor || false,
+      mentor_topics: alumniObj.mentor_topics || '',
+      photo_url: alumniObj.photo_url || '',
+    });
+  };
+
+  const handleSaveEditAlumni = async (e) => {
+    e.preventDefault();
+    if (!editingAlumni) return;
+    if (!editAlumniForm.full_name || !editAlumniForm.passout_year || !editAlumniForm.working_area) {
+      toast.error('Full Name, Passout Year, and Working Area are required');
+      return;
+    }
+
+    setSavingAlumni(true);
+    try {
+      let photoUrl = editAlumniForm.photo_url;
+      if (editAlumniPhotoFile) {
+        try {
+          const fileExt = editAlumniPhotoFile.name.split('.').pop();
+          const fileName = `alumni_${Date.now()}_${Math.random().toString(36).substring(2, 7)}.${fileExt}`;
+          const { error: uploadError } = await supabase.storage.from('alumni-photos').upload(fileName, editAlumniPhotoFile);
+          if (!uploadError) {
+            const { data: publicUrlData } = supabase.storage.from('alumni-photos').getPublicUrl(fileName);
+            photoUrl = publicUrlData?.publicUrl || photoUrl;
+          }
+        } catch (uploadErr) {
+          console.warn('Admin photo upload error:', uploadErr);
+        }
+      }
+
+      const { error } = await supabase
+        .from('alumni_profiles')
+        .update({
+          full_name: editAlumniForm.full_name,
+          passout_year: editAlumniForm.passout_year,
+          working_area: editAlumniForm.working_area,
+          company_org: editAlumniForm.company_org,
+          whatsapp_number: editAlumniForm.whatsapp_number,
+          phone: editAlumniForm.phone,
+          email: editAlumniForm.email,
+          location: editAlumniForm.location,
+          linkedin_url: editAlumniForm.linkedin_url,
+          bio: editAlumniForm.bio,
+          status: editAlumniForm.status,
+          is_mentor: editAlumniForm.is_mentor,
+          mentor_topics: editAlumniForm.mentor_topics,
+          photo_url: photoUrl,
+        })
+        .eq('id', editingAlumni.id);
+
+      if (error) throw error;
+
+      toast.success(`Alumni member "${editAlumniForm.full_name}" updated successfully!`);
+      setEditingAlumni(null);
+      fetchAdminAlumni();
+    } catch (err) {
+      toast.error('Failed to update alumni: ' + err.message);
+    } finally {
+      setSavingAlumni(false);
+    }
+  };
+
   const handleCreateAlumniEvent = async () => {
     if (!eventForm.title || !eventForm.event_date) {
       toast.error('Title and Date are required');
@@ -1052,12 +1131,28 @@ const AdminDashboard = () => {
                   <div className="space-y-3">
                     {alumniData.filter(a => a.status === 'pending').map((a) => (
                       <div key={a.id} className="bg-white rounded-xl p-4 border border-amber-200 flex flex-wrap items-center justify-between gap-3 shadow-sm">
-                        <div>
-                          <p className="font-bold text-stone-900 text-sm">{a.full_name} <span className="text-xs font-normal text-stone-500">(Batch of {a.passout_year})</span></p>
-                          <p className="text-xs text-stone-600 font-medium">{a.working_area} {a.company_org ? `at ${a.company_org}` : ''}</p>
-                          <p className="text-[11px] text-stone-400 mt-0.5">WhatsApp: {a.whatsapp_number} {a.location ? `· ${a.location}` : ''}</p>
+                        <div className="flex items-center gap-3">
+                          <div className="w-10 h-10 rounded-full overflow-hidden bg-amber-100 border border-amber-300 shrink-0 flex items-center justify-center font-bold text-amber-800 text-xs">
+                            {a.photo_url ? (
+                              <img src={a.photo_url} alt={a.full_name} className="w-full h-full object-cover" />
+                            ) : (
+                              a.full_name?.charAt(0) || 'A'
+                            )}
+                          </div>
+                          <div>
+                            <p className="font-bold text-stone-900 text-sm">{a.full_name} <span className="text-xs font-normal text-stone-500">(Batch of {a.passout_year})</span></p>
+                            <p className="text-xs text-stone-600 font-medium">{a.working_area} {a.company_org ? `at ${a.company_org}` : ''}</p>
+                            <p className="text-[11px] text-stone-400 mt-0.5">WhatsApp: {a.whatsapp_number} {a.location ? `· ${a.location}` : ''}</p>
+                          </div>
                         </div>
-                        <div className="flex gap-2">
+                        <div className="flex items-center gap-2">
+                          <button
+                            onClick={() => handleOpenEditAlumni(a)}
+                            className="inline-flex items-center gap-1 px-3 py-1.5 rounded-xl bg-stone-100 hover:bg-stone-200 text-stone-700 font-semibold text-xs transition-colors"
+                            title="Edit Alumni Details"
+                          >
+                            <Pencil className="w-3.5 h-3.5 text-stone-600" /> Edit
+                          </button>
                           <Btn variant="primary" onClick={() => handleApproveAlumni(a.id)}>
                             <CheckCircle className="w-3.5 h-3.5" /> Approve
                           </Btn>
@@ -1081,18 +1176,27 @@ const AdminDashboard = () => {
                   <div className="divide-y divide-stone-100">
                     {alumniData.filter(a => a.status === 'approved').map((a) => (
                       <div key={a.id} className="py-3 flex items-center justify-between gap-3 flex-wrap">
-                        <div>
-                          <p className="font-bold text-stone-900 text-sm flex items-center gap-2">
-                            {a.full_name}
-                            <span className="text-xs font-normal text-stone-400">· Batch {a.passout_year}</span>
-                            {a.is_mentor && (
-                              <span className="text-[10px] font-bold bg-amber-100 text-amber-800 px-2 py-0.5 rounded-full">
-                                🏅 Active Mentor
-                              </span>
+                        <div className="flex items-center gap-3">
+                          <div className="w-10 h-10 rounded-full overflow-hidden bg-emerald-100 border border-emerald-300 shrink-0 flex items-center justify-center font-bold text-emerald-800 text-xs shadow-sm">
+                            {a.photo_url ? (
+                              <img src={a.photo_url} alt={a.full_name} className="w-full h-full object-cover" />
+                            ) : (
+                              a.full_name?.charAt(0) || 'A'
                             )}
-                          </p>
-                          <p className="text-xs text-stone-600">{a.working_area} {a.company_org ? `@ ${a.company_org}` : ''}</p>
-                          <p className="text-[11px] text-stone-400">{a.location || 'Location N/A'} · WA: {a.whatsapp_number}</p>
+                          </div>
+                          <div>
+                            <p className="font-bold text-stone-900 text-sm flex items-center gap-2">
+                              {a.full_name}
+                              <span className="text-xs font-normal text-stone-400">· Batch {a.passout_year}</span>
+                              {a.is_mentor && (
+                                <span className="text-[10px] font-bold bg-amber-100 text-amber-800 px-2 py-0.5 rounded-full">
+                                  🏅 Active Mentor
+                                </span>
+                              )}
+                            </p>
+                            <p className="text-xs text-stone-600">{a.working_area} {a.company_org ? `@ ${a.company_org}` : ''}</p>
+                            <p className="text-[11px] text-stone-400">{a.location || 'Location N/A'} · WA: {a.whatsapp_number}</p>
+                          </div>
                         </div>
                         <div className="flex items-center gap-2">
                           <button
@@ -1104,6 +1208,14 @@ const AdminDashboard = () => {
                             }`}
                           >
                             {a.is_mentor ? '✓ Mentor' : '+ Make Mentor'}
+                          </button>
+
+                          <button
+                            onClick={() => handleOpenEditAlumni(a)}
+                            className="inline-flex items-center gap-1 px-3 py-1.5 rounded-xl bg-stone-100 hover:bg-stone-200 text-stone-700 font-semibold text-xs transition-colors"
+                            title="Edit Alumni Details"
+                          >
+                            <Pencil className="w-3.5 h-3.5 text-stone-600" /> Edit
                           </button>
 
                           <Btn variant="danger" onClick={() => handleDeleteAlumni(a)} title="Delete Alumni Profile">
@@ -1130,12 +1242,28 @@ const AdminDashboard = () => {
                   <div className="space-y-3">
                     {alumniData.filter(a => a.status === 'rejected').map((a) => (
                       <div key={a.id} className="bg-white rounded-xl p-4 border border-stone-200 flex flex-wrap items-center justify-between gap-3 shadow-sm">
-                        <div>
-                          <p className="font-bold text-stone-900 text-sm">{a.full_name} <span className="text-xs font-normal text-stone-500">(Batch of {a.passout_year})</span></p>
-                          <p className="text-xs text-stone-600 font-medium">{a.working_area} {a.company_org ? `at ${a.company_org}` : ''}</p>
-                          <p className="text-[11px] text-stone-400 mt-0.5">WhatsApp: {a.whatsapp_number} {a.location ? `· ${a.location}` : ''}</p>
+                        <div className="flex items-center gap-3">
+                          <div className="w-10 h-10 rounded-full overflow-hidden bg-stone-100 border border-stone-300 shrink-0 flex items-center justify-center font-bold text-stone-600 text-xs">
+                            {a.photo_url ? (
+                              <img src={a.photo_url} alt={a.full_name} className="w-full h-full object-cover" />
+                            ) : (
+                              a.full_name?.charAt(0) || 'A'
+                            )}
+                          </div>
+                          <div>
+                            <p className="font-bold text-stone-900 text-sm">{a.full_name} <span className="text-xs font-normal text-stone-500">(Batch of {a.passout_year})</span></p>
+                            <p className="text-xs text-stone-600 font-medium">{a.working_area} {a.company_org ? `at ${a.company_org}` : ''}</p>
+                            <p className="text-[11px] text-stone-400 mt-0.5">WhatsApp: {a.whatsapp_number} {a.location ? `· ${a.location}` : ''}</p>
+                          </div>
                         </div>
-                        <div className="flex gap-2">
+                        <div className="flex items-center gap-2">
+                          <button
+                            onClick={() => handleOpenEditAlumni(a)}
+                            className="inline-flex items-center gap-1 px-3 py-1.5 rounded-xl bg-stone-100 hover:bg-stone-200 text-stone-700 font-semibold text-xs transition-colors"
+                            title="Edit Alumni Details"
+                          >
+                            <Pencil className="w-3.5 h-3.5 text-stone-600" /> Edit
+                          </button>
                           <Btn variant="primary" onClick={() => handleApproveAlumni(a.id)}>
                             <CheckCircle className="w-3.5 h-3.5" /> Approve
                           </Btn>
@@ -1722,6 +1850,211 @@ const AdminDashboard = () => {
             </Btn>
           </div>
         </div>
+      </Modal>
+
+      {/* ── MODAL: Edit Alumni Member ── */}
+      <Modal open={!!editingAlumni} onClose={() => !savingAlumni && setEditingAlumni(null)} title="Edit Alumni Details">
+        {editingAlumni && (
+          <form onSubmit={handleSaveEditAlumni} className="space-y-4 max-h-[75vh] overflow-y-auto pr-1">
+            {/* Photo Avatar & File Upload */}
+            <div className="flex items-center gap-4 p-3 bg-stone-50 border border-stone-200 rounded-2xl">
+              <div className="relative w-16 h-16 rounded-full overflow-hidden bg-stone-200 border-2 border-emerald-500 shrink-0 flex items-center justify-center shadow-sm">
+                {editAlumniPhotoPreview ? (
+                  <img src={editAlumniPhotoPreview} alt="Alumni" className="w-full h-full object-cover" />
+                ) : (
+                  <User className="w-7 h-7 text-stone-400" />
+                )}
+              </div>
+              <div className="flex-1 min-w-0">
+                <label className="block text-xs font-bold text-stone-800 mb-1">Alumni Photo</label>
+                <div className="flex items-center gap-2">
+                  <label className="cursor-pointer inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white border border-stone-200 hover:border-emerald-400 text-xs font-semibold text-stone-700 shadow-sm hover:bg-emerald-50 transition-colors">
+                    <Upload className="w-3.5 h-3.5 text-emerald-600" />
+                    <span>Upload New Photo</span>
+                    <input
+                      type="file"
+                      accept="image/*"
+                      className="hidden"
+                      onChange={(e) => {
+                        const file = e.target.files?.[0];
+                        if (file) {
+                          setEditAlumniPhotoFile(file);
+                          setEditAlumniPhotoPreview(URL.createObjectURL(file));
+                        }
+                      }}
+                    />
+                  </label>
+                  {editAlumniPhotoPreview && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setEditAlumniPhotoFile(null);
+                        setEditAlumniPhotoPreview('');
+                        setEditAlumniForm(f => ({ ...f, photo_url: '' }));
+                      }}
+                      className="text-xs text-red-500 hover:underline font-semibold"
+                    >
+                      Clear Photo
+                    </button>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            <div className="grid sm:grid-cols-2 gap-3">
+              <div>
+                <label className="block text-xs font-semibold text-stone-700 mb-1">Full Name *</label>
+                <input
+                  required
+                  value={editAlumniForm.full_name}
+                  onChange={e => setEditAlumniForm(f => ({ ...f, full_name: e.target.value }))}
+                  className="w-full border border-stone-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-stone-700 mb-1">Passout Year / Batch *</label>
+                <input
+                  required
+                  value={editAlumniForm.passout_year}
+                  onChange={e => setEditAlumniForm(f => ({ ...f, passout_year: e.target.value }))}
+                  className="w-full border border-stone-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                />
+              </div>
+            </div>
+
+            <div className="grid sm:grid-cols-2 gap-3">
+              <div>
+                <label className="block text-xs font-semibold text-stone-700 mb-1">Working Area / Profession *</label>
+                <input
+                  required
+                  value={editAlumniForm.working_area}
+                  onChange={e => setEditAlumniForm(f => ({ ...f, working_area: e.target.value }))}
+                  className="w-full border border-stone-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-stone-700 mb-1">Company / Organization</label>
+                <input
+                  value={editAlumniForm.company_org}
+                  onChange={e => setEditAlumniForm(f => ({ ...f, company_org: e.target.value }))}
+                  className="w-full border border-stone-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                />
+              </div>
+            </div>
+
+            <div className="grid sm:grid-cols-2 gap-3">
+              <div>
+                <label className="block text-xs font-semibold text-stone-700 mb-1">WhatsApp Number</label>
+                <input
+                  value={editAlumniForm.whatsapp_number}
+                  onChange={e => setEditAlumniForm(f => ({ ...f, whatsapp_number: e.target.value }))}
+                  className="w-full border border-stone-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-stone-700 mb-1">Phone Number</label>
+                <input
+                  value={editAlumniForm.phone}
+                  onChange={e => setEditAlumniForm(f => ({ ...f, phone: e.target.value }))}
+                  className="w-full border border-stone-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                />
+              </div>
+            </div>
+
+            <div className="grid sm:grid-cols-2 gap-3">
+              <div>
+                <label className="block text-xs font-semibold text-stone-700 mb-1">City / Country Location</label>
+                <input
+                  value={editAlumniForm.location}
+                  onChange={e => setEditAlumniForm(f => ({ ...f, location: e.target.value }))}
+                  className="w-full border border-stone-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-stone-700 mb-1">Approval Status</label>
+                <select
+                  value={editAlumniForm.status}
+                  onChange={e => setEditAlumniForm(f => ({ ...f, status: e.target.value }))}
+                  className="w-full border border-stone-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 bg-white"
+                >
+                  <option value="approved">Approved</option>
+                  <option value="pending">Pending</option>
+                  <option value="rejected">Rejected</option>
+                </select>
+              </div>
+            </div>
+
+            <div className="grid sm:grid-cols-2 gap-3">
+              <div>
+                <label className="block text-xs font-semibold text-stone-700 mb-1">Email</label>
+                <input
+                  type="email"
+                  value={editAlumniForm.email}
+                  onChange={e => setEditAlumniForm(f => ({ ...f, email: e.target.value }))}
+                  className="w-full border border-stone-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-stone-700 mb-1">LinkedIn Profile URL</label>
+                <input
+                  value={editAlumniForm.linkedin_url}
+                  onChange={e => setEditAlumniForm(f => ({ ...f, linkedin_url: e.target.value }))}
+                  className="w-full border border-stone-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                />
+              </div>
+            </div>
+
+            {/* Mentorship Option */}
+            <div className="bg-emerald-50/80 border border-emerald-200/80 rounded-xl p-3 space-y-2">
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={editAlumniForm.is_mentor}
+                  onChange={e => setEditAlumniForm(f => ({ ...f, is_mentor: e.target.checked }))}
+                  className="w-4 h-4 text-emerald-600 rounded focus:ring-emerald-500"
+                />
+                <span className="text-xs font-bold text-emerald-950 flex items-center gap-1">
+                  <Award className="w-4 h-4 text-emerald-600" /> Active Student Mentor
+                </span>
+              </label>
+
+              {editAlumniForm.is_mentor && (
+                <div>
+                  <label className="block text-[11px] font-medium text-emerald-800 mb-1">Mentor Topics / Expertise</label>
+                  <input
+                    value={editAlumniForm.mentor_topics}
+                    onChange={e => setEditAlumniForm(f => ({ ...f, mentor_topics: e.target.value }))}
+                    className="w-full border border-emerald-200 rounded-xl px-3 py-1.5 text-xs bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                  />
+                </div>
+              )}
+            </div>
+
+            <div>
+              <label className="block text-xs font-semibold text-stone-700 mb-1">Bio / Message to Students</label>
+              <textarea
+                rows={2}
+                value={editAlumniForm.bio}
+                onChange={e => setEditAlumniForm(f => ({ ...f, bio: e.target.value }))}
+                className="w-full border border-stone-200 rounded-xl p-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
+              />
+            </div>
+
+            <div className="flex gap-3 justify-end pt-2">
+              <Btn variant="ghost" disabled={savingAlumni} onClick={() => setEditingAlumni(null)}>
+                Cancel
+              </Btn>
+              <Btn variant="primary" disabled={savingAlumni} type="submit">
+                {savingAlumni ? <RefreshCw className="w-4 h-4 animate-spin" /> : <CheckCircle className="w-4 h-4" />} Save Changes
+              </Btn>
+            </div>
+          </form>
+        )}
       </Modal>
 
       {/* ── MODAL: Create Alumni Event ── */}

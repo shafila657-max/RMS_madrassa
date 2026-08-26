@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, GraduationCap, CheckCircle2, RefreshCw, Send, Award } from 'lucide-react';
+import { X, GraduationCap, CheckCircle2, RefreshCw, Send, Award, Camera, Upload, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { supabase } from '@/lib/supabase';
 
@@ -19,8 +19,22 @@ const AlumniRegisterModal = ({ open, onClose }) => {
     is_mentor: true,
     mentor_topics: 'Career Guidance, Higher Education',
   });
+  const [photoFile, setPhotoFile] = useState(null);
+  const [photoPreview, setPhotoPreview] = useState('');
   const [loading, setLoading] = useState(false);
   const [submitted, setSubmitted] = useState(false);
+
+  const handlePhotoChange = (e) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      if (file.size > 5 * 1024 * 1024) {
+        toast.error('Image size must be under 5MB');
+        return;
+      }
+      setPhotoFile(file);
+      setPhotoPreview(URL.createObjectURL(file));
+    }
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -33,6 +47,21 @@ const AlumniRegisterModal = ({ open, onClose }) => {
     try {
       const { data: { session } } = await supabase.auth.getSession();
       const userId = session?.user?.id || null;
+
+      let photoUrl = null;
+      if (photoFile) {
+        try {
+          const fileExt = photoFile.name.split('.').pop();
+          const fileName = `alumni_${Date.now()}_${Math.random().toString(36).substring(2, 7)}.${fileExt}`;
+          const { error: uploadError } = await supabase.storage.from('alumni-photos').upload(fileName, photoFile);
+          if (!uploadError) {
+            const { data: publicUrlData } = supabase.storage.from('alumni-photos').getPublicUrl(fileName);
+            photoUrl = publicUrlData?.publicUrl || null;
+          }
+        } catch (imgErr) {
+          console.warn('Photo upload warning:', imgErr);
+        }
+      }
 
       const { error } = await supabase.from('alumni_profiles').insert([{
         user_id: userId,
@@ -48,6 +77,7 @@ const AlumniRegisterModal = ({ open, onClose }) => {
         linkedin_url: form.linkedin_url,
         is_mentor: form.is_mentor,
         mentor_topics: form.mentor_topics,
+        photo_url: photoUrl,
         status: 'pending',
       }]);
 
@@ -69,6 +99,8 @@ const AlumniRegisterModal = ({ open, onClose }) => {
 
   const handleReset = () => {
     setSubmitted(false);
+    setPhotoFile(null);
+    setPhotoPreview('');
     setForm({
       full_name: '',
       email: '',
@@ -141,6 +173,37 @@ const AlumniRegisterModal = ({ open, onClose }) => {
               </div>
             ) : (
               <form onSubmit={handleSubmit} className="space-y-4">
+                {/* Profile Photo Upload */}
+                <div className="flex items-center gap-4 p-3.5 bg-stone-50 border border-stone-200 rounded-2xl">
+                  <div className="relative w-16 h-16 rounded-full overflow-hidden bg-stone-200 border-2 border-emerald-500 shrink-0 flex items-center justify-center shadow-sm">
+                    {photoPreview ? (
+                      <img src={photoPreview} alt="Preview" className="w-full h-full object-cover" />
+                    ) : (
+                      <Camera className="w-7 h-7 text-stone-400" />
+                    )}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <label className="block text-xs font-bold text-stone-800 mb-1">Profile Photo (Optional)</label>
+                    <div className="flex items-center gap-2">
+                      <label className="cursor-pointer inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white border border-stone-200 hover:border-emerald-400 text-xs font-semibold text-stone-700 shadow-sm hover:bg-emerald-50 transition-colors">
+                        <Upload className="w-3.5 h-3.5 text-emerald-600" />
+                        <span>{photoFile ? 'Change Photo' : 'Upload Photo'}</span>
+                        <input type="file" accept="image/*" className="hidden" onChange={handlePhotoChange} />
+                      </label>
+                      {photoFile && (
+                        <button
+                          type="button"
+                          onClick={() => { setPhotoFile(null); setPhotoPreview(''); }}
+                          className="text-xs text-red-500 hover:underline font-semibold flex items-center gap-1"
+                        >
+                          <Trash2 className="w-3 h-3" /> Remove
+                        </button>
+                      )}
+                    </div>
+                    <p className="text-[10px] text-stone-400 mt-1">PNG, JPG, or WEBP up to 5MB</p>
+                  </div>
+                </div>
+
                 <div className="grid sm:grid-cols-2 gap-4">
                   <div>
                     <label className="block text-xs font-semibold text-stone-700 mb-1">Full Name *</label>

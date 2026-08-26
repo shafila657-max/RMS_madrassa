@@ -353,8 +353,12 @@ const AlumniPage = () => {
                         {/* Header */}
                         <div className="flex items-start justify-between gap-3">
                           <div className="flex items-center gap-3">
-                            <div className="w-12 h-12 bg-gradient-to-tr from-emerald-600 to-teal-500 rounded-2xl flex items-center justify-center text-white text-lg font-bold shadow-md shadow-emerald-200">
-                              {alumni.full_name.charAt(0).toUpperCase()}
+                            <div className="w-12 h-12 bg-gradient-to-tr from-emerald-600 to-teal-500 rounded-2xl flex items-center justify-center text-white text-lg font-bold shadow-md shadow-emerald-200 shrink-0 overflow-hidden">
+                              {alumni.photo_url ? (
+                                <img src={alumni.photo_url} alt={alumni.full_name} className="w-full h-full object-cover" />
+                              ) : (
+                                alumni.full_name.charAt(0).toUpperCase()
+                              )}
                             </div>
                             <div>
                               <h3 className="font-bold text-stone-900 text-base leading-snug">{alumni.full_name}</h3>
@@ -543,19 +547,28 @@ const AlumniPage = () => {
                 {mentorsList.length > 0 ? (
                   mentorsList.map(m => (
                     <div key={m.id} className="bg-white rounded-2xl p-4 border border-stone-200 shadow-sm flex flex-wrap items-center justify-between gap-3">
-                      <div className="space-y-1">
-                        <p className="font-bold text-stone-900 text-sm flex items-center gap-2">
-                          {m.full_name}
-                          <span className="text-[10px] font-semibold bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded-full">
-                            Batch {m.passout_year}
-                          </span>
-                        </p>
-                        <p className="text-xs text-stone-600 font-medium">{m.working_area} {m.company_org ? `@ ${m.company_org}` : ''}</p>
-                        {m.mentor_topics && (
-                          <p className="text-xs text-emerald-700 bg-emerald-50 px-2.5 py-1 rounded-lg border border-emerald-100 inline-block font-medium">
-                            Mentors in: {m.mentor_topics}
+                      <div className="flex items-center gap-3">
+                        <div className="w-11 h-11 rounded-full overflow-hidden bg-emerald-100 border border-emerald-300 shrink-0 flex items-center justify-center font-bold text-emerald-800 text-xs shadow-sm">
+                          {m.photo_url ? (
+                            <img src={m.photo_url} alt={m.full_name} className="w-full h-full object-cover" />
+                          ) : (
+                            m.full_name?.charAt(0) || 'M'
+                          )}
+                        </div>
+                        <div className="space-y-1">
+                          <p className="font-bold text-stone-900 text-sm flex items-center gap-2">
+                            {m.full_name}
+                            <span className="text-[10px] font-semibold bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded-full">
+                              Batch {m.passout_year}
+                            </span>
                           </p>
-                        )}
+                          <p className="text-xs text-stone-600 font-medium">{m.working_area} {m.company_org ? `@ ${m.company_org}` : ''}</p>
+                          {m.mentor_topics && (
+                            <p className="text-xs text-emerald-700 bg-emerald-50 px-2.5 py-1 rounded-lg border border-emerald-100 inline-block font-medium">
+                              Mentors in: {m.mentor_topics}
+                            </p>
+                          )}
+                        </div>
                       </div>
                       {m.whatsapp_number && (
                         <a
