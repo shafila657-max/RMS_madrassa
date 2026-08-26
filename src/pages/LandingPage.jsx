@@ -335,16 +335,16 @@ const LandingPage = () => {
       </section>
 
       {/* ── HALL OF FAME LEADERBOARD ────────────────────────────────────────────── */}
-      <section className="bg-transparent py-8 text-stone-900 section-lazy md:py-10">
+      <section className="bg-gradient-to-b from-stone-950 via-emerald-950 to-stone-950 star-pattern-bg overflow-hidden section-lazy">
         <div className="mx-auto w-full px-0">
           {leaderboardData.length > 0 ? (
             <LeaderboardShowcase standings={leaderboardData} variant="screen" screenTone="transparent" showScreenHeader={false} showRankedList={false} />
           ) : leaderboardLoading ? (
-            <p className="text-center text-stone-400 text-sm animate-pulse">Leaderboard standings updating...</p>
+            <p className="py-10 text-center text-stone-400 text-sm animate-pulse">Leaderboard standings updating...</p>
           ) : (
-            <div className="mx-auto max-w-lg rounded-2xl border border-stone-200 bg-white p-8 text-center shadow-sm">
-              <Trophy className="w-12 h-12 text-stone-600 mx-auto mb-4" />
-              <p className="font-medium text-stone-700">New academic year started!</p>
+            <div className="mx-auto max-w-lg rounded-2xl border border-stone-700 bg-stone-900 p-8 text-center shadow-sm my-10 mx-6">
+              <Trophy className="w-12 h-12 text-stone-400 mx-auto mb-4" />
+              <p className="font-medium text-stone-300">New academic year started!</p>
               <p className="mt-1 text-xs text-stone-500">Scores and rankings will appear here once students start earning points.</p>
             </div>
           )}
