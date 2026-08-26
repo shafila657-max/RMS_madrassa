@@ -46,12 +46,21 @@ const AVATAR_NODES = [
   },
 ];
 
-// Speech Bubble Nodes matching reference image positions
-const CHAT_BUBBLES = [
-  { x: 318, y: 152 }, // Right (on Outer ring)
-  { x: 92,  y: 164 }, // Left (on Inner ring)
-  { x: 180, y: 270 }, // Bottom (on Inner ring)
+// Floating Badges (Chat Bubbles + WhatsApp Icons)
+const FLOATING_BADGES = [
+  { x: 318, y: 152, type: 'chat' },     // Right (on Outer ring) - Speech bubble
+  { x: 92,  y: 164, type: 'whatsapp' }, // Left (on Inner ring) - WhatsApp icon
+  { x: 180, y: 270, type: 'whatsapp' }, // Bottom (on Inner ring) - WhatsApp icon
+  { x: 175, y: 38,  type: 'chat' },     // Top (on Outer ring) - Speech bubble
 ];
+
+// ─── WhatsApp SVG Icon ──────────────────────────────────────────────────────
+const WhatsAppIcon = () => (
+  <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" className="text-emerald-600">
+    <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.521.151-.172.2-.296.3-.495.099-.198.05-.372-.025-.521-.075-.148-.669-1.611-.916-2.206-.242-.579-.487-.501-.669-.51l-.57-.01c-.197 0-.52.074-.792.372s-1.04 1.016-1.04 2.479 1.065 2.876 1.213 3.074c.149.198 2.095 3.2 5.076 4.487.709.306 1.263.489 1.694.626.712.226 1.36.194 1.872.118.571-.085 1.758-.719 2.006-1.413.248-.695.248-1.29.173-1.414-.074-.124-.272-.198-.57-.347z"/>
+    <path d="M12 2C6.477 2 2 6.477 2 12c0 1.891.525 3.66 1.438 5.168L2 22l4.98-1.33A9.955 9.955 0 0 0 12 22c5.523 0 10-4.477 10-10S17.523 2 12 2zm0 18c-1.634 0-3.15-.443-4.455-1.215l-.32-.189-2.964.792.793-2.906-.208-.33A7.954 7.954 0 0 1 4 12c0-4.411 3.589-8 8-8s8 3.589 8 8-3.589 8-8 8z"/>
+  </svg>
+);
 
 // ─── SVG Profile Fallback Avatars ──────────────────────────────────────────
 const AvatarIllustration = ({ type }) => {
@@ -85,7 +94,7 @@ const AvatarIllustration = ({ type }) => {
   }
   return (
     <svg viewBox="0 0 100 100" className="w-full h-full object-cover">
-      <path d="M50 45c7 0 12-5 12-12s-5-12-12-12-12 5-12 12 5 12 12 12z" fill="#064e3b" />
+      <path d="M50 45c7 0 12-5 12-12s-5-12-12-12-12 5-12 12 12z" fill="#064e3b" />
       <path d="M50 51c-14 0-23 8-23 21v7h46v-7c0-13-9-21-23-21z" fill="#0284c7" />
       <path d="M45 51h10v10H45z" fill="#ffffff" />
     </svg>
@@ -140,13 +149,13 @@ const AlumniOrbitalShowcase = ({ alumni = [] }) => {
         </svg>
       </div>
 
-      {/* ── Chat Speech Bubble Badges */}
-      {CHAT_BUBBLES.map((b, i) => (
+      {/* ── Floating Badges (Chat Speech Bubbles & WhatsApp Icons) */}
+      {FLOATING_BADGES.map((b, i) => (
         <motion.div
-          key={`chat-${i}`}
+          key={`badge-${i}`}
           initial={{ opacity: 0, scale: 0.5 }}
           animate={{ opacity: 1, scale: 1 }}
-          transition={{ delay: 0.2 + i * 0.1 }}
+          transition={{ delay: 0.15 + i * 0.1 }}
           className="absolute flex items-center justify-center pointer-events-none z-10"
           style={{
             left: `${(b.x / VB) * 100}%`,
@@ -154,10 +163,14 @@ const AlumniOrbitalShowcase = ({ alumni = [] }) => {
             transform: 'translate(-50%, -50%)',
           }}
         >
-          <div className="w-10 h-10 sm:w-11 sm:h-11 rounded-full bg-white/95 shadow-xl border border-emerald-100 flex items-center justify-center text-emerald-800">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" className="text-emerald-700">
-              <path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2z" />
-            </svg>
+          <div className="w-10 h-10 sm:w-11 sm:h-11 rounded-full bg-white/95 shadow-xl border border-emerald-100 flex items-center justify-center">
+            {b.type === 'whatsapp' ? (
+              <WhatsAppIcon />
+            ) : (
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" className="text-emerald-700">
+                <path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2z" />
+              </svg>
+            )}
           </div>
         </motion.div>
       ))}
