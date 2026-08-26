@@ -105,6 +105,30 @@ const StatCard = ({ icon: Icon, label, value, color, delay = 0 }) => (
   </motion.div>
 );
 
+// ─── Default Programs ────────────────────────────────────────────────────────
+const DEFAULT_PROGRAMS = [
+  {
+    id: 'default-1',
+    title: 'Al-Suffa Nattudarsu',
+    tag: 'Weekly',
+    schedule_text: 'Every Sunday at 7:30 PM',
+    location: 'Madrasa Main Hall & Online Stream',
+    description: 'Weekly community dars and Islamic learning session conducted every Sunday evening. Covers Quranic commentary, Seerah, and daily guidance.',
+    image_url: 'https://images.unsplash.com/photo-1584551246679-0daf3d275d0f?auto=format&fit=crop&w=800&q=80',
+    is_active: true,
+  },
+  {
+    id: 'default-2',
+    title: 'Malharatul Badriya',
+    tag: 'Monthly',
+    schedule_text: 'Monthly Special Gathering',
+    location: 'Madrasa Main Campus',
+    description: 'Monthly spiritual gathering of dhikr, Badriyath recitation, and Islamic education for the community.',
+    image_url: 'https://images.unsplash.com/photo-1609599006353-e629aaabfeae?auto=format&fit=crop&w=800&q=80',
+    is_active: true,
+  },
+];
+
 // ─── MAIN COMPONENT ────────────────────────────────────────────────────────────
 const AdminDashboard = () => {
   const navigate = useNavigate();
@@ -162,8 +186,8 @@ const AdminDashboard = () => {
   const [deletingAlumni, setDeletingAlumni] = useState(false);
   const [editingAlumni, setEditingAlumni] = useState(null);
   const [savingAlumni, setSavingAlumni] = useState(false);
-  const [alumniPhotoFile, setAlumniPhotoFile] = useState(null);
-  const [alumniPhotoPreview, setAlumniPhotoPreview] = useState('');
+  const [editAlumniPhotoFile, setEditAlumniPhotoFile] = useState(null);
+  const [editAlumniPhotoPreview, setEditAlumniPhotoPreview] = useState('');
   const [editAlumniForm, setEditAlumniForm] = useState({
     full_name: '',
     passout_year: '',
