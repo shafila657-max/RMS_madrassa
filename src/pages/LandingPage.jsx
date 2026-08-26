@@ -505,10 +505,9 @@ const LandingPage = () => {
         initial={{ y: 100, opacity: 0 }}
         animate={showInstallBanner ? { y: 0, opacity: 1 } : { y: 100, opacity: 0 }}
         transition={{ type: 'spring', damping: 20, stiffness: 200 }}
-        className="fixed bottom-5 left-1/2 -translate-x-1/2 z-50 pointer-events-none"
-        style={{ width: 'min(92vw, 420px)' }}
+        className="fixed bottom-5 left-0 right-0 z-50 flex justify-center pointer-events-none px-4"
       >
-        <div className="pointer-events-auto bg-stone-900 text-white rounded-2xl shadow-2xl shadow-black/30 px-5 py-4 flex items-center gap-4 border border-white/10">
+        <div className="pointer-events-auto w-full max-w-[420px] bg-stone-900 text-white rounded-2xl shadow-2xl shadow-black/30 px-5 py-4 flex items-center gap-4 border border-white/10">
           {/* Icon */}
           <div className="w-11 h-11 rounded-xl bg-emerald-600 flex items-center justify-center flex-shrink-0">
             <Download className="w-5 h-5 text-white" />
