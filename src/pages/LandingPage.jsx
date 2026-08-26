@@ -321,24 +321,24 @@ const LandingPage = () => {
       </section>
 
       {/* ── CTA DARK SECTION ──────────────────────────────────────────────── */}
-      <section className="bg-gradient-to-br from-stone-950 via-emerald-950 to-stone-900 star-pattern-bg py-20 text-white section-lazy md:py-24">
+      <section className="bg-gradient-to-b from-[#022c22] via-[#064e3b] to-[#044e3a] star-pattern-bg py-20 text-white section-lazy md:py-24">
         <div className="container mx-auto px-5 md:px-12">
           <motion.div
             variants={fadeScale} initial="hidden" whileInView="visible" viewport={VIEWPORT}
             className="mx-auto max-w-3xl text-center"
           >
             <h2 className="mb-5 font-heading text-4xl font-extrabold md:text-5xl">Begin Your Spiritual Journey</h2>
-            <p className="mx-auto mb-8 max-w-2xl text-base leading-relaxed text-stone-200 md:text-xl">
+            <p className="mx-auto mb-8 max-w-2xl text-base leading-relaxed text-emerald-100/90 md:text-xl">
               Join our community of learners and embark on a path of knowledge and spiritual growth
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
               <Link to="/register?type=student">
-                  <Button size="lg" className="rounded-full bg-white text-primary transition-colors hover:bg-emerald-50" data-testid="cta-student-register">
+                <Button size="lg" className="rounded-full bg-white text-emerald-950 font-bold shadow-lg transition-colors hover:bg-emerald-50" data-testid="cta-student-register">
                   Register as Student
                 </Button>
               </Link>
               <Link to="/register?type=parent">
-                  <Button size="lg" variant="outline" className="rounded-full border-emerald-300 text-white transition-colors hover:bg-white/10" data-testid="cta-parent-register">
+                <Button size="lg" variant="outline" className="rounded-full border-emerald-300/60 text-white transition-colors hover:bg-white/10" data-testid="cta-parent-register">
                   Register as Parent
                 </Button>
               </Link>
@@ -348,24 +348,24 @@ const LandingPage = () => {
       </section>
 
       {/* ── HALL OF FAME LEADERBOARD ────────────────────────────────────────────── */}
-      <section className="bg-gradient-to-b from-stone-950 via-emerald-950 to-stone-950 star-pattern-bg overflow-hidden section-lazy">
+      <section className="bg-gradient-to-b from-[#044e3a] via-[#065f46] to-[#044e3a] star-pattern-bg overflow-hidden section-lazy py-8 md:py-12">
         <div className="mx-auto w-full px-0">
           {leaderboardData.length > 0 ? (
             <LeaderboardShowcase standings={leaderboardData} variant="screen" screenTone="transparent" showScreenHeader={false} showRankedList={false} />
           ) : leaderboardLoading ? (
-            <p className="py-10 text-center text-stone-400 text-sm animate-pulse">Leaderboard standings updating...</p>
+            <p className="py-10 text-center text-emerald-200/80 text-sm animate-pulse">Leaderboard standings updating...</p>
           ) : (
-            <div className="mx-auto max-w-lg rounded-2xl border border-stone-700 bg-stone-900 p-8 text-center shadow-sm my-10 mx-6">
-              <Trophy className="w-12 h-12 text-stone-400 mx-auto mb-4" />
-              <p className="font-medium text-stone-300">New academic year started!</p>
-              <p className="mt-1 text-xs text-stone-500">Scores and rankings will appear here once students start earning points.</p>
+            <div className="mx-auto max-w-lg rounded-2xl border border-emerald-500/20 bg-emerald-950/60 backdrop-blur-sm p-8 text-center shadow-sm my-10 mx-6">
+              <Trophy className="w-12 h-12 text-amber-400 mx-auto mb-4" />
+              <p className="font-medium text-emerald-100">New academic year started!</p>
+              <p className="mt-1 text-xs text-emerald-300/70">Scores and rankings will appear here once students start earning points.</p>
             </div>
           )}
         </div>
       </section>
 
       {/* ── ALUMNI SECTION ─────────────────────────────────────────────────── */}
-      <section className="relative overflow-hidden border-t border-emerald-800 bg-gradient-to-br from-emerald-950 via-teal-950 to-stone-950 star-pattern-bg py-20 text-white section-lazy md:py-24">
+      <section className="relative overflow-hidden bg-gradient-to-b from-[#044e3a] via-[#022c22] to-[#011812] star-pattern-bg py-20 text-white section-lazy md:py-24">
         <div className="container relative z-10 mx-auto px-5 md:px-12">
           <div className="grid lg:grid-cols-2 gap-12 items-center">
             <motion.div variants={fadeLeft} initial="hidden" whileInView="visible" viewport={VIEWPORT} className="space-y-6">
@@ -421,7 +421,7 @@ const LandingPage = () => {
 
       {/* ── FEATURED GALLERY MARQUEE ─────────────────────────────────────── */}
       {galleryPreview.length > 0 && (
-        <section id="gallery" className="py-20 bg-stone-950 star-pattern-bg overflow-hidden relative section-lazy">
+        <section id="gallery" className="py-20 bg-gradient-to-b from-[#011812] to-stone-950 star-pattern-bg overflow-hidden relative section-lazy">
           {/* Subtle static decorations — no blur-3xl to avoid expensive filter layers */}
           <div className="absolute top-0 left-1/4 w-96 h-96 bg-emerald-600/8 rounded-full pointer-events-none" />
           <div className="absolute bottom-0 right-1/4 w-96 h-96 bg-amber-500/8 rounded-full pointer-events-none" />
