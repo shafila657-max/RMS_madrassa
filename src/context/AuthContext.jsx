@@ -48,28 +48,38 @@ const AuthProvider = ({ children }) => {
       setLoading(false);
     };
 
-    supabase.auth.getSession()
-      .then(({ data: { session: initialSession } }) => restoreSession(initialSession))
-      .catch((error) => {
-        console.error('Auth session restore error:', error);
-        if (isMounted) setLoading(false);
-      });
+    // Use onAuthStateChange exclusively for session management.
+    // This fires INITIAL_SESSION on app load (restoring persisted sessions),
+    // SIGNED_IN after login, TOKEN_REFRESHED when access token auto-renews,
+    // and SIGNED_OUT on logout — all without needing a separate getSession() call.
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, nextSession) => {
+      if (!isMounted) return;
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, nextSession) => {
-      if (!nextSession?.user) {
+      if (
+        event === 'SIGNED_OUT' ||
+        event === 'USER_DELETED' ||
+        !nextSession?.user
+      ) {
         setSession(null);
         setProfile(null);
+        clearCachedProfile();
         setLoading(false);
         return;
       }
 
-      // Keep protected routes in a loading state while a newly signed-in or
-      // refreshed session's profile is restored.
-      setSession(nextSession);
-      setLoading(true);
-
-      // Defer the profile query so it does not run inside Supabase's auth callback.
-      setTimeout(() => restoreSession(nextSession), 0);
+      // INITIAL_SESSION  — app opened with a persisted/refreshed session
+      // SIGNED_IN        — fresh login
+      // TOKEN_REFRESHED  — access token silently renewed (keeps user logged in)
+      if (
+        event === 'INITIAL_SESSION' ||
+        event === 'SIGNED_IN' ||
+        event === 'TOKEN_REFRESHED'
+      ) {
+        setSession(nextSession);
+        setLoading(true);
+        // Defer profile query outside Supabase's auth callback microtask
+        setTimeout(() => restoreSession(nextSession), 0);
+      }
     });
 
     return () => {

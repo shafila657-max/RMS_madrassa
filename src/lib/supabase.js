@@ -14,10 +14,14 @@ export const supabase = createClient(
   supabaseAnonKey || 'placeholder_key',
   {
     auth: {
-      // Keep users signed in across browser/PWA restarts and refresh tokens automatically.
+      // Persist session tokens in localStorage so they survive PWA/browser restarts.
       persistSession: true,
+      // Automatically refresh the access token using the refresh token (60-day window).
       autoRefreshToken: true,
       detectSessionInUrl: true,
+      // Explicitly use localStorage (not sessionStorage which clears on tab close).
+      storage: typeof window !== 'undefined' ? window.localStorage : undefined,
+      storageKey: 'rms-madrasa-auth',
     },
   }
 );
