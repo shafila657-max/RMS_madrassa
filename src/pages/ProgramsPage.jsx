@@ -105,7 +105,7 @@ export default function ProgramsPage() {
         <div className="container mx-auto px-5 md:px-12 relative z-10 text-center max-w-3xl">
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
             <span className="text-[11px] sm:text-xs uppercase tracking-widest font-bold text-emerald-300 bg-emerald-900/60 border border-emerald-700/50 px-3.5 py-1 rounded-full inline-flex items-center gap-1.5 mb-4">
-              <Sparkles className="w-3.5 h-3.5 text-amber-400" /> Fixed Events & Community Programs
+              <Sparkles className="w-3.5 h-3.5 text-amber-400" />Events & Community Programs
             </span>
             <h1 className="font-heading text-3xl sm:text-5xl font-extrabold text-white mb-4 tracking-tight">
               Madrasa Educational & Spiritual Events
@@ -121,11 +121,10 @@ export default function ProgramsPage() {
               <button
                 key={tag}
                 onClick={() => setSelectedTag(tag)}
-                className={`px-4 py-2 rounded-full text-xs font-bold transition-all ${
-                  selectedTag === tag
+                className={`px-4 py-2 rounded-full text-xs font-bold transition-all ${selectedTag === tag
                     ? 'bg-emerald-500 text-white shadow-lg shadow-emerald-900/50 scale-105'
                     : 'bg-stone-800/80 text-stone-300 hover:bg-stone-700 hover:text-white border border-stone-700/60'
-                }`}
+                  }`}
               >
                 {tag === 'All' ? 'All Programs' : `${tag} Events`}
               </button>
@@ -160,9 +159,8 @@ export default function ProgramsPage() {
                     />
                     <div className="absolute inset-0 bg-gradient-to-t from-stone-950/80 via-transparent to-transparent" />
                     <span
-                      className={`absolute top-4 left-4 text-[11px] font-extrabold px-3 py-1 rounded-full border shadow-md ${
-                        TAG_COLORS[program.tag] || 'bg-stone-100 text-stone-800 border-stone-300'
-                      }`}
+                      className={`absolute top-4 left-4 text-[11px] font-extrabold px-3 py-1 rounded-full border shadow-md ${TAG_COLORS[program.tag] || 'bg-stone-100 text-stone-800 border-stone-300'
+                        }`}
                     >
                       ✦ {program.tag || 'Special'} Event
                     </span>
@@ -248,9 +246,8 @@ export default function ProgramsPage() {
                 </button>
                 <div className="absolute bottom-4 left-6 right-6">
                   <span
-                    className={`text-[10px] font-extrabold px-3 py-1 rounded-full border mb-2 inline-block ${
-                      TAG_COLORS[selectedProgram.tag] || 'bg-stone-100 text-stone-800'
-                    }`}
+                    className={`text-[10px] font-extrabold px-3 py-1 rounded-full border mb-2 inline-block ${TAG_COLORS[selectedProgram.tag] || 'bg-stone-100 text-stone-800'
+                      }`}
                   >
                     ✦ {selectedProgram.tag || 'Special'} Event
                   </span>

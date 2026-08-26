@@ -82,6 +82,13 @@ const MarqueeCard = React.memo(({ item }) => {
 });
 MarqueeCard.displayName = 'MarqueeCard';
 
+// ─── GlowButton Wrapper ────────────────────────────────────────────────────────
+const GlowButton = ({ children, className = '', onClick }) => (
+  <div className={`glowing-edge-wrapper ${className}`} onClick={onClick}>
+    {children}
+  </div>
+);
+
 // ═══════════════════════════════════════════════════════════════════════════════
 const LandingPage = () => {
   const [showAlumniModal, setShowAlumniModal] = useState(false);
@@ -176,7 +183,7 @@ const LandingPage = () => {
         style={{ willChange: 'transform' }}
       >
         <div className="container relative mx-auto h-full px-5 sm:px-6 lg:px-10">
-          <div className="grid h-full grid-cols-[auto_1fr_auto] items-center gap-6">
+          <div className="flex h-full items-center justify-between gap-4">
             <div className="flex min-w-max items-center gap-2">
               <img src="/apple-touch-icon.png" alt="RMS Madrasa" className="w-9 h-9 rounded-xl object-cover" />
               <span className="font-heading text-xl font-bold tracking-tight text-stone-900 sm:text-2xl">RMS Madrasa</span>
@@ -192,20 +199,24 @@ const LandingPage = () => {
               </Link>
             </nav>
             <div className="hidden items-center justify-end gap-3 md:flex">
-              <Button
-                onClick={() => setShowQRModal(true)}
-                variant="outline"
-                className="items-center gap-1.5 rounded-full border-transparent bg-transparent text-xs font-bold text-stone-600 hover:border-stone-200 hover:bg-stone-50 hover:text-primary"
-              >
-                <QrCode className="w-4 h-4 text-emerald-600" /> Scan QR
-              </Button>
-              <Link to="/login" state={{ loginIntent: true }}>
-                <Button className="rounded-full bg-primary px-5 text-sm font-bold text-white hover:bg-emerald-600" data-testid="header-login-button">Login</Button>
-              </Link>
+              <GlowButton>
+                <Button
+                  onClick={() => setShowQRModal(true)}
+                  variant="outline"
+                  className="items-center gap-1.5 rounded-full border-transparent bg-stone-900 text-xs font-bold text-white hover:bg-stone-800"
+                >
+                  <QrCode className="w-4 h-4 text-emerald-400" /> Scan QR
+                </Button>
+              </GlowButton>
+              <GlowButton>
+                <Link to="/login" state={{ loginIntent: true }}>
+                  <Button className="rounded-full bg-stone-950 px-5 text-sm font-bold text-white hover:bg-emerald-700" data-testid="header-login-button">Login</Button>
+                </Link>
+              </GlowButton>
             </div>
             <button
               type="button"
-              className="flex h-10 w-10 items-center justify-center rounded-full text-stone-700 transition-colors hover:bg-stone-100 md:hidden"
+              className="flex h-10 w-10 items-center justify-center rounded-full text-stone-700 transition-colors hover:bg-stone-100 md:hidden ml-auto"
               onClick={() => setMobileNavOpen((open) => !open)}
               aria-label={mobileNavOpen ? 'Close navigation menu' : 'Open navigation menu'}
               aria-expanded={mobileNavOpen}
@@ -220,13 +231,19 @@ const LandingPage = () => {
                 <Link to="/programs" onClick={() => setMobileNavOpen(false)} className="rounded-xl px-3 py-2.5 text-sm font-medium text-stone-700 hover:bg-stone-50 hover:text-primary">Programs</Link>
                 <Link to="/alumni" onClick={() => setMobileNavOpen(false)} className="rounded-xl px-3 py-2.5 text-sm font-medium text-stone-700 hover:bg-stone-50 hover:text-primary">Alumni</Link>
                 <Link to="/gallery" onClick={() => setMobileNavOpen(false)} className="rounded-xl px-3 py-2.5 text-sm font-medium text-stone-700 hover:bg-stone-50 hover:text-primary">Gallery</Link>
-                <div className="mt-2 flex items-center gap-2 border-t border-stone-100 pt-3">
-                  <Button onClick={() => { setMobileNavOpen(false); setShowQRModal(true); }} variant="outline" className="flex-1 rounded-full border-transparent text-xs font-bold text-stone-600 hover:border-stone-200 hover:bg-stone-50">
-                    <QrCode className="mr-1.5 h-4 w-4 text-emerald-600" /> Scan QR
-                  </Button>
-                  <Link to="/login" state={{ loginIntent: true }} onClick={() => setMobileNavOpen(false)} className="flex-1">
-                    <Button className="w-full rounded-full bg-primary text-xs font-bold text-white hover:bg-emerald-600">Login</Button>
-                  </Link>
+                <div className="mt-3 flex flex-col gap-2.5 border-t border-stone-100 pt-3.5">
+                  <GlowButton className="w-full">
+                    <Button onClick={() => { setMobileNavOpen(false); setShowQRModal(true); }} className="w-full rounded-full bg-stone-900 hover:bg-stone-900 text-xs font-extrabold text-white border-0 py-2.5 h-auto">
+                      <QrCode className="mr-1.5 h-4 w-4 text-emerald-400 shrink-0" /> Scan QR Code
+                    </Button>
+                  </GlowButton>
+                  <GlowButton className="w-full">
+                    <Link to="/login" state={{ loginIntent: true }} onClick={() => setMobileNavOpen(false)} className="w-full flex">
+                      <Button className="w-full rounded-full bg-stone-950 hover:bg-stone-950 text-xs font-extrabold text-white border-0 py-2.5 h-auto">
+                        Sign In / Login
+                      </Button>
+                    </Link>
+                  </GlowButton>
                 </div>
               </nav>
             </div>
@@ -257,17 +274,21 @@ const LandingPage = () => {
               <p className="mb-8 max-w-xl text-base leading-relaxed text-stone-600 md:text-lg">
                 Building a foundation of faith, Quranic knowledge, and character for the leaders of tomorrow.
               </p>
-              <div className="flex flex-col sm:flex-row gap-4">
-                <Link to="/register?type=student">
-                  <Button size="lg" className="rounded-full bg-primary shadow-md shadow-emerald-200 transition-colors hover:bg-emerald-600" data-testid="student-register-button">
-                    Student Registration <ArrowRight className="ml-2 w-4 h-4" />
-                  </Button>
-                </Link>
-                <Link to="/register?type=parent">
-                  <Button size="lg" variant="outline" className="rounded-full border-emerald-300 bg-white/70 text-emerald-900 transition-colors hover:bg-emerald-50" data-testid="parent-register-button">
-                    Parent Registration
-                  </Button>
-                </Link>
+              <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 w-full sm:w-auto">
+                <GlowButton className="w-full sm:w-auto">
+                  <Link to="/register?type=student" className="w-full sm:w-auto flex">
+                    <Button size="lg" className="w-full sm:w-auto rounded-full bg-stone-950 hover:bg-stone-950 px-5 sm:px-7 text-xs sm:text-sm font-extrabold text-white border-0 py-3 h-auto" data-testid="student-register-button">
+                      Student Registration <ArrowRight className="ml-1.5 w-4 h-4 text-emerald-400" />
+                    </Button>
+                  </Link>
+                </GlowButton>
+                <GlowButton className="w-full sm:w-auto">
+                  <Link to="/register?type=parent" className="w-full sm:w-auto flex">
+                    <Button size="lg" className="w-full sm:w-auto rounded-full bg-stone-950 hover:bg-stone-950 px-5 sm:px-7 text-xs sm:text-sm font-extrabold text-white border-0 py-3 h-auto" data-testid="parent-register-button">
+                      Parent Registration
+                    </Button>
+                  </Link>
+                </GlowButton>
               </div>
             </motion.div>
             <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} transition={{ duration: 0.4 }} className="hidden md:block relative">
@@ -376,15 +397,17 @@ const LandingPage = () => {
           {/* Explore Programs CTA Banner */}
           <motion.div
             variants={fadeUp} initial="hidden" whileInView="visible" viewport={VIEWPORT}
-            className="flex justify-center pt-2"
+            className="flex justify-center pt-2 w-full"
           >
-            <Link to="/programs">
-              <Button size="lg" className="rounded-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold px-8 shadow-lg shadow-emerald-200 gap-2">
-                <BookOpen className="w-5 h-5 text-emerald-200" />
-                Explore All Programs &amp; Fixed Events
-                <ArrowRight className="w-4 h-4 ml-1" />
-              </Button>
-            </Link>
+            <GlowButton className="w-full sm:w-auto">
+              <Link to="/programs" className="w-full sm:w-auto flex">
+                <Button size="lg" className="w-full sm:w-auto rounded-full bg-stone-950 hover:bg-stone-950 text-white font-extrabold px-5 sm:px-8 text-xs sm:text-sm border-0 py-3 h-auto gap-2">
+                  <BookOpen className="w-4 h-4 sm:w-5 sm:h-5 text-emerald-400 shrink-0" />
+                  <span>Explore All Programs &amp; Fixed Events</span>
+                  <ArrowRight className="w-4 h-4 text-emerald-400 shrink-0 ml-1" />
+                </Button>
+              </Link>
+            </GlowButton>
           </motion.div>
 
           {/* Live Impact Counter Metric Bar */}
@@ -429,17 +452,21 @@ const LandingPage = () => {
             <p className="mx-auto mb-8 max-w-2xl text-base leading-relaxed text-emerald-100/90 md:text-xl">
               Join our community of learners and embark on a path of knowledge and spiritual growth
             </p>
-            <div className="flex flex-col sm:flex-row gap-4 justify-center">
-              <Link to="/register?type=student">
-                <Button size="lg" className="rounded-full bg-white text-emerald-950 font-bold shadow-lg transition-colors hover:bg-emerald-50" data-testid="cta-student-register">
-                  Register as Student
-                </Button>
-              </Link>
-              <Link to="/register?type=parent">
-                <Button size="lg" variant="outline" className="rounded-full border-emerald-300/60 text-white transition-colors hover:bg-white/10" data-testid="cta-parent-register">
-                  Register as Parent
-                </Button>
-              </Link>
+            <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 justify-center w-full sm:w-auto">
+              <GlowButton className="w-full sm:w-auto">
+                <Link to="/register?type=student" className="w-full sm:w-auto flex">
+                  <Button size="lg" className="w-full sm:w-auto rounded-full bg-stone-950 hover:bg-stone-950 text-white font-extrabold px-5 sm:px-8 text-xs sm:text-sm border-0 py-3 h-auto" data-testid="cta-student-register">
+                    Register as Student
+                  </Button>
+                </Link>
+              </GlowButton>
+              <GlowButton className="w-full sm:w-auto">
+                <Link to="/register?type=parent" className="w-full sm:w-auto flex">
+                  <Button size="lg" className="w-full sm:w-auto rounded-full bg-stone-950 hover:bg-stone-950 text-white font-extrabold px-5 sm:px-8 text-xs sm:text-sm border-0 py-3 h-auto" data-testid="cta-parent-register">
+                    Register as Parent
+                  </Button>
+                </Link>
+              </GlowButton>
             </div>
           </motion.div>
         </div>
@@ -503,15 +530,19 @@ const LandingPage = () => {
                   </div>
                 ))}
               </div>
-              <div className="pt-4 flex flex-wrap gap-4">
-                <Button onClick={() => setShowAlumniModal(true)} size="lg" className="rounded-full bg-emerald-400 font-bold text-stone-950 shadow-lg shadow-black/20 transition-colors hover:bg-emerald-300">
-                  <GraduationCap className="mr-2 w-5 h-5" /> Register as Alumni
-                </Button>
-                <Link to="/alumni">
-                  <Button size="lg" variant="outline" className="rounded-full border-emerald-300 text-emerald-100 transition-colors hover:bg-white/10">
-                    Explore Alumni Directory
+              <div className="pt-4 flex flex-col sm:flex-row flex-wrap gap-3 sm:gap-4 w-full sm:w-auto">
+                <GlowButton className="w-full sm:w-auto">
+                  <Button onClick={() => setShowAlumniModal(true)} size="lg" className="w-full sm:w-auto rounded-full bg-stone-950 hover:bg-stone-950 font-extrabold text-white px-5 sm:px-7 text-xs sm:text-sm border-0 py-3 h-auto">
+                    <GraduationCap className="mr-2 w-4 h-4 sm:w-5 sm:h-5 text-emerald-400 shrink-0" /> Register as Alumni
                   </Button>
-                </Link>
+                </GlowButton>
+                <GlowButton className="w-full sm:w-auto">
+                  <Link to="/alumni" className="w-full sm:w-auto flex">
+                    <Button size="lg" className="w-full sm:w-auto rounded-full bg-stone-950 hover:bg-stone-950 text-white font-extrabold px-5 sm:px-7 text-xs sm:text-sm border-0 py-3 h-auto">
+                      Explore Alumni Directory
+                    </Button>
+                  </Link>
+                </GlowButton>
               </div>
             </motion.div>
 
@@ -547,14 +578,16 @@ const LandingPage = () => {
                 <h2 className="font-heading text-3xl md:text-4xl font-bold text-white">Our Gallery</h2>
                 <p className="text-stone-400 text-sm mt-1">Events, classes &amp; celebrations at RMS Madrasa</p>
               </div>
-              <Link
-                to="/gallery"
-                className="shrink-0 whitespace-nowrap flex items-center gap-1.5 sm:gap-2 px-3 sm:px-5 py-2 sm:py-2.5 rounded-full bg-white/10 hover:bg-emerald-600 text-white text-xs sm:text-sm font-semibold border border-white/10 hover:border-emerald-600 transition-colors group"
-              >
-                <ImageIcon className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
-                <span>View Gallery</span>
-                <ArrowRight className="w-3.5 h-3.5 sm:w-4 sm:h-4 group-hover:translate-x-1 transition-transform" />
-              </Link>
+              <GlowButton className="shrink-0">
+                <Link
+                  to="/gallery"
+                  className="shrink-0 whitespace-nowrap flex items-center gap-1.5 sm:gap-2 px-3.5 sm:px-5 py-2 sm:py-2.5 rounded-full bg-stone-900 hover:bg-stone-900 text-white text-xs sm:text-sm font-semibold border-0 transition-colors group"
+                >
+                  <ImageIcon className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-emerald-400" />
+                  <span>View Gallery</span>
+                  <ArrowRight className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-emerald-400 group-hover:translate-x-1 transition-transform" />
+                </Link>
+              </GlowButton>
             </div>
           </div>
 
