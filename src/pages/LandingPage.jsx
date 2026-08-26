@@ -89,6 +89,50 @@ const GlowButton = ({ children, className = '', onClick }) => (
   </div>
 );
 
+// ─── Animated Metric Counter Component ───────────────────────────────────────
+const AnimatedMetricCounter = ({ target, suffix = '+', duration = 2000 }) => {
+  const [count, setCount] = useState(0);
+  const counterRef = React.useRef(null);
+  const [hasAnimated, setHasAnimated] = useState(false);
+
+  useEffect(() => {
+    const node = counterRef.current;
+    if (!node) return;
+
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting && !hasAnimated) {
+          setHasAnimated(true);
+          let startTimestamp = null;
+          const step = (timestamp) => {
+            if (!startTimestamp) startTimestamp = timestamp;
+            const progress = Math.min((timestamp - startTimestamp) / duration, 1);
+            // Smooth ease-out cubic curve
+            const currentCount = Math.floor((1 - Math.pow(1 - progress, 3)) * target);
+            setCount(currentCount);
+            if (progress < 1) {
+              window.requestAnimationFrame(step);
+            } else {
+              setCount(target);
+            }
+          };
+          window.requestAnimationFrame(step);
+        }
+      },
+      { threshold: 0.15 }
+    );
+
+    observer.observe(node);
+    return () => observer.disconnect();
+  }, [target, duration, hasAnimated]);
+
+  return (
+    <span ref={counterRef}>
+      {count.toLocaleString()}{suffix}
+    </span>
+  );
+};
+
 // ═══════════════════════════════════════════════════════════════════════════════
 const LandingPage = () => {
   const [showAlumniModal, setShowAlumniModal] = useState(false);
@@ -98,7 +142,32 @@ const LandingPage = () => {
   const [showInstallBanner, setShowInstallBanner] = useState(false);
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
   const [alumniPreview, setAlumniPreview] = useState([]);
+  const [liveCounts, setLiveCounts] = useState({
+    students: 100,
+    teachers: 25,
+    years: 50,
+    alumni: 1000,
+  });
   const location = useLocation();
+
+  // Fetch live counts from database
+  useEffect(() => {
+    const fetchLiveCounts = async () => {
+      try {
+        const { count: sCount } = await supabase.from('students').select('id', { count: 'exact', head: true });
+        const { count: aCount } = await supabase.from('alumni_profiles').select('id', { count: 'exact', head: true });
+
+        setLiveCounts((prev) => ({
+          ...prev,
+          students: Math.max(100, sCount || 0),
+          alumni: Math.max(1000, aCount || 0),
+        }));
+      } catch (err) {
+        console.error('Metrics fetch error:', err);
+      }
+    };
+    fetchLiveCounts();
+  }, []);
 
   // Fetch 4 approved alumni for the orbital showcase (public fields only)
   useEffect(() => {
@@ -417,14 +486,14 @@ const LandingPage = () => {
           >
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-6 text-center">
               {[
-                { number: '100+', label: 'Active Students Enrolled' },
-                { number: '25+',  label: 'Certified Asatidha & Scholars' },
-                { number: '50+',  label: 'Years of Excellence' },
-                { number: '1000+',label: 'Alumni Worldwide' },
-              ].map(({ number, label }, idx) => (
+                { value: liveCounts.students, label: 'Active Students Enrolled' },
+                { value: liveCounts.teachers, label: 'Certified Asatidha & Scholars' },
+                { value: liveCounts.years,    label: 'Years of Excellence' },
+                { value: liveCounts.alumni,   label: 'Alumni Worldwide' },
+              ].map(({ value, label }, idx) => (
                 <div key={label} className={`p-2 sm:p-3 ${idx % 2 !== 0 ? 'border-l border-white/10' : ''} ${idx > 0 ? 'lg:border-l lg:border-white/10' : ''}`}>
                   <p className="font-heading text-2xl sm:text-3xl lg:text-4xl font-extrabold text-amber-400 mb-0.5 sm:mb-1 tracking-tight">
-                    {number}
+                    <AnimatedMetricCounter target={value} />
                   </p>
                   <p className="text-[11px] sm:text-xs lg:text-sm text-emerald-100/80 font-medium leading-tight">
                     {label}
