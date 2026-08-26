@@ -1,10 +1,9 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { RefreshCw, ArrowDown } from 'lucide-react';
-import { toast } from 'sonner';
 
-const PULL_THRESHOLD = 65; // Minimum drag distance to trigger refresh
-const MAX_PULL = 100;       // Maximum pull limit
+const PULL_THRESHOLD = 60; // Minimum drag distance to trigger refresh
+const MAX_PULL = 90;        // Maximum pull limit
 
 const PullToRefresh = ({ children, onRefresh }) => {
   const [pullDistance, setPullDistance] = useState(0);
@@ -57,14 +56,11 @@ const PullToRefresh = ({ children, onRefresh }) => {
           if (onRefresh) {
             await onRefresh();
           } else {
-            // Trigger app-level custom refresh event or reload route data
             window.dispatchEvent(new CustomEvent('app-pull-refresh'));
-            await new Promise(res => setTimeout(res, 800));
+            await new Promise(res => setTimeout(res, 600));
           }
-          toast.success('Page refreshed with latest data');
         } catch (err) {
           console.error(err);
-          toast.error('Failed to refresh');
         } finally {
           setIsRefreshing(false);
           setPullDistance(0);
@@ -92,38 +88,30 @@ const PullToRefresh = ({ children, onRefresh }) => {
 
   return (
     <div className="relative min-h-screen">
-      {/* Floating Pull to Refresh Indicator Badge */}
+      {/* Sleek Native Minimal Circular Pull Indicator */}
       <AnimatePresence>
         {(isPulling || isRefreshing) && (
           <motion.div
-            initial={{ opacity: 0, y: -40, scale: 0.8 }}
+            initial={{ opacity: 0, y: -30, scale: 0.8 }}
             animate={{
               opacity: 1,
-              y: isRefreshing ? 20 : Math.min(pullDistance - 10, 45),
+              y: isRefreshing ? 16 : Math.min(pullDistance - 10, 36),
               scale: 1
             }}
-            exit={{ opacity: 0, y: -40, scale: 0.8 }}
+            exit={{ opacity: 0, y: -30, scale: 0.8 }}
             transition={{ type: 'spring', damping: 25, stiffness: 300 }}
-            className="fixed top-0 left-0 right-0 z-[100] flex justify-center pointer-events-none px-4"
+            className="fixed top-0 left-0 right-0 z-[100] flex justify-center pointer-events-none"
           >
-            <div className="bg-stone-900/95 backdrop-blur-md border border-emerald-500/40 text-white px-4 py-2.5 rounded-full shadow-2xl flex items-center gap-2.5 text-xs font-semibold">
+            <div className="w-10 h-10 rounded-full bg-stone-900/90 backdrop-blur-md border border-emerald-500/40 shadow-2xl flex items-center justify-center">
               {isRefreshing ? (
-                <>
-                  <RefreshCw className="w-4 h-4 text-emerald-400 animate-spin" />
-                  <span className="text-emerald-100">Refreshing content...</span>
-                </>
+                <RefreshCw className="w-4 h-4 text-emerald-400 animate-spin" />
               ) : (
-                <>
-                  <div
-                    className="w-5 h-5 rounded-full bg-emerald-500/20 flex items-center justify-center transition-transform duration-150"
-                    style={{ transform: `rotate(${progress * 180}deg)` }}
-                  >
-                    <ArrowDown className={`w-3.5 h-3.5 ${isPastThreshold ? 'text-amber-400' : 'text-emerald-400'}`} />
-                  </div>
-                  <span className={isPastThreshold ? 'text-amber-300 font-bold' : 'text-stone-300'}>
-                    {isPastThreshold ? 'Release to refresh' : 'Pull down to refresh'}
-                  </span>
-                </>
+                <div
+                  className="transition-transform duration-150"
+                  style={{ transform: `rotate(${progress * 180}deg)` }}
+                >
+                  <ArrowDown className={`w-4 h-4 ${isPastThreshold ? 'text-amber-400' : 'text-emerald-400'}`} />
+                </div>
               )}
             </div>
           </motion.div>
