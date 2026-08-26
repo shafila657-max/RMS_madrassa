@@ -376,20 +376,20 @@ const LandingPage = () => {
           {/* Live Impact Counter Metric Bar */}
           <motion.div
             variants={fadeUp} initial="hidden" whileInView="visible" viewport={VIEWPORT}
-            className="rounded-3xl border border-emerald-500/20 bg-gradient-to-r from-emerald-950 via-teal-950 to-stone-950 text-white p-8 sm:p-10 shadow-2xl"
+            className="rounded-2xl sm:rounded-3xl border border-emerald-500/20 bg-gradient-to-r from-emerald-950 via-teal-950 to-stone-950 text-white p-4 sm:p-8 lg:p-10 shadow-2xl"
           >
-            <div className="grid grid-cols-2 lg:grid-cols-4 gap-6 text-center">
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-6 text-center">
               {[
-                { number: '500+', label: 'Active Students Enrolled' },
-                { number: '25+', label: 'Certified Asatidha & Scholars' },
-                { number: '15+', label: 'Years of Excellence' },
-                { number: '1000+', label: 'Alumni Worldwide' },
+                { number: '100+', label: 'Active Students Enrolled' },
+                { number: '25+',  label: 'Certified Asatidha & Scholars' },
+                { number: '50+',  label: 'Years of Excellence' },
+                { number: '1000+',label: 'Alumni Worldwide' },
               ].map(({ number, label }, idx) => (
-                <div key={label} className={`p-3 ${idx !== 0 ? 'sm:border-l sm:border-white/10' : ''}`}>
-                  <p className="font-heading text-3xl sm:text-4xl font-extrabold text-amber-400 mb-1 tracking-tight">
+                <div key={label} className={`p-2 sm:p-3 ${idx % 2 !== 0 ? 'border-l border-white/10' : ''} ${idx > 0 ? 'lg:border-l lg:border-white/10' : ''}`}>
+                  <p className="font-heading text-2xl sm:text-3xl lg:text-4xl font-extrabold text-amber-400 mb-0.5 sm:mb-1 tracking-tight">
                     {number}
                   </p>
-                  <p className="text-xs sm:text-sm text-emerald-100/80 font-medium">
+                  <p className="text-[11px] sm:text-xs lg:text-sm text-emerald-100/80 font-medium leading-tight">
                     {label}
                   </p>
                 </div>
