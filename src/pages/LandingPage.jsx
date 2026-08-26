@@ -183,7 +183,7 @@ const LandingPage = () => {
             </div>
             <nav className="hidden items-center justify-center gap-9 md:flex" aria-label="Primary navigation">
               <a href="#about" className="text-sm font-medium text-stone-600 transition-colors hover:text-primary">About</a>
-              <a href="#programs" className="text-sm font-medium text-stone-600 transition-colors hover:text-primary">Programs</a>
+              <Link to="/programs" className={`text-sm font-medium transition-colors hover:text-primary ${location.pathname === '/programs' ? 'font-semibold text-primary underline underline-offset-8' : 'text-stone-600'}`}>Programs</Link>
               <Link to="/alumni" className={`items-center gap-1 text-sm font-medium transition-colors hover:text-primary md:flex ${location.pathname === '/alumni' ? 'font-semibold text-primary underline underline-offset-8' : 'text-stone-600'}`}>
                 <GraduationCap className="w-4 h-4 text-emerald-600" /> Alumni
               </Link>
@@ -217,7 +217,7 @@ const LandingPage = () => {
             <div className="absolute left-0 right-0 top-full border-b border-stone-200 bg-white/95 px-5 py-4 shadow-lg backdrop-blur-md md:hidden">
               <nav className="flex flex-col gap-1" aria-label="Mobile navigation">
                 <a href="#about" onClick={() => setMobileNavOpen(false)} className="rounded-xl px-3 py-2.5 text-sm font-medium text-stone-700 hover:bg-stone-50 hover:text-primary">About</a>
-                <a href="#programs" onClick={() => setMobileNavOpen(false)} className="rounded-xl px-3 py-2.5 text-sm font-medium text-stone-700 hover:bg-stone-50 hover:text-primary">Programs</a>
+                <Link to="/programs" onClick={() => setMobileNavOpen(false)} className="rounded-xl px-3 py-2.5 text-sm font-medium text-stone-700 hover:bg-stone-50 hover:text-primary">Programs</Link>
                 <Link to="/alumni" onClick={() => setMobileNavOpen(false)} className="rounded-xl px-3 py-2.5 text-sm font-medium text-stone-700 hover:bg-stone-50 hover:text-primary">Alumni</Link>
                 <Link to="/gallery" onClick={() => setMobileNavOpen(false)} className="rounded-xl px-3 py-2.5 text-sm font-medium text-stone-700 hover:bg-stone-50 hover:text-primary">Gallery</Link>
                 <div className="mt-2 flex items-center gap-2 border-t border-stone-100 pt-3">
@@ -372,6 +372,20 @@ const LandingPage = () => {
               </motion.div>
             ))}
           </div>
+
+          {/* Explore Programs CTA Banner */}
+          <motion.div
+            variants={fadeUp} initial="hidden" whileInView="visible" viewport={VIEWPORT}
+            className="flex justify-center pt-2"
+          >
+            <Link to="/programs">
+              <Button size="lg" className="rounded-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold px-8 shadow-lg shadow-emerald-200 gap-2">
+                <BookOpen className="w-5 h-5 text-emerald-200" />
+                Explore All Programs &amp; Fixed Events
+                <ArrowRight className="w-4 h-4 ml-1" />
+              </Button>
+            </Link>
+          </motion.div>
 
           {/* Live Impact Counter Metric Bar */}
           <motion.div

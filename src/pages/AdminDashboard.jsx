@@ -160,6 +160,37 @@ const AdminDashboard = () => {
   const [eventForm, setEventForm] = useState({ title: '', description: '', event_date: '', location: 'Madrasa Main Auditorium' });
   const [alumniToDelete, setAlumniToDelete] = useState(null);
   const [deletingAlumni, setDeletingAlumni] = useState(false);
+  const [editingAlumni, setEditingAlumni] = useState(null);
+  const [savingAlumni, setSavingAlumni] = useState(false);
+  const [alumniPhotoFile, setAlumniPhotoFile] = useState(null);
+  const [alumniPhotoPreview, setAlumniPhotoPreview] = useState('');
+  const [editAlumniForm, setEditAlumniForm] = useState({
+    full_name: '',
+    passout_year: '',
+    working_area: '',
+    company_org: '',
+    whatsapp_number: '',
+    phone: '',
+    email: '',
+    location: '',
+    linkedin_url: '',
+    bio: '',
+    status: 'approved',
+    is_mentor: false,
+    mentor_topics: '',
+    photo_url: '',
+  });
+
+  // Programs & Fixed Events
+  const [programsData, setProgramsData] = useState([]);
+  const [editingProgram, setEditingProgram] = useState(null);
+  const [programForm, setProgramForm] = useState({
+    title: '', tag: 'Weekly', schedule_text: '', location: 'Madrasa Main Hall',
+    description: '', image_url: '', is_active: true
+  });
+  const [programPhotoFile, setProgramPhotoFile] = useState(null);
+  const [programPhotoPreview, setProgramPhotoPreview] = useState('');
+  const [savingProgram, setSavingProgram] = useState(false);
 
   // Gallery
   const [galleryItems, setGalleryItems] = useState([]);
@@ -288,6 +319,20 @@ const AdminDashboard = () => {
     setAlumniData(profiles || []);
     setAlumniEvents(events || []);
     setAlumniRSVPs(rsvps || []);
+  }, []);
+
+  const fetchAdminPrograms = useCallback(async () => {
+    try {
+      const { data, error } = await supabase
+        .from('madrasa_programs')
+        .select('*')
+        .order('created_at', { ascending: false });
+      if (!error && data) {
+        setProgramsData(data);
+      }
+    } catch (err) {
+      console.error(err);
+    }
   }, []);
 
   const fetchGalleryItems = useCallback(async () => {
@@ -913,6 +958,124 @@ const AdminDashboard = () => {
     });
   };
 
+  const handleOpenCreateProgram = () => {
+    setEditingProgram({ id: null, is_new: true });
+    setProgramPhotoFile(null);
+    setProgramPhotoPreview('');
+    setProgramForm({
+      title: '',
+      tag: 'Weekly',
+      schedule_text: 'Every Sunday at 7:30 PM',
+      location: 'Madrasa Main Hall',
+      description: '',
+      image_url: '',
+      is_active: true,
+    });
+  };
+
+  const handleOpenEditProgram = (progObj) => {
+    setEditingProgram(progObj);
+    setProgramPhotoFile(null);
+    setProgramPhotoPreview(progObj.image_url || '');
+    setProgramForm({
+      title: progObj.title || '',
+      tag: progObj.tag || 'Weekly',
+      schedule_text: progObj.schedule_text || '',
+      location: progObj.location || '',
+      description: progObj.description || '',
+      image_url: progObj.image_url || '',
+      is_active: progObj.is_active ?? true,
+    });
+  };
+
+  const handleSaveProgram = async (e) => {
+    e.preventDefault();
+    if (!editingProgram) return;
+    if (!programForm.title || !programForm.schedule_text) {
+      toast.error('Title and Schedule text are required');
+      return;
+    }
+
+    setSavingProgram(true);
+    try {
+      let imageUrl = programForm.image_url;
+      if (programPhotoFile) {
+        try {
+          const fileExt = programPhotoFile.name.split('.').pop();
+          const fileName = `prog_${Date.now()}_${Math.random().toString(36).substring(2, 7)}.${fileExt}`;
+          const { error: uploadError } = await supabase.storage.from('program-images').upload(fileName, programPhotoFile);
+          if (!uploadError) {
+            const { data: publicUrlData } = supabase.storage.from('program-images').getPublicUrl(fileName);
+            imageUrl = publicUrlData?.publicUrl || imageUrl;
+          }
+        } catch (uploadErr) {
+          console.warn('Program photo upload error:', uploadErr);
+        }
+      }
+
+      if (editingProgram.is_new) {
+        const { error } = await supabase.from('madrasa_programs').insert([{
+          title: programForm.title,
+          tag: programForm.tag,
+          schedule_text: programForm.schedule_text,
+          location: programForm.location,
+          description: programForm.description,
+          image_url: imageUrl,
+          is_active: programForm.is_active,
+        }]);
+        if (error) throw error;
+        toast.success(`Program "${programForm.title}" created successfully!`);
+      } else {
+        const { error } = await supabase
+          .from('madrasa_programs')
+          .update({
+            title: programForm.title,
+            tag: programForm.tag,
+            schedule_text: programForm.schedule_text,
+            location: programForm.location,
+            description: programForm.description,
+            image_url: imageUrl,
+            is_active: programForm.is_active,
+          })
+          .eq('id', editingProgram.id);
+        if (error) throw error;
+        toast.success(`Program "${programForm.title}" updated successfully!`);
+      }
+
+      setEditingProgram(null);
+      fetchAdminPrograms();
+    } catch (err) {
+      toast.error('Failed to save program: ' + err.message);
+    } finally {
+      setSavingProgram(false);
+    }
+  };
+
+  const handleToggleProgramActive = async (id, currentStatus) => {
+    try {
+      const { error } = await supabase
+        .from('madrasa_programs')
+        .update({ is_active: !currentStatus })
+        .eq('id', id);
+      if (error) throw error;
+      toast.success('Program visibility updated!');
+      fetchAdminPrograms();
+    } catch (err) {
+      toast.error('Failed to update status');
+    }
+  };
+
+  const handleDeleteProgram = async (id) => {
+    try {
+      const { error } = await supabase.from('madrasa_programs').delete().eq('id', id);
+      if (error) throw error;
+      toast.success('Program deleted');
+      fetchAdminPrograms();
+    } catch (err) {
+      toast.error('Failed to delete program');
+    }
+  };
+
   const handleAddGalleryItem = async (e) => {
     e.preventDefault();
     if (!galleryForm.title) {
@@ -1035,6 +1198,7 @@ const AdminDashboard = () => {
         { id: 'classes', label: 'Classes' },
         { id: 'approvals', label: `Approvals${pendingUsers.length > 0 ? ` (${pendingUsers.length})` : ''}` },
         { id: 'alumni', label: `Alumni${pendingAlumniCount > 0 ? ` (${pendingAlumniCount})` : ''}` },
+        { id: 'programs', label: 'Programs' },
         { id: 'announcements', label: 'Announcements' },
         { id: 'students', label: 'Students' },
         { id: 'gallery', label: 'Gallery' },
@@ -1419,6 +1583,80 @@ const AdminDashboard = () => {
                 ) : (
                   <p className="text-stone-400 text-xs py-4 text-center">No alumni events scheduled yet. Click "Create Event" to post one.</p>
                 )}
+              </div>
+            </motion.div>
+          )}
+
+          {/* ── PROGRAMS & FIXED EVENTS ── */}
+          {activeTab === 'programs' && (
+            <motion.div key="programs" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="space-y-6">
+              <div className="flex flex-wrap items-center justify-between gap-3 bg-white rounded-2xl p-5 border border-stone-100 shadow-sm">
+                <div>
+                  <h2 className="text-xl font-bold text-stone-900">Programs & Fixed Events Management</h2>
+                  <p className="text-xs text-stone-500 mt-0.5">Manage weekly dars, monthly events, cover photos, schedules, and program cards</p>
+                </div>
+                <Btn variant="primary" onClick={handleOpenCreateProgram} className="flex items-center gap-1.5">
+                  <Plus className="w-4 h-4" /> Add New Program / Event
+                </Btn>
+              </div>
+
+              {/* Programs List */}
+              <div className="grid gap-6 md:grid-cols-2">
+                {(programsData.length > 0 ? programsData : DEFAULT_PROGRAMS).map((prog) => (
+                  <div key={prog.id} className="bg-white rounded-2xl border border-stone-200 overflow-hidden shadow-sm flex flex-col justify-between">
+                    <div>
+                      <div className="relative h-44 bg-stone-900 overflow-hidden">
+                        <img
+                          src={prog.image_url || 'https://images.unsplash.com/photo-1584551246679-0daf3d275d0f?auto=format&fit=crop&w=800&q=80'}
+                          alt={prog.title}
+                          className="w-full h-full object-cover"
+                        />
+                        <div className="absolute top-3 left-3 bg-stone-950/80 backdrop-blur-sm border border-stone-700 text-emerald-400 text-[10px] font-extrabold px-3 py-1 rounded-full">
+                          ✦ {prog.tag || 'Weekly'} Event
+                        </div>
+                      </div>
+
+                      <div className="p-4 space-y-2">
+                        <div className="flex items-start justify-between gap-2">
+                          <h3 className="font-bold text-stone-900 text-base">{prog.title}</h3>
+                          <span className={`text-[10px] font-extrabold px-2.5 py-0.5 rounded-full ${prog.is_active !== false ? 'bg-emerald-100 text-emerald-800' : 'bg-stone-100 text-stone-500'}`}>
+                            {prog.is_active !== false ? 'Active' : 'Hidden'}
+                          </span>
+                        </div>
+
+                        <p className="text-xs font-semibold text-emerald-800 bg-emerald-50 px-2.5 py-1 rounded-lg border border-emerald-100 inline-block">
+                          ⏰ {prog.schedule_text || 'Scheduled Event'}
+                        </p>
+
+                        {prog.location && (
+                          <p className="text-xs text-stone-500">📍 {prog.location}</p>
+                        )}
+
+                        <p className="text-xs text-stone-600 line-clamp-2 leading-relaxed">
+                          {prog.description}
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="p-4 pt-0 flex gap-2 justify-end border-t border-stone-100 mt-2">
+                      <button
+                        onClick={() => handleToggleProgramActive(prog.id, prog.is_active)}
+                        className="px-3 py-1.5 rounded-xl border text-xs font-semibold bg-stone-50 hover:bg-stone-100 text-stone-700"
+                      >
+                        {prog.is_active !== false ? 'Hide' : 'Show'}
+                      </button>
+                      <button
+                        onClick={() => handleOpenEditProgram(prog)}
+                        className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-200 text-xs font-semibold"
+                      >
+                        <Pencil className="w-3.5 h-3.5 text-emerald-600" /> Edit
+                      </button>
+                      <Btn variant="danger" onClick={() => handleDeleteProgram(prog.id)} title="Delete Program">
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </Btn>
+                    </div>
+                  </div>
+                ))}
               </div>
             </motion.div>
           )}
@@ -1930,6 +2168,128 @@ const AdminDashboard = () => {
             </Btn>
           </div>
         </div>
+      </Modal>
+
+      {/* ── MODAL: Create / Edit Program ── */}
+      <Modal open={!!editingProgram} onClose={() => !savingProgram && setEditingProgram(null)} title={editingProgram?.is_new ? 'Create New Program / Event' : 'Edit Program Details'}>
+        {editingProgram && (
+          <form onSubmit={handleSaveProgram} className="space-y-4 max-h-[75vh] overflow-y-auto pr-1">
+            {/* Cover Photo Upload */}
+            <div className="flex items-center gap-4 p-3 bg-stone-50 border border-stone-200 rounded-2xl">
+              <div className="relative w-20 h-16 rounded-xl overflow-hidden bg-stone-200 border border-stone-300 shrink-0 flex items-center justify-center shadow-sm">
+                {programPhotoPreview ? (
+                  <img src={programPhotoPreview} alt="Cover Preview" className="w-full h-full object-cover" />
+                ) : (
+                  <ImageIcon className="w-6 h-6 text-stone-400" />
+                )}
+              </div>
+              <div className="flex-1 min-w-0">
+                <label className="block text-xs font-bold text-stone-800 mb-1">Cover Image</label>
+                <div className="flex items-center gap-2">
+                  <label className="cursor-pointer inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white border border-stone-200 hover:border-emerald-400 text-xs font-semibold text-stone-700 shadow-sm hover:bg-emerald-50 transition-colors">
+                    <Upload className="w-3.5 h-3.5 text-emerald-600" />
+                    <span>Upload Image</span>
+                    <input
+                      type="file"
+                      accept="image/*"
+                      className="hidden"
+                      onChange={(e) => {
+                        const file = e.target.files?.[0];
+                        if (file) {
+                          setProgramPhotoFile(file);
+                          setProgramPhotoPreview(URL.createObjectURL(file));
+                        }
+                      }}
+                    />
+                  </label>
+                  {programPhotoPreview && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setProgramPhotoFile(null);
+                        setProgramPhotoPreview('');
+                        setProgramForm(f => ({ ...f, image_url: '' }));
+                      }}
+                      className="text-xs text-red-500 hover:underline font-semibold"
+                    >
+                      Clear
+                    </button>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            <div className="grid sm:grid-cols-2 gap-3">
+              <div>
+                <label className="block text-xs font-semibold text-stone-700 mb-1">Program Title *</label>
+                <input
+                  required
+                  placeholder="e.g. Al-Suffa Nattudarsu"
+                  value={programForm.title}
+                  onChange={e => setProgramForm(f => ({ ...f, title: e.target.value }))}
+                  className="w-full border border-stone-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-stone-700 mb-1">Event Tag / Frequency *</label>
+                <select
+                  value={programForm.tag}
+                  onChange={e => setProgramForm(f => ({ ...f, tag: e.target.value }))}
+                  className="w-full border border-stone-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 bg-white"
+                >
+                  <option value="Weekly">Weekly</option>
+                  <option value="Monthly">Monthly</option>
+                  <option value="Daily">Daily</option>
+                  <option value="Special">Special Event</option>
+                </select>
+              </div>
+            </div>
+
+            <div className="grid sm:grid-cols-2 gap-3">
+              <div>
+                <label className="block text-xs font-semibold text-stone-700 mb-1">Schedule / Time Text *</label>
+                <input
+                  required
+                  placeholder="e.g. Every Sunday at 7:30 PM"
+                  value={programForm.schedule_text}
+                  onChange={e => setProgramForm(f => ({ ...f, schedule_text: e.target.value }))}
+                  className="w-full border border-stone-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-stone-700 mb-1">Location</label>
+                <input
+                  placeholder="e.g. Madrasa Main Hall"
+                  value={programForm.location}
+                  onChange={e => setProgramForm(f => ({ ...f, location: e.target.value }))}
+                  className="w-full border border-stone-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                />
+              </div>
+            </div>
+
+            <div>
+              <label className="block text-xs font-semibold text-stone-700 mb-1">Program Description</label>
+              <textarea
+                rows={3}
+                placeholder="Details about the dars, topic, target audience..."
+                value={programForm.description}
+                onChange={e => setProgramForm(f => ({ ...f, description: e.target.value }))}
+                className="w-full border border-stone-200 rounded-xl p-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
+              />
+            </div>
+
+            <div className="flex gap-3 justify-end pt-2">
+              <Btn variant="ghost" disabled={savingProgram} onClick={() => setEditingProgram(null)}>
+                Cancel
+              </Btn>
+              <Btn variant="primary" disabled={savingProgram} type="submit" className="flex items-center gap-1.5">
+                {savingProgram ? <RefreshCw className="w-4 h-4 animate-spin" /> : <CheckCircle className="w-4 h-4" />} Save Program
+              </Btn>
+            </div>
+          </form>
+        )}
       </Modal>
 
       {/* ── MODAL: Edit Alumni Member ── */}

@@ -89,3 +89,48 @@ FOR UPDATE USING (bucket_id = 'alumni-photos');
 CREATE POLICY "Admin Delete Alumni Photos" ON storage.objects
 FOR DELETE USING (bucket_id = 'alumni-photos');
 
+
+-- 6. CREATE MADRASA PROGRAMS TABLE & INITIAL EVENTS
+CREATE TABLE IF NOT EXISTS public.madrasa_programs (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  title TEXT NOT NULL,
+  tag TEXT DEFAULT 'Weekly',
+  schedule_text TEXT NOT NULL,
+  location TEXT,
+  description TEXT,
+  image_url TEXT,
+  is_active BOOLEAN DEFAULT true,
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- Enable RLS on madrasa_programs
+ALTER TABLE public.madrasa_programs ENABLE ROW LEVEL SECURITY;
+
+-- Allow public read access to active programs
+DROP POLICY IF EXISTS "Public Read Active Programs" ON public.madrasa_programs;
+CREATE POLICY "Public Read Active Programs" ON public.madrasa_programs
+FOR SELECT USING (is_active = true);
+
+-- Allow authenticated admins full control on madrasa_programs
+DROP POLICY IF EXISTS "Admin Full Access Programs" ON public.madrasa_programs;
+CREATE POLICY "Admin Full Access Programs" ON public.madrasa_programs
+FOR ALL TO authenticated USING (true) WITH CHECK (true);
+
+-- Insert Default Madrasa Programs
+INSERT INTO public.madrasa_programs (title, tag, schedule_text, location, description, image_url)
+VALUES 
+  ('Al-Suffa Nattudarsu', 'Weekly', 'Every Sunday at 7:30 PM', 'Madrasa Main Hall & Online Stream', 'Weekly community dars and Islamic learning session conducted every Sunday evening. Covers Quranic commentary, Seerah of Prophet Muhammad (ﷺ), and practical Islamic guidance.', 'https://images.unsplash.com/photo-1584551246679-0daf3d275d0f?auto=format&fit=crop&w=800&q=80'),
+  ('Malharatul Badriya', 'Monthly', 'Monthly Special Gathering', 'Madrasa Main Campus', 'Monthly spiritual gathering of dhikr, Badriyath recitation, and Islamic education for the community.', 'https://images.unsplash.com/photo-1609599006353-e629aaabfeae?auto=format&fit=crop&w=800&q=80')
+ON CONFLICT DO NOTHING;
+
+-- Storage Bucket for program images
+INSERT INTO storage.buckets (id, name, public)
+VALUES ('program-images', 'program-images', true)
+ON CONFLICT (id) DO UPDATE SET public = true;
+
+DROP POLICY IF EXISTS "Public Read Program Images" ON storage.objects;
+DROP POLICY IF EXISTS "Public Upload Program Images" ON storage.objects;
+CREATE POLICY "Public Read Program Images" ON storage.objects FOR SELECT USING (bucket_id = 'program-images');
+CREATE POLICY "Public Upload Program Images" ON storage.objects FOR INSERT WITH CHECK (bucket_id = 'program-images');
+
+

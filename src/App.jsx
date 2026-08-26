@@ -8,6 +8,7 @@ import ParentDashboard from './pages/ParentDashboard';
 import StudentDetailPage from './pages/StudentDetailPage';
 import AlumniPage from './pages/AlumniPage';
 import GalleryPage from './pages/GalleryPage';
+import ProgramsPage from './pages/ProgramsPage';
 import ResetPasswordPage from './pages/ResetPasswordPage';
 import ProtectedRoute from './components/ProtectedRoute';
 import { Toaster } from './components/ui/toaster';
@@ -38,6 +39,9 @@ function App() {
                       <Route path="/login" element={<LoginRoute />} />
                       <Route path="/register" element={<RegisterPage />} />
                       
+                      {/* Programs & Events Showcase */}
+                      <Route path="/programs" element={<ProgramsPage />} />
+
                       {/* Protected Admin & Teacher Routes */}
                       <Route path="/admin" element={
                           <ProtectedRoute allowedRoles={['admin', 'teacher']}>
