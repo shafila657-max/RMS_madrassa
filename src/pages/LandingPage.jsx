@@ -286,37 +286,110 @@ const LandingPage = () => {
         </div>
       </section>
 
-      {/* ── ABOUT — section-lazy skips rendering until near viewport ─────── */}
-      <section id="about" className="bg-secondary islamic-pattern-bg py-20 section-lazy md:py-24">
-        <div className="container mx-auto px-5 md:px-12">
+      {/* ── ABOUT / OUR MISSION ────────────────────────────────────────── */}
+      <section id="about" className="bg-stone-100/90 islamic-pattern-bg py-20 section-lazy md:py-24">
+        <div className="container mx-auto px-5 md:px-12 space-y-16">
           <motion.div
             variants={fadeUp} initial="hidden" whileInView="visible" viewport={VIEWPORT}
             className="mx-auto max-w-3xl text-center"
           >
-            <h2 className="mb-5 font-heading text-4xl font-extrabold text-stone-900 md:text-5xl">Our Mission</h2>
-            <p className="mb-12 text-base leading-relaxed text-stone-600 md:text-lg">
+            <span className="text-xs uppercase tracking-widest font-bold text-emerald-800 bg-emerald-100 border border-emerald-200 px-3.5 py-1 rounded-full inline-block mb-3 shadow-sm">
+              ✦ Excellence in Islamic Education
+            </span>
+            <h2 className="mb-4 font-heading text-4xl font-extrabold text-stone-900 md:text-5xl">Our Mission</h2>
+            <p className="text-base leading-relaxed text-stone-600 md:text-lg">
               At RMS Madrasa, we provide a holistic Islamic education that empowers students with authentic knowledge, moral values, and life skills needed to thrive in modern society.
             </p>
           </motion.div>
 
-          <div className="grid gap-5 md:grid-cols-3 md:gap-7">
+          {/* 3 Interactive Glassmorphism Feature Cards */}
+          <div className="grid gap-6 md:grid-cols-3 md:gap-8">
             {[
-              { icon: BookOpen, title: 'Authentic Curriculum', text: 'Comprehensive Islamic studies covering Quran, Hadith, Fiqh, Seerah, and Arabic language.' },
-              { icon: Users,    title: 'Qualified Faculty',   text: 'Dedicated and certified scholars passionate about nurturing the next generation.' },
-              { icon: Award,    title: 'Character Building',  text: 'Focusing on tarbiyah, adab, and leadership development in every student.' },
-            ].map(({ icon: Icon, title, text }, i) => (
+              {
+                icon: BookOpen,
+                title: 'Authentic Curriculum',
+                badge: '📖 Quran, Hadith & Fiqh',
+                text: 'Comprehensive Islamic studies covering Quran recitation, Hadith, Fiqh, Seerah, and Arabic language.',
+                highlights: ['Tajweed & Hifz Program', 'Authentic Hadith Studies', 'Fiqh & Islamic Jurisprudence'],
+                gradient: 'from-emerald-600 to-teal-700 shadow-emerald-200',
+              },
+              {
+                icon: Users,
+                title: 'Qualified Faculty',
+                badge: '🎓 Certified Scholars',
+                text: 'Dedicated and certified Islamic scholars passionate about nurturing the spiritual and academic growth of students.',
+                highlights: ['Experienced Asatidha', '1-on-1 Student Mentorship', 'Certified Alim Degree'],
+                gradient: 'from-teal-600 to-emerald-800 shadow-teal-200',
+              },
+              {
+                icon: Award,
+                title: 'Character Building',
+                badge: '🌱 Tarbiyah & Ethics',
+                text: 'Focusing on holistic tarbiyah, adab, moral ethics, and leadership development in every single student.',
+                highlights: ['Moral & Ethical Values', 'Islamic Adab & Discipline', 'Student Leadership'],
+                gradient: 'from-amber-500 to-emerald-700 shadow-amber-200',
+              },
+            ].map(({ icon: Icon, title, badge, text, highlights, gradient }, i) => (
               <motion.div
                 key={title}
                 variants={fadeUp} initial="hidden" whileInView="visible" viewport={VIEWPORT}
-                transition={{ delay: i * 0.07 }}
-                className="rounded-2xl border border-stone-200/80 bg-white p-7 shadow-sm transition-shadow hover:shadow-md md:p-8"
+                transition={{ delay: i * 0.1 }}
+                className="group relative rounded-3xl border border-stone-200/90 bg-white/90 backdrop-blur-md p-8 shadow-lg hover:shadow-2xl transition-all duration-300 hover:-translate-y-1.5 flex flex-col justify-between"
               >
-                <Icon className="mb-4 h-11 w-11 text-primary" />
-                <h3 className="mb-2 font-heading text-xl font-bold text-stone-900">{title}</h3>
-                <p className="text-stone-600 text-sm">{text}</p>
+                <div>
+                  <div className="flex items-center justify-between mb-6">
+                    <div className={`w-14 h-14 rounded-2xl bg-gradient-to-br ${gradient} flex items-center justify-center text-white shadow-lg transition-transform group-hover:scale-110`}>
+                      <Icon className="w-7 h-7" />
+                    </div>
+                    <span className="text-[11px] font-bold text-emerald-800 bg-emerald-50 border border-emerald-200 px-3 py-1 rounded-full">
+                      {badge}
+                    </span>
+                  </div>
+
+                  <h3 className="mb-3 font-heading text-2xl font-bold text-stone-900 group-hover:text-emerald-800 transition-colors">
+                    {title}
+                  </h3>
+
+                  <p className="text-stone-600 text-sm leading-relaxed mb-6">
+                    {text}
+                  </p>
+                </div>
+
+                <div className="pt-4 border-t border-stone-100 space-y-2">
+                  {highlights.map((item) => (
+                    <div key={item} className="flex items-center gap-2 text-xs font-semibold text-stone-700">
+                      <div className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+                      <span>{item}</span>
+                    </div>
+                  ))}
+                </div>
               </motion.div>
             ))}
           </div>
+
+          {/* Live Impact Counter Metric Bar */}
+          <motion.div
+            variants={fadeUp} initial="hidden" whileInView="visible" viewport={VIEWPORT}
+            className="rounded-3xl border border-emerald-500/20 bg-gradient-to-r from-emerald-950 via-teal-950 to-stone-950 text-white p-8 sm:p-10 shadow-2xl"
+          >
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-6 text-center">
+              {[
+                { number: '500+', label: 'Active Students Enrolled' },
+                { number: '25+',  label: 'Certified Asatidha & Scholars' },
+                { number: '15+',  label: 'Years of Excellence' },
+                { number: '1000+',label: 'Alumni Worldwide' },
+              ].map(({ number, label }, idx) => (
+                <div key={label} className={`p-3 ${idx !== 0 ? 'sm:border-l sm:border-white/10' : ''}`}>
+                  <p className="font-heading text-3xl sm:text-4xl font-extrabold text-amber-400 mb-1 tracking-tight">
+                    {number}
+                  </p>
+                  <p className="text-xs sm:text-sm text-emerald-100/80 font-medium">
+                    {label}
+                  </p>
+                </div>
+              ))}
+            </div>
+          </motion.div>
         </div>
       </section>
 
