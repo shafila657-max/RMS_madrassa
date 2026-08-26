@@ -586,11 +586,10 @@ const LandingPage = () => {
             <div>
               <h4 className="font-heading text-lg mb-4 text-emerald-400">Contact</h4>
               <ul className="space-y-2 text-sm text-stone-400">
-                <li>Vilayil,</li>
-                <li>673641,</li>
-                <li>Malappuram,kerala</li>
+                <li>Vilayil, 673641</li>
+                <li>Malappuram, Kerala</li>
                 <li>contact@rmsmadrasa.edu</li>
-                <li>(123) 456-7890</li>
+                <li><a href="tel:+918129127439" className="hover:text-emerald-300 transition-colors">+91 81291 27439</a></li>
               </ul>
             </div>
           </div>
