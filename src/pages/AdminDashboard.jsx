@@ -1182,9 +1182,13 @@ const AdminDashboard = () => {
 
                   <div className="space-y-3">
                     {alumniData.filter(a => a.status === 'pending').map((a) => (
-                      <div key={a.id} className="bg-white rounded-xl p-4 border border-amber-200 flex flex-wrap items-center justify-between gap-3 shadow-sm">
-                        <div className="flex items-center gap-3">
-                          <div className="w-10 h-10 rounded-full overflow-hidden bg-amber-100 border border-amber-300 shrink-0 flex items-center justify-center font-bold text-amber-800 text-xs">
+                      <div key={a.id} className="bg-white rounded-xl p-4 border border-amber-200 flex flex-wrap items-center justify-between gap-3 shadow-sm hover:border-amber-300 transition-colors">
+                        <div
+                          onClick={() => handleOpenEditAlumni(a)}
+                          className="flex items-center gap-3 cursor-pointer group flex-1 min-w-[220px]"
+                          title="Click to view & edit pending alumni profile"
+                        >
+                          <div className="w-10 h-10 rounded-full overflow-hidden bg-amber-100 border border-amber-300 shrink-0 flex items-center justify-center font-bold text-amber-800 text-xs shadow-sm group-hover:border-amber-500 transition-colors">
                             {a.photo_url ? (
                               <img src={a.photo_url} alt={a.full_name} className="w-full h-full object-cover" />
                             ) : (
@@ -1192,7 +1196,10 @@ const AdminDashboard = () => {
                             )}
                           </div>
                           <div>
-                            <p className="font-bold text-stone-900 text-sm">{a.full_name} <span className="text-xs font-normal text-stone-500">(Batch of {a.passout_year})</span></p>
+                            <p className="font-bold text-stone-900 text-sm flex items-center gap-2 group-hover:text-amber-800 transition-colors">
+                              {a.full_name} <span className="text-xs font-normal text-stone-500">(Batch of {a.passout_year})</span>
+                              <Pencil className="w-3.5 h-3.5 text-stone-300 group-hover:text-amber-600 opacity-0 group-hover:opacity-100 transition-all" />
+                            </p>
                             <p className="text-xs text-stone-600 font-medium">{a.working_area} {a.company_org ? `at ${a.company_org}` : ''}</p>
                             <p className="text-[11px] text-stone-400 mt-0.5">WhatsApp: {a.whatsapp_number} {a.location ? `· ${a.location}` : ''}</p>
                           </div>
@@ -1200,10 +1207,10 @@ const AdminDashboard = () => {
                         <div className="flex items-center gap-2">
                           <button
                             onClick={() => handleOpenEditAlumni(a)}
-                            className="inline-flex items-center gap-1 px-3 py-1.5 rounded-xl bg-stone-100 hover:bg-stone-200 text-stone-700 font-semibold text-xs transition-colors"
-                            title="Edit Alumni Details"
+                            className="inline-flex items-center gap-1 px-3 py-1.5 rounded-xl bg-amber-50 hover:bg-amber-100 text-amber-900 border border-amber-200 font-semibold text-xs transition-colors"
+                            title="Edit Details & Photo"
                           >
-                            <Pencil className="w-3.5 h-3.5 text-stone-600" /> Edit
+                            <Pencil className="w-3.5 h-3.5 text-amber-700" /> Edit
                           </button>
                           <Btn variant="primary" onClick={() => handleApproveAlumni(a.id)}>
                             <CheckCircle className="w-3.5 h-3.5" /> Approve
@@ -1227,27 +1234,32 @@ const AdminDashboard = () => {
                 {alumniData.filter(a => a.status === 'approved').length > 0 ? (
                   <div className="divide-y divide-stone-100">
                     {alumniData.filter(a => a.status === 'approved').map((a) => (
-                      <div key={a.id} className="py-3 flex items-center justify-between gap-3 flex-wrap">
-                        <div className="flex items-center gap-3">
-                          <div className="w-10 h-10 rounded-full overflow-hidden bg-emerald-100 border border-emerald-300 shrink-0 flex items-center justify-center font-bold text-emerald-800 text-xs shadow-sm">
+                      <div key={a.id} className="py-3 px-2 hover:bg-stone-50/80 rounded-2xl flex items-center justify-between gap-3 flex-wrap transition-colors">
+                        <div
+                          onClick={() => handleOpenEditAlumni(a)}
+                          className="flex items-center gap-3.5 cursor-pointer group flex-1 min-w-[240px]"
+                          title="Click to view & edit alumni details"
+                        >
+                          <div className="relative w-11 h-11 rounded-full overflow-hidden bg-emerald-100 border-2 border-emerald-400 shrink-0 flex items-center justify-center font-bold text-emerald-800 text-xs shadow-sm group-hover:border-emerald-600 transition-colors">
                             {a.photo_url ? (
                               <img src={a.photo_url} alt={a.full_name} className="w-full h-full object-cover" />
                             ) : (
-                              a.full_name?.charAt(0) || 'A'
+                              a.full_name?.charAt(0)?.toUpperCase() || 'A'
                             )}
                           </div>
                           <div>
-                            <p className="font-bold text-stone-900 text-sm flex items-center gap-2">
+                            <p className="font-bold text-stone-900 text-sm flex items-center gap-2 group-hover:text-emerald-700 transition-colors">
                               {a.full_name}
                               <span className="text-xs font-normal text-stone-400">· Batch {a.passout_year}</span>
                               {a.is_mentor && (
-                                <span className="text-[10px] font-bold bg-amber-100 text-amber-800 px-2 py-0.5 rounded-full">
+                                <span className="text-[10px] font-bold bg-amber-100 text-amber-800 px-2 py-0.5 rounded-full border border-amber-200">
                                   🏅 Active Mentor
                                 </span>
                               )}
+                              <Pencil className="w-3.5 h-3.5 text-stone-300 group-hover:text-emerald-600 opacity-0 group-hover:opacity-100 transition-all" />
                             </p>
-                            <p className="text-xs text-stone-600">{a.working_area} {a.company_org ? `@ ${a.company_org}` : ''}</p>
-                            <p className="text-[11px] text-stone-400">{a.location || 'Location N/A'} · WA: {a.whatsapp_number}</p>
+                            <p className="text-xs text-stone-600 font-medium">{a.working_area} {a.company_org ? `@ ${a.company_org}` : ''}</p>
+                            <p className="text-[11px] text-stone-400 mt-0.5">{a.location || 'Location N/A'} · WA: {a.whatsapp_number}</p>
                           </div>
                         </div>
                         <div className="flex items-center gap-2">
@@ -1264,10 +1276,10 @@ const AdminDashboard = () => {
 
                           <button
                             onClick={() => handleOpenEditAlumni(a)}
-                            className="inline-flex items-center gap-1 px-3 py-1.5 rounded-xl bg-stone-100 hover:bg-stone-200 text-stone-700 font-semibold text-xs transition-colors"
-                            title="Edit Alumni Details"
+                            className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-200 font-semibold text-xs transition-colors"
+                            title="Edit Alumni Profile & Photo"
                           >
-                            <Pencil className="w-3.5 h-3.5 text-stone-600" /> Edit
+                            <Pencil className="w-3.5 h-3.5 text-emerald-600" /> Edit Profile
                           </button>
 
                           <Btn variant="danger" onClick={() => handleDeleteAlumni(a)} title="Delete Alumni Profile">
@@ -1279,7 +1291,7 @@ const AdminDashboard = () => {
                   </div>
                 ) : (
                   <div className="p-12 text-center text-stone-400 text-sm">
-                    No approved alumni in directory yet.
+                    No approved alumni in directory yet. Click "+ Add Alumni Member" above to add one.
                   </div>
                 )}
               </div>
