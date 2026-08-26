@@ -14,22 +14,22 @@ import LeaderboardShowcase from '@/components/LeaderboardShowcase';
 import WaveDivider from '@/components/WaveDivider';
 
 // Lazy-load heavy modals — they're NOT needed on first paint
-const AlumniRegisterModal    = lazy(() => import('@/components/AlumniRegisterModal'));
-const MobileQRModal          = lazy(() => import('@/components/MobileQRModal'));
-const AlumniOrbitalShowcase  = lazy(() => import('@/components/AlumniOrbitalShowcase'));
+const AlumniRegisterModal = lazy(() => import('@/components/AlumniRegisterModal'));
+const MobileQRModal = lazy(() => import('@/components/MobileQRModal'));
+const AlumniOrbitalShowcase = lazy(() => import('@/components/AlumniOrbitalShowcase'));
 
 // ─── Framer Motion variants (defined OUTSIDE component to prevent re-creation) ──
 const fadeUp = {
-  hidden:  { opacity: 0, y: 30 },
+  hidden: { opacity: 0, y: 30 },
   visible: { opacity: 1, y: 0, transition: { duration: 0.35, ease: 'easeOut' } },
 };
 const fadeLeft = {
-  hidden:  { opacity: 0, x: -30 },
-  visible: { opacity: 1, x: 0,  transition: { duration: 0.35, ease: 'easeOut' } },
+  hidden: { opacity: 0, x: -30 },
+  visible: { opacity: 1, x: 0, transition: { duration: 0.35, ease: 'easeOut' } },
 };
 const fadeScale = {
-  hidden:  { opacity: 0, scale: 0.95 },
-  visible: { opacity: 1, scale: 1,    transition: { duration: 0.35, ease: 'easeOut' } },
+  hidden: { opacity: 0, scale: 0.95 },
+  visible: { opacity: 1, scale: 1, transition: { duration: 0.35, ease: 'easeOut' } },
 };
 const VIEWPORT = { once: true, amount: 0.15 };
 
@@ -85,9 +85,9 @@ MarqueeCard.displayName = 'MarqueeCard';
 // ═══════════════════════════════════════════════════════════════════════════════
 const LandingPage = () => {
   const [showAlumniModal, setShowAlumniModal] = useState(false);
-  const [showQRModal,     setShowQRModal]     = useState(false);
-  const [galleryPreview,  setGalleryPreview]  = useState([]);
-  const [deferredPrompt,  setDeferredPrompt]  = useState(null);
+  const [showQRModal, setShowQRModal] = useState(false);
+  const [galleryPreview, setGalleryPreview] = useState([]);
+  const [deferredPrompt, setDeferredPrompt] = useState(null);
   const [showInstallBanner, setShowInstallBanner] = useState(false);
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
   const [alumniPreview, setAlumniPreview] = useState([]);
@@ -293,23 +293,23 @@ const LandingPage = () => {
       </section>
 
       {/* ── ABOUT / OUR MISSION ────────────────────────────────────────── */}
-      <section id="about" className="relative bg-stone-100/90 islamic-pattern-bg pt-12 pb-16 sm:pt-20 sm:pb-32 md:pt-24 md:pb-36 section-lazy">
-        <div className="container mx-auto px-4 sm:px-6 md:px-12 space-y-8 sm:space-y-12 md:space-y-16">
+      <section id="about" className="relative bg-stone-100/90 islamic-pattern-bg pt-20 pb-24 sm:pb-32 md:pt-24 md:pb-36 section-lazy">
+        <div className="container mx-auto px-5 md:px-12 space-y-16">
           <motion.div
             variants={fadeUp} initial="hidden" whileInView="visible" viewport={VIEWPORT}
             className="mx-auto max-w-3xl text-center"
           >
-            <span className="text-[11px] sm:text-xs uppercase tracking-widest font-bold text-emerald-800 bg-emerald-100 border border-emerald-200 px-3 py-0.5 sm:px-3.5 sm:py-1 rounded-full inline-block mb-2.5 sm:mb-3 shadow-sm">
+            <span className="text-xs uppercase tracking-widest font-bold text-emerald-800 bg-emerald-100 border border-emerald-200 px-3.5 py-1 rounded-full inline-block mb-3 shadow-sm">
               ✦ Excellence in Islamic Education
             </span>
-            <h2 className="mb-2 sm:mb-4 font-heading text-3xl font-extrabold text-stone-900 sm:text-4xl md:text-5xl">Our Mission</h2>
-            <p className="text-sm leading-relaxed text-stone-600 sm:text-base md:text-lg">
+            <h2 className="mb-4 font-heading text-4xl font-extrabold text-stone-900 md:text-5xl">Our Mission</h2>
+            <p className="text-base leading-relaxed text-stone-600 md:text-lg">
               At RMS Madrasa, we provide a holistic Islamic education that empowers students with authentic knowledge, moral values, and life skills needed to thrive in modern society.
             </p>
           </motion.div>
 
           {/* 3 Interactive Glassmorphism Feature Cards */}
-          <div className="grid gap-4 sm:gap-6 md:grid-cols-3 md:gap-8">
+          <div className="grid gap-6 md:grid-cols-3 md:gap-8">
             {[
               {
                 icon: BookOpen,
@@ -340,31 +340,31 @@ const LandingPage = () => {
                 key={title}
                 variants={fadeUp} initial="hidden" whileInView="visible" viewport={VIEWPORT}
                 transition={{ delay: i * 0.1 }}
-                className="group relative rounded-2xl sm:rounded-3xl border border-stone-200/90 bg-white/90 backdrop-blur-md p-5 sm:p-6 md:p-8 shadow-md sm:shadow-lg hover:shadow-2xl transition-all duration-300 hover:-translate-y-1.5 flex flex-col justify-between"
+                className="group relative rounded-3xl border border-stone-200/90 bg-white/90 backdrop-blur-md p-8 shadow-lg hover:shadow-2xl transition-all duration-300 hover:-translate-y-1.5 flex flex-col justify-between"
               >
                 <div>
-                  <div className="flex items-center justify-between mb-4 sm:mb-6">
-                    <div className={`w-11 h-11 sm:w-14 sm:h-14 rounded-xl sm:rounded-2xl bg-gradient-to-br ${gradient} flex items-center justify-center text-white shadow-md sm:shadow-lg transition-transform group-hover:scale-110`}>
-                      <Icon className="w-5.5 h-5.5 sm:w-7 sm:h-7" />
+                  <div className="flex items-center justify-between mb-6">
+                    <div className={`w-14 h-14 rounded-2xl bg-gradient-to-br ${gradient} flex items-center justify-center text-white shadow-lg transition-transform group-hover:scale-110`}>
+                      <Icon className="w-7 h-7" />
                     </div>
-                    <span className="text-[10px] sm:text-[11px] font-bold text-emerald-800 bg-emerald-50 border border-emerald-200 px-2.5 py-0.5 sm:px-3 sm:py-1 rounded-full">
+                    <span className="text-[11px] font-bold text-emerald-800 bg-emerald-50 border border-emerald-200 px-3 py-1 rounded-full">
                       {badge}
                     </span>
                   </div>
 
-                  <h3 className="mb-2 sm:mb-3 font-heading text-xl sm:text-2xl font-bold text-stone-900 group-hover:text-emerald-800 transition-colors">
+                  <h3 className="mb-3 font-heading text-2xl font-bold text-stone-900 group-hover:text-emerald-800 transition-colors">
                     {title}
                   </h3>
 
-                  <p className="text-stone-600 text-xs sm:text-sm leading-relaxed mb-4 sm:mb-6">
+                  <p className="text-stone-600 text-sm leading-relaxed mb-6">
                     {text}
                   </p>
                 </div>
 
-                <div className="pt-3 sm:pt-4 border-t border-stone-100 space-y-1.5 sm:space-y-2">
+                <div className="pt-4 border-t border-stone-100 space-y-2">
                   {highlights.map((item) => (
-                    <div key={item} className="flex items-center gap-2 text-[11px] sm:text-xs font-semibold text-stone-700">
-                      <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 shrink-0" />
+                    <div key={item} className="flex items-center gap-2 text-xs font-semibold text-stone-700">
+                      <div className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
                       <span>{item}</span>
                     </div>
                   ))}
@@ -376,20 +376,20 @@ const LandingPage = () => {
           {/* Live Impact Counter Metric Bar */}
           <motion.div
             variants={fadeUp} initial="hidden" whileInView="visible" viewport={VIEWPORT}
-            className="rounded-2xl sm:rounded-3xl border border-emerald-500/20 bg-gradient-to-r from-emerald-950 via-teal-950 to-stone-950 text-white p-4 sm:p-8 lg:p-10 shadow-xl"
+            className="rounded-3xl border border-emerald-500/20 bg-gradient-to-r from-emerald-950 via-teal-950 to-stone-950 text-white p-8 sm:p-10 shadow-2xl"
           >
-            <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-6 text-center">
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-6 text-center">
               {[
                 { number: '500+', label: 'Active Students Enrolled' },
-                { number: '25+',  label: 'Certified Asatidha & Scholars' },
-                { number: '15+',  label: 'Years of Excellence' },
-                { number: '1000+',label: 'Alumni Worldwide' },
+                { number: '25+', label: 'Certified Asatidha & Scholars' },
+                { number: '15+', label: 'Years of Excellence' },
+                { number: '1000+', label: 'Alumni Worldwide' },
               ].map(({ number, label }, idx) => (
-                <div key={label} className={`p-2 sm:p-3 ${idx % 2 !== 0 ? 'border-l border-white/10' : ''} ${idx > 0 ? 'lg:border-l lg:border-white/10' : ''}`}>
-                  <p className="font-heading text-2xl sm:text-3xl lg:text-4xl font-extrabold text-amber-400 mb-0.5 sm:mb-1 tracking-tight">
+                <div key={label} className={`p-3 ${idx !== 0 ? 'sm:border-l sm:border-white/10' : ''}`}>
+                  <p className="font-heading text-3xl sm:text-4xl font-extrabold text-amber-400 mb-1 tracking-tight">
                     {number}
                   </p>
-                  <p className="text-[11px] sm:text-xs lg:text-sm text-emerald-100/80 font-medium leading-tight">
+                  <p className="text-xs sm:text-sm text-emerald-100/80 font-medium">
                     {label}
                   </p>
                 </div>
@@ -431,18 +431,32 @@ const LandingPage = () => {
         </div>
       </section>
 
-      {/* ── HALL OF FAME LEADERBOARD ────────────────────────────────────────────── */}
-      <section className="bg-gradient-to-b from-[#044e3a] via-[#065f46] to-[#044e3a] star-pattern-bg overflow-hidden section-lazy py-8 md:py-12">
+      {/* ── STUDENT LEADERBOARD ────────────────────────────────────────────── */}
+      <section id="leaderboard" className="relative bg-gradient-to-b from-[#044e3a] via-[#065f46] to-[#044e3a] star-pattern-bg overflow-hidden py-14 sm:py-20 text-white">
+        <div className="container mx-auto px-4 sm:px-6 md:px-12 mb-6 text-center">
+          <motion.div variants={fadeUp} initial="hidden" whileInView="visible" viewport={VIEWPORT} className="mx-auto max-w-2xl">
+            <span className="text-[11px] sm:text-xs uppercase tracking-widest font-bold text-emerald-200 bg-emerald-800/50 border border-emerald-600/40 px-3.5 py-1 rounded-full inline-block mb-2">
+              ✦ Top Performers
+            </span>
+            <h2 className="mb-2 font-heading text-3xl sm:text-4xl md:text-5xl font-extrabold text-white">
+              Student Leaderboard
+            </h2>
+            <p className="text-xs sm:text-base text-emerald-100/80 leading-relaxed max-w-md mx-auto">
+              Celebrating our top-performing students based on academic marks, discipline, and class attendance.
+            </p>
+          </motion.div>
+        </div>
+
         <div className="mx-auto w-full px-0">
           {leaderboardData.length > 0 ? (
             <LeaderboardShowcase standings={leaderboardData} variant="screen" screenTone="transparent" showScreenHeader={false} showRankedList={false} />
           ) : leaderboardLoading ? (
-            <p className="py-10 text-center text-emerald-200/80 text-sm animate-pulse">Leaderboard standings updating...</p>
+            <p className="py-10 text-center text-emerald-200/80 text-sm animate-pulse">Leaderboard standings loading...</p>
           ) : (
-            <div className="mx-auto max-w-lg rounded-2xl border border-emerald-500/20 bg-emerald-950/60 backdrop-blur-sm p-8 text-center shadow-sm my-10 mx-6">
-              <Trophy className="w-12 h-12 text-amber-400 mx-auto mb-4" />
-              <p className="font-medium text-emerald-100">New academic year started!</p>
-              <p className="mt-1 text-xs text-emerald-300/70">Scores and rankings will appear here once students start earning points.</p>
+            <div className="mx-auto max-w-lg rounded-2xl border border-emerald-500/20 bg-emerald-950/60 backdrop-blur-sm p-6 sm:p-8 text-center shadow-sm my-8 mx-4 sm:mx-6">
+              <Trophy className="w-10 h-10 sm:w-12 sm:h-12 text-amber-400 mx-auto mb-3" />
+              <p className="font-medium text-emerald-100 text-sm sm:text-base">New Academic Term Leaderboard</p>
+              <p className="mt-1 text-xs text-emerald-300/70">Scores and rankings will update here as monthly evaluations progress.</p>
             </div>
           )}
         </div>
@@ -464,8 +478,8 @@ const LandingPage = () => {
               </p>
               <div className="space-y-3 pt-2">
                 {[
-                  { icon: Briefcase,     text: 'Showcase your current occupation & working area with contact/WhatsApp' },
-                  { icon: HeartHandshake,text: 'Provide career guidance & Quranic mentorship for current Madrasa students' },
+                  { icon: Briefcase, text: 'Showcase your current occupation & working area with contact/WhatsApp' },
+                  { icon: HeartHandshake, text: 'Provide career guidance & Quranic mentorship for current Madrasa students' },
                 ].map(({ icon: Icon, text }) => (
                   <div key={text} className="flex items-center gap-3 text-sm text-emerald-100">
                     <div className="w-8 h-8 rounded-full bg-emerald-800/80 flex items-center justify-center text-emerald-300 flex-shrink-0">
@@ -562,9 +576,9 @@ const LandingPage = () => {
             <div>
               <h4 className="font-heading text-lg mb-4 text-emerald-400">Quick Links</h4>
               <ul className="space-y-2 text-sm text-stone-400">
-                <li><a href="#about"    className="hover:text-white transition-colors">About Us</a></li>
+                <li><a href="#about" className="hover:text-white transition-colors">About Us</a></li>
                 <li><a href="#programs" className="hover:text-white transition-colors">Programs</a></li>
-                <li><Link to="/alumni"  className="hover:text-emerald-300 transition-colors font-medium">Alumni Directory</Link></li>
+                <li><Link to="/alumni" className="hover:text-emerald-300 transition-colors font-medium">Alumni Directory</Link></li>
                 <li><button onClick={() => setShowAlumniModal(true)} className="hover:text-emerald-300 transition-colors">Register as Alumni</button></li>
                 <li><Link to="/login" state={{ loginIntent: true }} className="hover:text-white transition-colors">Login</Link></li>
               </ul>
@@ -589,7 +603,7 @@ const LandingPage = () => {
       {/* Modals — lazy-loaded, only rendered when opened */}
       <Suspense fallback={null}>
         {showAlumniModal && <AlumniRegisterModal open onClose={() => setShowAlumniModal(false)} />}
-        {showQRModal     && <MobileQRModal       open onClose={() => setShowQRModal(false)} />}
+        {showQRModal && <MobileQRModal open onClose={() => setShowQRModal(false)} />}
       </Suspense>
 
       {/* ── FLOATING INSTALL BANNER ─────────────────────────────────── */}

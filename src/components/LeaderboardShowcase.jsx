@@ -9,11 +9,14 @@ const filterTabs = [
 
 const podiumTheme = {
   1: {
-    block: 'bg-gradient-to-b from-slate-200 to-slate-300 text-slate-950 shadow-[0_18px_40px_rgba(0,0,0,0.18)]',
-    ring: 'border-amber-400',
-    badge: 'bg-amber-400 text-amber-950',
-    score: 'text-amber-500',
-    avatarShell: 'bg-slate-950 border-amber-400',
+    // 🥇 Rank 1 Gold Column: 3D Beveled Top Inset, crisp border alignment, rich color separation
+    block: 'bg-gradient-to-b from-amber-300 via-amber-400 to-yellow-500 text-stone-950 border border-amber-200/90 shadow-[inset_0_2px_4px_rgba(255,255,255,0.7),0_8px_20px_rgba(0,0,0,0.3)]',
+    ring: 'border-2 border-amber-300',
+    badge: 'bg-stone-950 text-amber-300 border border-amber-400/60 font-black',
+    score: 'text-stone-950 font-black',
+    nameColor: 'text-stone-950 font-extrabold',
+    classColor: 'text-stone-900/90 font-bold',
+    avatarShell: 'bg-stone-950 border-2 border-amber-300',
     avatarSize: 'w-28 h-28 sm:w-32 sm:h-32',
     blockHeight: 'h-[19rem] sm:h-[21rem]',
     bottomPad: 'pb-6',
@@ -21,11 +24,14 @@ const podiumTheme = {
     scoreSize: 'text-2xl sm:text-4xl',
   },
   2: {
-    block: 'bg-slate-700/90 text-white shadow-[0_14px_30px_rgba(0,0,0,0.16)]',
-    ring: 'border-sky-400',
-    badge: 'bg-sky-400 text-slate-950',
-    score: 'text-sky-300',
-    avatarShell: 'bg-slate-950 border-sky-400',
+    // 🥈 Rank 2 Silver Column: 3D Beveled Top Inset, crisp white border alignment
+    block: 'bg-gradient-to-b from-slate-100 via-slate-200 to-slate-300 text-slate-950 border border-white/90 shadow-[inset_0_2px_4px_rgba(255,255,255,0.9),0_6px_16px_rgba(0,0,0,0.2)]',
+    ring: 'border-2 border-sky-400',
+    badge: 'bg-slate-950 text-sky-300 border border-sky-400/60 font-black',
+    score: 'text-sky-950 font-black',
+    nameColor: 'text-slate-950 font-extrabold',
+    classColor: 'text-slate-800 font-bold',
+    avatarShell: 'bg-slate-950 border-2 border-sky-400',
     avatarSize: 'w-20 h-20 sm:w-24 sm:h-24',
     blockHeight: 'h-[14rem] sm:h-[16rem]',
     bottomPad: 'pb-5',
@@ -33,11 +39,14 @@ const podiumTheme = {
     scoreSize: 'text-xl sm:text-3xl',
   },
   3: {
-    block: 'bg-slate-700/90 text-white shadow-[0_14px_30px_rgba(0,0,0,0.16)]',
-    ring: 'border-emerald-400',
-    badge: 'bg-emerald-400 text-slate-950',
-    score: 'text-emerald-300',
-    avatarShell: 'bg-slate-950 border-emerald-400',
+    // 🥉 Rank 3 Bronze Column: 3D Beveled Top Inset, crisp warm border alignment
+    block: 'bg-gradient-to-b from-amber-700 via-amber-800 to-stone-900 text-white border border-amber-500/50 shadow-[inset_0_2px_4px_rgba(255,255,255,0.25),0_6px_16px_rgba(0,0,0,0.25)]',
+    ring: 'border-2 border-amber-400',
+    badge: 'bg-amber-400 text-stone-950 border border-amber-300/60 font-black',
+    score: 'text-amber-300 font-black',
+    nameColor: 'text-white font-extrabold',
+    classColor: 'text-amber-200/90 font-semibold',
+    avatarShell: 'bg-stone-950 border-2 border-amber-400',
     avatarSize: 'w-20 h-20 sm:w-24 sm:h-24',
     blockHeight: 'h-[12rem] sm:h-[13.5rem]',
     bottomPad: 'pb-5',
@@ -52,7 +61,7 @@ const listTheme = {
 };
 
 const AvatarCircle = ({ student, size, ringClass, shellClass }) => (
-  <div className={`rounded-full border-4 ${ringClass} ${size} overflow-hidden shadow-lg ${shellClass}`}>
+  <div className={`rounded-full ${ringClass} ${size} overflow-hidden ${shellClass}`}>
     {student.photo_url ? (
       <img src={student.photo_url} alt={student.full_name} className="h-full w-full object-cover" />
     ) : (
@@ -91,7 +100,7 @@ const PodiumColumn = ({ student, rank, dense = false }) => {
         <div className={`absolute left-1/2 ${avatarOffset} z-20 -translate-x-1/2`}>
           {isChampion && (
             <div className={`absolute left-1/2 ${crownOffset} -translate-x-1/2`}>
-              <Crown className="h-6 w-6 fill-current text-amber-400 drop-shadow-sm" />
+              <Crown className="h-6 w-6 fill-current text-amber-400" />
             </div>
           )}
 
@@ -103,22 +112,24 @@ const PodiumColumn = ({ student, rank, dense = false }) => {
               shellClass={theme.avatarShell}
             />
             <div
-              className={`absolute left-1/2 bottom-0 flex h-7 w-7 -translate-x-1/2 translate-y-1/2 items-center justify-center rounded-full text-[10px] font-black shadow-md ${theme.badge}`}
+              className={`absolute left-1/2 bottom-0 flex h-7 w-7 -translate-x-1/2 translate-y-1/2 items-center justify-center rounded-full text-[10px] font-black ${theme.badge}`}
             >
               #{rank}
             </div>
           </div>
         </div>
 
-        <div className={`relative flex h-full flex-col items-center justify-end px-3 ${theme.bottomPad} pt-16 text-center sm:px-4`}>
-          <p className={`font-medium text-white ${theme.titleSize} truncate`}>
-            {student.full_name}
-          </p>
-          <p className={`mt-1 font-black ${theme.scoreSize} ${theme.score}`}>
+        <div className={`relative flex h-full flex-col items-center justify-end px-2 sm:px-3 ${theme.bottomPad} pt-14 sm:pt-16 text-center`}>
+          <div className="flex h-10 sm:h-12 items-center justify-center w-full px-1 overflow-hidden">
+            <p className={`${theme.nameColor} text-xs sm:text-sm md:text-base font-extrabold line-clamp-2 leading-snug sm:leading-tight text-balance text-center`}>
+              {student.full_name}
+            </p>
+          </div>
+          <p className={`mt-0.5 sm:mt-1 ${theme.scoreSize} ${theme.score}`}>
             {student.totalPoints}
           </p>
-          <p className="mt-1 truncate text-[10px] text-white/55">
-            {student.class_level}
+          <p className={`mt-0.5 truncate text-[10px] sm:text-[11px] ${theme.classColor}`}>
+            {student.class_name || student.class_level || 'Madrasa Student'}
           </p>
         </div>
       </div>
@@ -155,7 +166,6 @@ const LeaderboardShowcase = ({
     : screenTone === 'transparent'
       ? 'bg-transparent'
     : 'bg-[linear-gradient(180deg,#dff7ee_0%,#c9eadb_46%,#b4d1c5_100%)]';
-  const showSurfaceGlow = screenTone !== 'transparent';
 
   const content = (
     <div className="relative overflow-visible">
@@ -196,12 +206,19 @@ const LeaderboardShowcase = ({
       )}
 
       <section className={`relative z-10 overflow-hidden ${isScreen ? `${screenSurface} px-4 ${showRankedList ? 'pb-20 sm:pb-24' : 'pb-8'} pt-4 sm:pt-6` : 'bg-[linear-gradient(180deg,#eff9f5_0%,#d9eee4_100%)] px-4 pb-20 pt-4 sm:pb-20'}`}>
-        {showSurfaceGlow && <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(255,255,255,0.45),transparent_35%),radial-gradient(circle_at_top_right,rgba(255,255,255,0.32),transparent_28%)]" />}
         <div className={`relative mx-auto max-w-md sm:max-w-2xl ${isScreen ? (showRankedList ? 'pt-28 sm:pt-32' : 'pt-20 sm:pt-24') : 'pt-20 sm:pt-24'}`}>
           <div className="grid grid-cols-3 items-end gap-3 sm:gap-5 px-2 sm:px-4">
             <PodiumColumn student={podium[2]} rank={2} dense={!isScreen} />
             <PodiumColumn student={podium[1]} rank={1} dense={!isScreen} />
             <PodiumColumn student={podium[3]} rank={3} dense={!isScreen} />
+          </div>
+
+          {/* Grounded 3D Stage Pedestal Base Table */}
+          <div className="relative z-20 -mt-1 rounded-2xl bg-gradient-to-b from-stone-900 via-stone-950 to-black border-t-2 border-amber-400/50 p-3 sm:p-4 text-center shadow-2xl ring-1 ring-stone-800">
+            <div className="flex items-center justify-center gap-2 text-xs sm:text-sm font-bold text-amber-300 tracking-widest uppercase">
+              <Trophy className="w-4 h-4 text-amber-400 shrink-0" />
+              <span>RMS Academic Honor Stage</span>
+            </div>
           </div>
         </div>
       </section>
