@@ -145,7 +145,7 @@ const LandingPage = () => {
   const [liveCounts, setLiveCounts] = useState({
     students: 100,
     teachers: 5,
-    years: 50,
+    years: 30,
     alumni: 1000,
   });
   const location = useLocation();
