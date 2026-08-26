@@ -3,10 +3,10 @@ import { motion } from 'framer-motion';
 import {
   BookOpen, Users, Award, GraduationCap, ArrowRight,
   Sparkles, HeartHandshake, Briefcase, QrCode,
-  Play, Image as ImageIcon, Download, Trophy
+  Play, Image as ImageIcon, Download, Trophy, Menu, X
 } from 'lucide-react';
 import { toast } from 'sonner';
-import { Link } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { supabase } from '@/lib/supabase';
 import { fetchFullLeaderboardData } from '@/utils/leaderboard';
@@ -87,6 +87,8 @@ const LandingPage = () => {
   const [galleryPreview,  setGalleryPreview]  = useState([]);
   const [deferredPrompt,  setDeferredPrompt]  = useState(null);
   const [showInstallBanner, setShowInstallBanner] = useState(false);
+  const [mobileNavOpen, setMobileNavOpen] = useState(false);
+  const location = useLocation();
 
   // Fetch featured gallery items
   useEffect(() => {
@@ -156,36 +158,65 @@ const LandingPage = () => {
         initial={{ y: -100 }}
         animate={{ y: 0 }}
         transition={{ duration: 0.3 }}
-        className="sticky top-0 z-50 border-b border-stone-200/80 bg-white/95 shadow-sm supports-[backdrop-filter]:backdrop-blur-md supports-[backdrop-filter]:bg-white/80"
+        className="sticky top-0 z-50 h-20 border-b border-stone-200/80 bg-white/80 supports-[backdrop-filter]:backdrop-blur-md supports-[backdrop-filter]:bg-white/70"
         style={{ willChange: 'transform' }}
       >
-        <div className="container mx-auto px-5 py-3.5 sm:px-6 sm:py-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
+        <div className="container relative mx-auto h-full px-5 sm:px-6 lg:px-10">
+          <div className="grid h-full grid-cols-[auto_1fr_auto] items-center gap-6">
+            <div className="flex min-w-max items-center gap-2">
               <img src="/apple-touch-icon.png" alt="RMS Madrasa" className="w-9 h-9 rounded-xl object-cover" />
               <span className="font-heading text-xl font-bold tracking-tight text-stone-900 sm:text-2xl">RMS Madrasa</span>
             </div>
-            <nav className="flex items-center gap-4 md:gap-8">
-              <a href="#about"    className="hidden md:inline-block text-sm font-medium text-stone-600 transition-colors hover:text-primary">About</a>
-              <a href="#programs" className="hidden md:inline-block text-sm font-medium text-stone-600 transition-colors hover:text-primary">Programs</a>
-              <Link to="/alumni"  className="hidden items-center gap-1 text-sm font-semibold text-emerald-700 transition-colors hover:text-primary md:flex">
+            <nav className="hidden items-center justify-center gap-9 md:flex" aria-label="Primary navigation">
+              <a href="#about" className="text-sm font-medium text-stone-600 transition-colors hover:text-primary">About</a>
+              <a href="#programs" className="text-sm font-medium text-stone-600 transition-colors hover:text-primary">Programs</a>
+              <Link to="/alumni" className={`items-center gap-1 text-sm font-medium transition-colors hover:text-primary md:flex ${location.pathname === '/alumni' ? 'font-semibold text-primary underline underline-offset-8' : 'text-stone-600'}`}>
                 <GraduationCap className="w-4 h-4 text-emerald-600" /> Alumni
               </Link>
-              <Link to="/gallery" className="hidden items-center gap-1 text-sm font-semibold text-stone-700 transition-colors hover:text-primary md:flex">
+              <Link to="/gallery" className={`items-center gap-1 text-sm font-medium transition-colors hover:text-primary md:flex ${location.pathname === '/gallery' ? 'font-semibold text-primary underline underline-offset-8' : 'text-stone-600'}`}>
                 <ImageIcon className="w-4 h-4 text-stone-600" /> Gallery
               </Link>
+            </nav>
+            <div className="hidden items-center justify-end gap-3 md:flex">
               <Button
                 onClick={() => setShowQRModal(true)}
                 variant="outline"
-                className="hidden items-center gap-1.5 rounded-full border-emerald-200 bg-emerald-50 text-xs font-bold text-emerald-800 hover:bg-emerald-100 md:flex"
+                className="items-center gap-1.5 rounded-full border-transparent bg-transparent text-xs font-bold text-stone-600 hover:border-stone-200 hover:bg-stone-50 hover:text-primary"
               >
                 <QrCode className="w-4 h-4 text-emerald-600" /> Scan QR
               </Button>
               <Link to="/login" state={{ loginIntent: true }}>
-                <Button variant="outline" className="rounded-full border-stone-300 px-4 text-sm hover:border-emerald-300 hover:bg-emerald-50" data-testid="header-login-button">Login</Button>
+                <Button className="rounded-full bg-primary px-5 text-sm font-bold text-white hover:bg-emerald-600" data-testid="header-login-button">Login</Button>
               </Link>
-            </nav>
+            </div>
+            <button
+              type="button"
+              className="flex h-10 w-10 items-center justify-center rounded-full text-stone-700 transition-colors hover:bg-stone-100 md:hidden"
+              onClick={() => setMobileNavOpen((open) => !open)}
+              aria-label={mobileNavOpen ? 'Close navigation menu' : 'Open navigation menu'}
+              aria-expanded={mobileNavOpen}
+            >
+              {mobileNavOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
+            </button>
           </div>
+          {mobileNavOpen && (
+            <div className="absolute left-0 right-0 top-full border-b border-stone-200 bg-white/95 px-5 py-4 shadow-lg backdrop-blur-md md:hidden">
+              <nav className="flex flex-col gap-1" aria-label="Mobile navigation">
+                <a href="#about" onClick={() => setMobileNavOpen(false)} className="rounded-xl px-3 py-2.5 text-sm font-medium text-stone-700 hover:bg-stone-50 hover:text-primary">About</a>
+                <a href="#programs" onClick={() => setMobileNavOpen(false)} className="rounded-xl px-3 py-2.5 text-sm font-medium text-stone-700 hover:bg-stone-50 hover:text-primary">Programs</a>
+                <Link to="/alumni" onClick={() => setMobileNavOpen(false)} className="rounded-xl px-3 py-2.5 text-sm font-medium text-stone-700 hover:bg-stone-50 hover:text-primary">Alumni</Link>
+                <Link to="/gallery" onClick={() => setMobileNavOpen(false)} className="rounded-xl px-3 py-2.5 text-sm font-medium text-stone-700 hover:bg-stone-50 hover:text-primary">Gallery</Link>
+                <div className="mt-2 flex items-center gap-2 border-t border-stone-100 pt-3">
+                  <Button onClick={() => { setMobileNavOpen(false); setShowQRModal(true); }} variant="outline" className="flex-1 rounded-full border-transparent text-xs font-bold text-stone-600 hover:border-stone-200 hover:bg-stone-50">
+                    <QrCode className="mr-1.5 h-4 w-4 text-emerald-600" /> Scan QR
+                  </Button>
+                  <Link to="/login" state={{ loginIntent: true }} onClick={() => setMobileNavOpen(false)} className="flex-1">
+                    <Button className="w-full rounded-full bg-primary text-xs font-bold text-white hover:bg-emerald-600">Login</Button>
+                  </Link>
+                </div>
+              </nav>
+            </div>
+          )}
         </div>
       </motion.header>
 
@@ -304,10 +335,10 @@ const LandingPage = () => {
       </section>
 
       {/* ── HALL OF FAME LEADERBOARD ────────────────────────────────────────────── */}
-      <section className="bg-stone-100 py-8 text-stone-900 section-lazy md:py-10">
+      <section className="bg-transparent py-8 text-stone-900 section-lazy md:py-10">
         <div className="mx-auto w-full px-0">
           {leaderboardData.length > 0 ? (
-            <LeaderboardShowcase standings={leaderboardData} variant="screen" screenTone="neutral" showScreenHeader={false} showRankedList={false} />
+            <LeaderboardShowcase standings={leaderboardData} variant="screen" screenTone="transparent" showScreenHeader={false} showRankedList={false} />
           ) : leaderboardLoading ? (
             <p className="text-center text-stone-400 text-sm animate-pulse">Leaderboard standings updating...</p>
           ) : (
@@ -368,7 +399,7 @@ const LandingPage = () => {
                   <div className="w-12 h-12 bg-emerald-500 rounded-2xl flex items-center justify-center font-bold text-xl text-stone-950">M</div>
                   <div>
                     <h4 className="font-bold text-lg">Muhammed Fasil</h4>
-                    <p className="text-xs text-emerald-300">Batch of 2016 · Software Engineer</p>
+                    <p className="text-xs text-emerald-300">Batch of 2016 · Business</p>
                   </div>
                 </div>
                 <span className="text-[10px] uppercase font-bold bg-emerald-500/20 text-emerald-300 px-3 py-1 rounded-full border border-emerald-500/30">Approved Alumni</span>

@@ -5,7 +5,7 @@ import { QRCodeSVG } from 'qrcode.react';
 import { toast } from 'sonner';
 
 const MobileQRModal = ({ open, onClose }) => {
-  const apkUrl = 'https://rms-madrasa.vercel.app/rms-madrasa-app.apk'; // Placeholder, replace with actual URL
+  const apkUrl = 'https://rms-madrasa.vercel.app/rms-madrasa.apk';
 
   const handleCopy = () => {
     navigator.clipboard.writeText(apkUrl);
