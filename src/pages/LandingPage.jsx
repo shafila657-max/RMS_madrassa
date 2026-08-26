@@ -12,9 +12,9 @@ import { supabase } from '@/lib/supabase';
 import { fetchFullLeaderboardData } from '@/utils/leaderboard';
 import LeaderboardShowcase from '@/components/LeaderboardShowcase';
 import WaveDivider from '@/components/WaveDivider';
+import AlumniRegisterModal from '@/components/AlumniRegisterModal';
 
 // Lazy-load heavy modals — they're NOT needed on first paint
-const AlumniRegisterModal = lazy(() => import('@/components/AlumniRegisterModal'));
 const MobileQRModal = lazy(() => import('@/components/MobileQRModal'));
 const AlumniOrbitalShowcase = lazy(() => import('@/components/AlumniOrbitalShowcase'));
 
