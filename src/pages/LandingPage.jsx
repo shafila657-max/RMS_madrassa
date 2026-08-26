@@ -11,6 +11,7 @@ import { Button } from '@/components/ui/button';
 import { supabase } from '@/lib/supabase';
 import { fetchFullLeaderboardData } from '@/utils/leaderboard';
 import LeaderboardShowcase from '@/components/LeaderboardShowcase';
+import WaveDivider from '@/components/WaveDivider';
 
 // Lazy-load heavy modals — they're NOT needed on first paint
 const AlumniRegisterModal    = lazy(() => import('@/components/AlumniRegisterModal'));
@@ -284,10 +285,15 @@ const LandingPage = () => {
             </motion.div>
           </div>
         </div>
+
+        {/* Organic Wave Divider transitioning into About section */}
+        <div className="absolute bottom-0 left-0 right-0 z-10 pointer-events-none">
+          <WaveDivider fill="#f5f5f4" heightClass="h-8 sm:h-12 lg:h-14" />
+        </div>
       </section>
 
       {/* ── ABOUT / OUR MISSION ────────────────────────────────────────── */}
-      <section id="about" className="bg-stone-100/90 islamic-pattern-bg py-20 section-lazy md:py-24">
+      <section id="about" className="relative bg-stone-100/90 islamic-pattern-bg pt-20 pb-24 sm:pb-32 md:pt-24 md:pb-36 section-lazy">
         <div className="container mx-auto px-5 md:px-12 space-y-16">
           <motion.div
             variants={fadeUp} initial="hidden" whileInView="visible" viewport={VIEWPORT}
@@ -390,6 +396,11 @@ const LandingPage = () => {
               ))}
             </div>
           </motion.div>
+        </div>
+
+        {/* Organic Wave Divider transitioning into CTA section */}
+        <div className="absolute bottom-0 left-0 right-0 z-10 overflow-hidden leading-none pointer-events-none">
+          <WaveDivider fill="#022c22" heightClass="h-12 sm:h-16 lg:h-20" />
         </div>
       </section>
 
@@ -494,7 +505,7 @@ const LandingPage = () => {
 
       {/* ── FEATURED GALLERY MARQUEE ─────────────────────────────────────── */}
       {galleryPreview.length > 0 && (
-        <section id="gallery" className="py-20 bg-gradient-to-b from-[#011812] to-stone-950 star-pattern-bg overflow-hidden relative section-lazy">
+        <section id="gallery" className="relative pt-20 pb-20 sm:pb-24 bg-gradient-to-b from-[#011812] to-stone-950 star-pattern-bg overflow-hidden section-lazy">
           {/* Subtle static decorations — no blur-3xl to avoid expensive filter layers */}
           <div className="absolute top-0 left-1/4 w-96 h-96 bg-emerald-600/8 rounded-full pointer-events-none" />
           <div className="absolute bottom-0 right-1/4 w-96 h-96 bg-amber-500/8 rounded-full pointer-events-none" />
@@ -526,6 +537,11 @@ const LandingPage = () => {
               {galleryPreview.map((item) => <MarqueeCard key={`a-${item.id}`} item={item} />)}
               {galleryPreview.map((item) => <MarqueeCard key={`b-${item.id}`} item={item} />)}
             </div>
+          </div>
+
+          {/* Organic Wave Divider transitioning into Footer */}
+          <div className="absolute bottom-0 left-0 right-0 z-10 overflow-hidden leading-none pointer-events-none">
+            <WaveDivider fill="#0c0a09" heightClass="h-10 sm:h-14 lg:h-16" />
           </div>
         </section>
       )}
