@@ -158,6 +158,8 @@ const AdminDashboard = () => {
   const [alumniRSVPs, setAlumniRSVPs] = useState([]);
   const [showAddEvent, setShowAddEvent] = useState(false);
   const [eventForm, setEventForm] = useState({ title: '', description: '', event_date: '', location: 'Madrasa Main Auditorium' });
+  const [alumniToDelete, setAlumniToDelete] = useState(null);
+  const [deletingAlumni, setDeletingAlumni] = useState(false);
 
   // Gallery
   const [galleryItems, setGalleryItems] = useState([]);
@@ -695,22 +697,24 @@ const AdminDashboard = () => {
     }
   };
 
-  const handleDeleteAlumni = (id) => {
-    toast('Delete this alumni record?', {
-      action: {
-        label: 'Delete',
-        onClick: async () => {
-          try {
-            const { error } = await supabase.from('alumni_profiles').delete().eq('id', id);
-            if (error) throw error;
-            toast.success('Alumni record deleted');
-            fetchAdminAlumni();
-          } catch (err) {
-            toast.error('Failed to delete alumni: ' + err.message);
-          }
-        }
-      }
-    });
+  const handleDeleteAlumni = (alumniObj) => {
+    setAlumniToDelete(alumniObj);
+  };
+
+  const confirmDeleteAlumni = async () => {
+    if (!alumniToDelete) return;
+    setDeletingAlumni(true);
+    try {
+      const { error } = await supabase.from('alumni_profiles').delete().eq('id', alumniToDelete.id);
+      if (error) throw error;
+      toast.success(`Alumni member "${alumniToDelete.full_name}" deleted`);
+      setAlumniToDelete(null);
+      fetchAdminAlumni();
+    } catch (err) {
+      toast.error('Failed to delete alumni: ' + err.message);
+    } finally {
+      setDeletingAlumni(false);
+    }
   };
 
   const handleToggleMentorStatus = async (id, currentStatus) => {
@@ -1060,6 +1064,9 @@ const AdminDashboard = () => {
                           <Btn variant="danger" onClick={() => handleRejectAlumni(a.id)}>
                             <XCircle className="w-3.5 h-3.5" /> Reject
                           </Btn>
+                          <Btn variant="danger" onClick={() => handleDeleteAlumni(a)} title="Delete Alumni Registration">
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </Btn>
                         </div>
                       </div>
                     ))}
@@ -1099,7 +1106,7 @@ const AdminDashboard = () => {
                             {a.is_mentor ? '✓ Mentor' : '+ Make Mentor'}
                           </button>
 
-                          <Btn variant="danger" onClick={() => handleDeleteAlumni(a.id)}>
+                          <Btn variant="danger" onClick={() => handleDeleteAlumni(a)} title="Delete Alumni Profile">
                             <Trash2 className="w-3.5 h-3.5" />
                           </Btn>
                         </div>
@@ -1112,6 +1119,35 @@ const AdminDashboard = () => {
                   </div>
                 )}
               </div>
+
+              {/* Rejected Alumni Registrations */}
+              {alumniData.filter(a => a.status === 'rejected').length > 0 && (
+                <div className="bg-stone-50 border border-stone-200 rounded-2xl p-5 shadow-sm space-y-3">
+                  <h3 className="font-bold text-stone-700 text-sm flex items-center gap-2">
+                    <XCircle className="w-4 h-4 text-red-500" /> Rejected Alumni Registrations ({alumniData.filter(a => a.status === 'rejected').length})
+                  </h3>
+
+                  <div className="space-y-3">
+                    {alumniData.filter(a => a.status === 'rejected').map((a) => (
+                      <div key={a.id} className="bg-white rounded-xl p-4 border border-stone-200 flex flex-wrap items-center justify-between gap-3 shadow-sm">
+                        <div>
+                          <p className="font-bold text-stone-900 text-sm">{a.full_name} <span className="text-xs font-normal text-stone-500">(Batch of {a.passout_year})</span></p>
+                          <p className="text-xs text-stone-600 font-medium">{a.working_area} {a.company_org ? `at ${a.company_org}` : ''}</p>
+                          <p className="text-[11px] text-stone-400 mt-0.5">WhatsApp: {a.whatsapp_number} {a.location ? `· ${a.location}` : ''}</p>
+                        </div>
+                        <div className="flex gap-2">
+                          <Btn variant="primary" onClick={() => handleApproveAlumni(a.id)}>
+                            <CheckCircle className="w-3.5 h-3.5" /> Approve
+                          </Btn>
+                          <Btn variant="danger" onClick={() => handleDeleteAlumni(a)} title="Delete Alumni Profile">
+                            <Trash2 className="w-3.5 h-3.5" /> Delete
+                          </Btn>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
 
               {/* Alumni Events & Reunions Section */}
               <div className="bg-white rounded-2xl border border-stone-100 shadow-sm p-5 space-y-4">
@@ -1638,6 +1674,53 @@ const AdminDashboard = () => {
         <div className="flex gap-2 mt-2">
           <Btn className="flex-1" onClick={handleAddFee} loading={formLoading}>Add Fee</Btn>
           <Btn variant="ghost" className="flex-1" onClick={() => setShowAddFee(false)}>Cancel</Btn>
+        </div>
+      </Modal>
+
+      {/* ── MODAL: Delete Alumni Confirmation ── */}
+      <Modal open={!!alumniToDelete} onClose={() => !deletingAlumni && setAlumniToDelete(null)} title="Delete Alumni Member">
+        <div className="space-y-4">
+          <div className="flex items-start gap-3 p-3.5 bg-red-50 border border-red-200 rounded-2xl text-red-900 text-sm">
+            <AlertTriangle className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" />
+            <div>
+              <p className="font-bold text-red-950">Are you sure you want to delete this alumni member?</p>
+              <p className="text-xs text-red-800 mt-1 leading-relaxed">
+                You are about to permanently delete <strong>{alumniToDelete?.full_name}</strong> (Batch of {alumniToDelete?.passout_year}) from the database.
+              </p>
+            </div>
+          </div>
+
+          {alumniToDelete && (
+            <div className="bg-stone-50 border border-stone-200 rounded-xl p-3.5 text-xs space-y-1.5 text-stone-700">
+              <p><strong>Name:</strong> {alumniToDelete.full_name}</p>
+              <p><strong>Passout Year:</strong> {alumniToDelete.passout_year}</p>
+              <p><strong>Working Area:</strong> {alumniToDelete.working_area} {alumniToDelete.company_org ? `@ ${alumniToDelete.company_org}` : ''}</p>
+              {alumniToDelete.location && <p><strong>Location:</strong> {alumniToDelete.location}</p>}
+              {alumniToDelete.whatsapp_number && <p><strong>WhatsApp:</strong> {alumniToDelete.whatsapp_number}</p>}
+              <p><strong>Status:</strong> <span className="capitalize font-semibold">{alumniToDelete.status}</span></p>
+            </div>
+          )}
+
+          <p className="text-xs text-stone-500 italic">
+            This action cannot be undone and will remove the record from public showcases and directory lists.
+          </p>
+
+          <div className="flex gap-3 justify-end pt-2">
+            <Btn variant="ghost" disabled={deletingAlumni} onClick={() => setAlumniToDelete(null)}>
+              Cancel
+            </Btn>
+            <Btn variant="danger" disabled={deletingAlumni} onClick={confirmDeleteAlumni} className="flex items-center gap-1.5">
+              {deletingAlumni ? (
+                <>
+                  <RefreshCw className="w-3.5 h-3.5 animate-spin" /> Deleting...
+                </>
+              ) : (
+                <>
+                  <Trash2 className="w-3.5 h-3.5" /> Delete Member
+                </>
+              )}
+            </Btn>
+          </div>
         </div>
       </Modal>
 
