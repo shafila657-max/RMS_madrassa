@@ -8,7 +8,7 @@ import {
   Bell, Megaphone, AlertTriangle, Trash2, Volume2, Edit3, Star,
   School, Camera, Phone, Mail, User, ClipboardList, Lightbulb,
   FileText, Clock, BookOpenCheck, Wallet, PenLine, Pencil, Upload,
-  Trophy, Award, RotateCcw, Crown, Medal, Sparkles, ShieldCheck
+  Trophy, Award, RotateCcw, Crown, Medal, Sparkles, ShieldCheck, Image as ImageIcon
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { logout, getCachedProfile, clearCachedProfile } from '@/utils/auth';
