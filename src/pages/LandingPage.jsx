@@ -274,7 +274,7 @@ const LandingPage = () => {
       </section>
 
       {/* ── ABOUT — section-lazy skips rendering until near viewport ─────── */}
-      <section id="about" className="bg-secondary py-20 section-lazy md:py-24">
+      <section id="about" className="bg-secondary islamic-pattern-bg py-20 section-lazy md:py-24">
         <div className="container mx-auto px-5 md:px-12">
           <motion.div
             variants={fadeUp} initial="hidden" whileInView="visible" viewport={VIEWPORT}
@@ -308,7 +308,7 @@ const LandingPage = () => {
       </section>
 
       {/* ── CTA DARK SECTION ──────────────────────────────────────────────── */}
-      <section className="bg-gradient-to-br from-stone-950 via-emerald-950 to-stone-900 py-20 text-white section-lazy md:py-24">
+      <section className="bg-gradient-to-br from-stone-950 via-emerald-950 to-stone-900 star-pattern-bg py-20 text-white section-lazy md:py-24">
         <div className="container mx-auto px-5 md:px-12">
           <motion.div
             variants={fadeScale} initial="hidden" whileInView="visible" viewport={VIEWPORT}
@@ -352,7 +352,7 @@ const LandingPage = () => {
       </section>
 
       {/* ── ALUMNI SECTION ─────────────────────────────────────────────────── */}
-      <section className="relative overflow-hidden border-t border-emerald-800 bg-gradient-to-br from-emerald-950 via-teal-950 to-stone-950 py-20 text-white section-lazy md:py-24">
+      <section className="relative overflow-hidden border-t border-emerald-800 bg-gradient-to-br from-emerald-950 via-teal-950 to-stone-950 star-pattern-bg py-20 text-white section-lazy md:py-24">
         <div className="container relative z-10 mx-auto px-5 md:px-12">
           <div className="grid lg:grid-cols-2 gap-12 items-center">
             <motion.div variants={fadeLeft} initial="hidden" whileInView="visible" viewport={VIEWPORT} className="space-y-6">
@@ -418,7 +418,7 @@ const LandingPage = () => {
 
       {/* ── FEATURED GALLERY MARQUEE ─────────────────────────────────────── */}
       {galleryPreview.length > 0 && (
-        <section id="gallery" className="py-20 bg-stone-950 overflow-hidden relative section-lazy">
+        <section id="gallery" className="py-20 bg-stone-950 star-pattern-bg overflow-hidden relative section-lazy">
           {/* Subtle static decorations — no blur-3xl to avoid expensive filter layers */}
           <div className="absolute top-0 left-1/4 w-96 h-96 bg-emerald-600/8 rounded-full pointer-events-none" />
           <div className="absolute bottom-0 right-1/4 w-96 h-96 bg-amber-500/8 rounded-full pointer-events-none" />
@@ -455,7 +455,7 @@ const LandingPage = () => {
       )}
 
       {/* ── FOOTER ──────────────────────────────────────────────────────── */}
-      <footer className="bg-stone-950 text-white py-12 border-t border-stone-800 section-lazy">
+      <footer className="bg-stone-950 star-pattern-bg text-white py-12 border-t border-stone-800 section-lazy">
         <div className="container mx-auto px-6 md:px-12">
           <div className="grid md:grid-cols-4 gap-8">
             <div className="md:col-span-2">

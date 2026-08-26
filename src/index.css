@@ -72,3 +72,29 @@
   from { transform: translateX(0); }
   to   { transform: translateX(calc(-50% - 10px)); }
 }
+
+/* ── Islamic Geometric Background Patterns ──────────────────────────────────
+   All patterns are inline SVG data URIs — zero extra HTTP requests.
+   Tweak opacity='0.06' inside the SVG string to make them stronger/subtler.
+   ─────────────────────────────────────────────────────────────────────────── */
+
+/* 10-point star + concentric circles — white strokes for dark backgrounds */
+.star-pattern-bg {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='100' height='100' viewBox='0 0 100 100'%3E%3Cg fill='none' stroke='%23ffffff' stroke-width='0.5' opacity='0.06'%3E%3Cpolygon points='50,5 61,35 95,35 68,57 79,90 50,70 21,90 32,57 5,35 39,35'/%3E%3Ccircle cx='50' cy='50' r='20'/%3E%3Ccircle cx='50' cy='50' r='30'/%3E%3C/g%3E%3C/svg%3E");
+  background-repeat: repeat;
+  background-size: 100px 100px;
+}
+
+/* Nested diamonds + circle — emerald strokes for light/white backgrounds */
+.islamic-pattern-bg {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='80' height='80' viewBox='0 0 80 80'%3E%3Cg fill='none' stroke='%23059669' stroke-width='0.5' opacity='0.08'%3E%3Cpath d='M40 0L80 40L40 80L0 40Z'/%3E%3Cpath d='M40 10L70 40L40 70L10 40Z'/%3E%3Cpath d='M40 20L60 40L40 60L20 40Z'/%3E%3Ccircle cx='40' cy='40' r='8'/%3E%3C/g%3E%3C/svg%3E");
+  background-repeat: repeat;
+  background-size: 80px 80px;
+}
+
+/* Smaller gold diamonds — for accent/gold-tinted sections */
+.gold-pattern-bg {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='60' height='60' viewBox='0 0 60 60'%3E%3Cg fill='none' stroke='%23d97706' stroke-width='0.4' opacity='0.1'%3E%3Cpath d='M30 0L60 30L30 60L0 30Z'/%3E%3Cpath d='M30 10L50 30L30 50L10 30Z'/%3E%3Ccircle cx='30' cy='30' r='6'/%3E%3C/g%3E%3C/svg%3E");
+  background-repeat: repeat;
+  background-size: 60px 60px;
+}
