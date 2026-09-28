@@ -6,7 +6,9 @@ import {
   Play, Image as ImageIcon, Download, Trophy, Menu, X
 } from 'lucide-react';
 import { toast } from 'sonner';
-import { Link, useLocation } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { useAuth } from '@/context/AuthContext';
+import { homePathFor } from '@/utils/auth';
 import { Button } from '@/components/ui/button';
 import { supabase } from '@/lib/supabase';
 import { fetchFullLeaderboardData } from '@/utils/leaderboard';
@@ -151,6 +153,23 @@ const LandingPage = () => {
     alumni: 1000,
   });
   const location = useLocation();
+  const navigate = useNavigate();
+  // Already signed in: offer the dashboard instead of the login form.
+  const { profile: authProfile, loading: authLoading } = useAuth();
+  const dashboardPath = homePathFor(authProfile);
+
+  // The installed app opens on this page; take a signed-in user straight to their
+  // dashboard, once per launch (so tapping "Home" later still shows this page).
+  useEffect(() => {
+    if (authLoading || !dashboardPath) return;
+    const standalone = window.matchMedia?.('(display-mode: standalone)').matches || window.navigator.standalone === true;
+    if (!standalone) return;
+    let alreadyRedirected = false;
+    try { alreadyRedirected = sessionStorage.getItem('rms-launch-redirected') === '1'; } catch { /* storage unavailable */ }
+    if (alreadyRedirected) return;
+    try { sessionStorage.setItem('rms-launch-redirected', '1'); } catch { /* storage unavailable */ }
+    navigate(dashboardPath, { replace: true });
+  }, [authLoading, dashboardPath, navigate]);
   // Latest published exam; the Results section and nav link only show when one exists.
   const [publishedExam, setPublishedExam] = useState(null);
 
@@ -297,8 +316,10 @@ const LandingPage = () => {
                 </Button>
               </GlowButton>
               <GlowButton>
-                <Link to="/login" state={{ loginIntent: true }}>
-                  <Button className="rounded-full bg-stone-950 px-5 text-sm font-bold text-white hover:bg-emerald-700" data-testid="header-login-button">Login</Button>
+                <Link to={dashboardPath || '/login'} state={dashboardPath ? undefined : { loginIntent: true }}>
+                  <Button className="rounded-full bg-stone-950 px-5 text-sm font-bold text-white hover:bg-emerald-700" data-testid="header-login-button">
+                    {dashboardPath ? 'My Dashboard' : 'Login'}
+                  </Button>
                 </Link>
               </GlowButton>
             </div>
@@ -332,9 +353,9 @@ const LandingPage = () => {
                     </Button>
                   </GlowButton>
                   <GlowButton className="w-full">
-                    <Link to="/login" state={{ loginIntent: true }} onClick={() => setMobileNavOpen(false)} className="w-full flex">
+                    <Link to={dashboardPath || '/login'} state={dashboardPath ? undefined : { loginIntent: true }} onClick={() => setMobileNavOpen(false)} className="w-full flex">
                       <Button className="w-full rounded-full bg-stone-950 hover:bg-stone-950 text-xs font-extrabold text-white border-0 py-2.5 h-auto">
-                        Sign In / Login
+                        {dashboardPath ? 'Open My Dashboard' : 'Sign In / Login'}
                       </Button>
                     </Link>
                   </GlowButton>

@@ -80,6 +80,15 @@ export const logout = async () => {
   await supabase.auth.signOut();
 };
 
+// Where a signed-in, approved account belongs; null if it has no dashboard yet.
+export const homePathFor = (profile) => {
+  if (!profile || profile.status !== 'approved') return null;
+  if (profile.role === 'admin' || profile.role === 'teacher') return '/admin';
+  if (profile.role === 'parent') return '/parent';
+  if (profile.role === 'student') return '/student';
+  return null;
+};
+
 // ─── Session Helpers ──────────────────────────────────────────────────────────
 
 export const getSession = async () => {
