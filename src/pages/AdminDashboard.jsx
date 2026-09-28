@@ -16,6 +16,8 @@ import { supabase } from '@/lib/supabase';
 import { createClient } from '@supabase/supabase-js';
 import AdminStudentModal from '@/components/AdminStudentModal';
 import { computeStudentLeaderboard } from '@/utils/leaderboard';
+import ResultsManager from '@/components/results/ResultsManager';
+import { describeSaveError } from '@/utils/results';
 
 const DISCIPLINE_DAYS = [
   { value: 0, label: 'Sunday' },
@@ -150,7 +152,9 @@ const AdminDashboard = () => {
   const [showAddStudent, setShowAddStudent] = useState(false);
   const [showLinkParent, setShowLinkParent] = useState(false);
   const [selectedStudent, setSelectedStudent] = useState(null);
-  const [studentForm, setStudentForm] = useState({ full_name: '', class_level: '', admission_date: '' });
+  const [studentForm, setStudentForm] = useState({ full_name: '', class_level: '', admission_date: '', registration_no: '', date_of_birth: '' });
+  // student_id -> date_of_birth (admin-only table, kept off the public students table)
+  const [studentDobs, setStudentDobs] = useState({});
   const [linkParentEmail, setLinkParentEmail] = useState('');
   const [selectedParentId, setSelectedParentId] = useState(null);
   const [show360Modal, setShow360Modal] = useState(false);
@@ -287,6 +291,12 @@ const AdminDashboard = () => {
       .select(`*, profiles(full_name, id)`)
       .order('full_name');
     setStudents(data || []);
+  }, []);
+
+  const fetchStudentDobs = useCallback(async () => {
+    const { data, error } = await supabase.from('student_private_details').select('student_id, date_of_birth');
+    if (error) return; // Table missing until supabase_exam_results.sql is run.
+    setStudentDobs(Object.fromEntries((data || []).filter(d => d.date_of_birth).map(d => [d.student_id, d.date_of_birth])));
   }, []);
 
   const fetchParents = useCallback(async () => {
@@ -485,7 +495,8 @@ const AdminDashboard = () => {
   useEffect(() => {
     if (activeTab === 'overview') { fetchStudents(); fetchParents(); }
     if (activeTab === 'approvals') { fetchPendingUsers(); }
-    if (activeTab === 'students') { fetchStudents(); fetchParents(); }
+    if (activeTab === 'students') { fetchStudents(); fetchParents(); fetchStudentDobs(); }
+    if (activeTab === 'results') { fetchStudents(); }
     if (activeTab === 'announcements') { fetchAnnouncements(); }
     if (activeTab === 'alumni') { fetchAdminAlumni(); }
     if (activeTab === 'gallery') { fetchGalleryItems(); }
@@ -583,15 +594,26 @@ const AdminDashboard = () => {
     if (!studentForm.full_name || !studentForm.class_level) { toast.error('Name and class are required'); return; }
     setFormLoading(true);
     try {
-      const { error } = await supabase.from('students').insert([{ ...studentForm }]);
+      const { date_of_birth, registration_no, ...rest } = studentForm;
+      const payload = { ...rest, admission_date: rest.admission_date || null };
+      // Left empty, the database assigns the next number in the admin's format.
+      if (registration_no.trim()) payload.registration_no = registration_no.trim();
+      const { data: created, error } = await supabase.from('students').insert([payload]).select('id, registration_no').single();
       if (error) throw error;
-      toast.success('Student added!');
+      if (date_of_birth) {
+        const { error: dobError } = await supabase
+          .from('student_private_details')
+          .upsert([{ student_id: created.id, date_of_birth, updated_at: new Date().toISOString() }]);
+        if (dobError) toast.error('Student added, but date of birth was not saved: ' + dobError.message);
+      }
+      toast.success(created?.registration_no ? `Student added · Reg. No ${created.registration_no}` : 'Student added!');
       setShowAddStudent(false);
-      setStudentForm({ full_name: '', class_level: '', admission_date: '' });
+      setStudentForm({ full_name: '', class_level: '', admission_date: '', registration_no: '', date_of_birth: '' });
       fetchStudents();
+      fetchStudentDobs();
       fetchAll();
     } catch (err) {
-      toast.error('Failed to add student: ' + err.message);
+      toast.error('Failed to add student: ' + describeSaveError(err));
     } finally {
       setFormLoading(false);
     }
@@ -1202,11 +1224,14 @@ const AdminDashboard = () => {
   const filteredStudents = students.filter(s => {
     const matchesSearch =
       s.full_name.toLowerCase().includes(studentSearch.toLowerCase()) ||
-      s.class_level?.toLowerCase().includes(studentSearch.toLowerCase());
+      s.class_level?.toLowerCase().includes(studentSearch.toLowerCase()) ||
+      s.registration_no?.toLowerCase().includes(studentSearch.trim().toLowerCase());
 
     const sStatus = s.status || 'active';
     const matchesStatus =
-      studentStatusFilter === 'all' ? true : sStatus === studentStatusFilter;
+      studentStatusFilter === 'all' ? true
+        : studentStatusFilter === 'missing_dob' ? sStatus === 'active' && !studentDobs[s.id]
+        : sStatus === studentStatusFilter;
 
     return matchesSearch && matchesStatus;
   });
@@ -1225,6 +1250,7 @@ const AdminDashboard = () => {
         { id: 'programs', label: 'Programs' },
         { id: 'announcements', label: 'Announcements' },
         { id: 'students', label: 'Students' },
+        { id: 'results', label: '📝 Results' },
         { id: 'gallery', label: 'Gallery' },
         { id: 'teachers', label: 'Teachers' },
         { id: 'leaderboard', label: '🏆 Leaderboard' },
@@ -1780,6 +1806,7 @@ const AdminDashboard = () => {
                   { id: 'completed', label: 'Completed (Graduates)', count: students.filter(s => s.status === 'completed').length },
                   { id: 'dropped', label: '⚠️ Dropped Out', count: students.filter(s => s.status === 'dropped').length },
                   { id: 'all', label: '📂 All Students', count: students.length },
+                  { id: 'missing_dob', label: '🎂 Missing DOB', count: students.filter(s => (s.status || 'active') === 'active' && !studentDobs[s.id]).length },
                 ].map(tab => (
                   <button
                     key={tab.id}
@@ -1806,7 +1833,7 @@ const AdminDashboard = () => {
                 <input
                   value={studentSearch}
                   onChange={e => setStudentSearch(e.target.value)}
-                  placeholder="Search by student name or class level..."
+                  placeholder="Search by name, class or registration number..."
                   className="w-full pl-10 pr-4 py-2.5 border border-stone-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
                 />
               </div>
@@ -1831,7 +1858,13 @@ const AdminDashboard = () => {
                                 <span className="text-[10px] bg-emerald-100 text-emerald-800 font-bold px-2 py-0.5 rounded-full">360° View</span>
                               </p>
                               <div className="flex items-center gap-2 text-xs text-stone-500 flex-wrap mt-0.5">
+                                {s.registration_no && (
+                                  <span className="font-mono font-semibold text-stone-700 bg-stone-100 px-1.5 py-0.5 rounded-md">{s.registration_no}</span>
+                                )}
                                 <span>{s.class_level}</span>
+                                {!studentDobs[s.id] && studentStatusFilter === 'missing_dob' && (
+                                  <span className="text-amber-600 font-medium">DOB missing</span>
+                                )}
                                 <span>·</span>
                                 {s.user_id ? (
                                   <span className="text-emerald-600 font-medium">✓ Parent linked</span>
@@ -1894,6 +1927,13 @@ const AdminDashboard = () => {
                   <Btn onClick={() => setShowAddStudent(true)}><Plus className="w-4 h-4" /> Add First Student</Btn>
                 </div>
               )}
+            </motion.div>
+          )}
+
+          {/* ── RESULTS ── */}
+          {activeTab === 'results' && (
+            <motion.div key="results" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+              <ResultsManager students={students} />
             </motion.div>
           )}
 
@@ -1999,6 +2039,8 @@ const AdminDashboard = () => {
           ))}
         </Select>
         <Input label="Admission Date" type="date" value={studentForm.admission_date} onChange={e => setStudentForm(f => ({ ...f, admission_date: e.target.value }))} />
+        <Input label="Date of Birth (for online results)" type="date" value={studentForm.date_of_birth} onChange={e => setStudentForm(f => ({ ...f, date_of_birth: e.target.value }))} />
+        <Input label="Registration No. (leave empty for automatic)" value={studentForm.registration_no} onChange={e => setStudentForm(f => ({ ...f, registration_no: e.target.value }))} placeholder="Auto-generated" />
         <div className="flex gap-2 mt-2">
           <Btn className="flex-1" onClick={handleAddStudent} loading={formLoading}>Add Student</Btn>
           <Btn variant="ghost" className="flex-1" onClick={() => setShowAddStudent(false)}>Cancel</Btn>
@@ -2664,7 +2706,7 @@ const AdminDashboard = () => {
         parents={parents}
         open={show360Modal}
         onClose={() => setShow360Modal(false)}
-        onRefresh={() => { fetchStudents(); fetchAll(); }}
+        onRefresh={() => { fetchStudents(); fetchStudentDobs(); fetchAll(); }}
       />
 
       {/* ══════════════════════════════════════════════════════════════ */}

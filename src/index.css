@@ -254,3 +254,24 @@
   opacity: 1;
   animation: rotateGlowAngle 2.5s linear infinite;
 }
+/* Exam result printing: print only the result card */
+@media print {
+  body * {
+    visibility: hidden;
+  }
+  .result-print-area,
+  .result-print-area * {
+    visibility: visible;
+  }
+  .result-print-area {
+    position: absolute;
+    inset: 0 auto auto 0;
+    width: 100%;
+    box-shadow: none !important;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+  .no-print {
+    display: none !important;
+  }
+}

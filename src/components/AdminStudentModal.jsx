@@ -7,6 +7,7 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { supabase } from '@/lib/supabase';
+import { describeSaveError } from '@/utils/results';
 
 const getGrade = (pct) => {
   if (pct >= 90) return { label: 'A+', color: 'text-emerald-600' };
@@ -29,7 +30,7 @@ const AdminStudentModal = ({ student, parents = [], open, onClose, onRefresh }) 
   const [tasks, setTasks] = useState([]);
 
   // Edit Profile Form
-  const [profileForm, setProfileForm] = useState({ full_name: '', class_level: '', admission_date: '', user_id: '', photo_url: '' });
+  const [profileForm, setProfileForm] = useState({ full_name: '', class_level: '', admission_date: '', user_id: '', photo_url: '', registration_no: '', date_of_birth: '' });
   const [photoFile, setPhotoFile] = useState(null);
   const [photoPreview, setPhotoPreview] = useState('');
   const [savingProfile, setSavingProfile] = useState(false);
@@ -77,6 +78,12 @@ const AdminStudentModal = ({ student, parents = [], open, onClose, onRefresh }) 
         supabase.from('achievements').select('*').eq('student_id', sid).order('date', { ascending: false }),
         supabase.from('student_tasks').select('*').eq('student_id', sid).order('created_at', { ascending: false }),
       ]);
+      // Date of birth lives in an admin-only table (the students table is publicly readable).
+      const { data: privateData } = await supabase
+        .from('student_private_details')
+        .select('date_of_birth')
+        .eq('student_id', sid)
+        .maybeSingle();
 
       setStudentInfo(sData || student);
       setProfileForm({
@@ -86,6 +93,8 @@ const AdminStudentModal = ({ student, parents = [], open, onClose, onRefresh }) 
         user_id: sData?.user_id || '',
         status: sData?.status || 'active',
         photo_url: sData?.photo_url || '',
+        registration_no: sData?.registration_no || '',
+        date_of_birth: privateData?.date_of_birth || '',
       });
       setPhotoFile(null);
       setPhotoPreview(sData?.photo_url || '');
@@ -138,15 +147,23 @@ const AdminStudentModal = ({ student, parents = [], open, onClose, onRefresh }) 
           user_id: profileForm.user_id || null,
           status: profileForm.status || 'active',
           photo_url: photoUrl,
+          // Blank means "assign the next automatic number".
+          registration_no: profileForm.registration_no.trim() || null,
         })
         .eq('id', student.id);
 
       if (error) throw error;
+
+      const { error: dobError } = await supabase
+        .from('student_private_details')
+        .upsert([{ student_id: student.id, date_of_birth: profileForm.date_of_birth || null, updated_at: new Date().toISOString() }]);
+      if (dobError) throw dobError;
+
       toast.success('Student profile updated!');
       fetchStudentFullDetails();
       if (onRefresh) onRefresh();
     } catch (err) {
-      toast.error('Failed to update profile: ' + err.message);
+      toast.error('Failed to update profile: ' + describeSaveError(err));
     } finally {
       setSavingProfile(false);
     }
@@ -383,6 +400,11 @@ const AdminStudentModal = ({ student, parents = [], open, onClose, onRefresh }) 
                   <span className="text-xs font-semibold px-3 py-1 bg-white/20 rounded-full">
                     {studentInfo?.class_level}
                   </span>
+                  {studentInfo?.registration_no && (
+                    <span className="text-xs font-mono font-semibold px-3 py-1 bg-white/10 rounded-full">
+                      {studentInfo.registration_no}
+                    </span>
+                  )}
                 </div>
                 <p className="text-emerald-100 text-xs mt-1">
                   Parent: {studentInfo?.profiles?.full_name ? `${studentInfo.profiles.full_name}` : '⚠️ Unlinked'}
@@ -507,6 +529,29 @@ const AdminStudentModal = ({ student, parents = [], open, onClose, onRefresh }) 
                               <option key={c} value={c}>{c}</option>
                             ))}
                           </select>
+                        </div>
+
+                        <div>
+                          <label className="block text-xs font-medium text-stone-700 mb-1">Registration No.</label>
+                          <input
+                            value={profileForm.registration_no}
+                            onChange={e => setProfileForm(f => ({ ...f, registration_no: e.target.value }))}
+                            placeholder="Leave empty for automatic"
+                            className="w-full border border-stone-200 rounded-xl px-3 py-2 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                          />
+                          <p className="text-[10px] text-stone-400 mt-1">Used with date of birth to check exam results online.</p>
+                        </div>
+
+                        <div>
+                          <label className="block text-xs font-medium text-stone-700 mb-1">Date of Birth</label>
+                          <input
+                            type="date"
+                            value={profileForm.date_of_birth || ''}
+                            max={new Date().toISOString().split('T')[0]}
+                            onChange={e => setProfileForm(f => ({ ...f, date_of_birth: e.target.value }))}
+                            className="w-full border border-stone-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                          />
+                          <p className="text-[10px] text-stone-400 mt-1">Private. Only admins can see it.</p>
                         </div>
 
                         <div>

@@ -11,6 +11,8 @@ import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/context/AuthContext';
 import { fetchFullLeaderboardData } from '@/utils/leaderboard';
 import LeaderboardShowcase from '@/components/LeaderboardShowcase';
+import ChildResultsHighlight from '@/components/results/ChildResultsHighlight';
+import { fetchMyChildrenResults } from '@/utils/results';
 import {
   filterAnnouncementsForParent,
   getNotificationPermission,
@@ -22,6 +24,8 @@ const ParentDashboard = () => {
   const navigate = useNavigate();
   const { session, profile } = useAuth();
   const [children, setChildren] = useState([]);
+  // Latest published exam result for each linked child.
+  const [childResults, setChildResults] = useState([]);
   const [leaderboardStandings, setLeaderboardStandings] = useState([]);
   const [announcements, setAnnouncements] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -113,6 +117,10 @@ const ParentDashboard = () => {
       );
 
       setChildren(enriched);
+
+      fetchMyChildrenResults()
+        .then(setChildResults)
+        .catch(err => console.error('Children results fetch error:', err));
 
       // Fetch announcements filtered strictly for parent's linked child classes
       const childClasses = (students || []).map(s => s.class_level).filter(Boolean);
@@ -377,6 +385,9 @@ const ParentDashboard = () => {
             </div>
           </motion.div>
         )}
+
+        {/* Newly published exam results */}
+        {childResults.length > 0 && <ChildResultsHighlight results={childResults} />}
 
         {/* Children Cards */}
         {children.length > 0 && (

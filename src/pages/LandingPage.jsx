@@ -13,6 +13,8 @@ import { fetchFullLeaderboardData } from '@/utils/leaderboard';
 import LeaderboardShowcase from '@/components/LeaderboardShowcase';
 import WaveDivider from '@/components/WaveDivider';
 import AlumniRegisterModal from '@/components/AlumniRegisterModal';
+import ResultsSection from '@/components/results/ResultsSection';
+import { fetchLatestPublishedExam } from '@/utils/results';
 
 // Lazy-load heavy modals — they're NOT needed on first paint
 const MobileQRModal = lazy(() => import('@/components/MobileQRModal'));
@@ -149,6 +151,14 @@ const LandingPage = () => {
     alumni: 1000,
   });
   const location = useLocation();
+  // Latest published exam; the Results section and nav link only show when one exists.
+  const [publishedExam, setPublishedExam] = useState(null);
+
+  useEffect(() => {
+    fetchLatestPublishedExam()
+      .then(setPublishedExam)
+      .catch(err => console.error('Published exam fetch error:', err));
+  }, []);
 
   // Fetch live counts from database
   useEffect(() => {
@@ -259,6 +269,12 @@ const LandingPage = () => {
             </div>
             <nav className="hidden items-center justify-center gap-9 md:flex" aria-label="Primary navigation">
               <a href="#about" className="text-sm font-medium text-stone-600 transition-colors hover:text-primary">About</a>
+              {publishedExam && (
+                <a href="#results" className="relative inline-flex items-center gap-1 text-sm font-semibold text-emerald-700 transition-colors hover:text-primary">
+                  <Award className="w-4 h-4" /> Results
+                  <span className="absolute -right-2.5 -top-1 h-2 w-2 rounded-full bg-amber-400 ring-2 ring-white" aria-hidden="true" />
+                </a>
+              )}
               <Link to="/programs" className={`text-sm font-medium transition-colors hover:text-primary ${location.pathname === '/programs' ? 'font-semibold text-primary underline underline-offset-8' : 'text-stone-600'}`}>Programs</Link>
               <Link to="/alumni" className={`items-center gap-1 text-sm font-medium transition-colors hover:text-primary md:flex ${location.pathname === '/alumni' ? 'font-semibold text-primary underline underline-offset-8' : 'text-stone-600'}`}>
                 <GraduationCap className="w-4 h-4 text-emerald-600" /> Alumni
@@ -297,6 +313,12 @@ const LandingPage = () => {
             <div className="absolute left-0 right-0 top-full border-b border-stone-200 bg-white/95 px-5 py-4 shadow-lg backdrop-blur-md md:hidden">
               <nav className="flex flex-col gap-1" aria-label="Mobile navigation">
                 <a href="#about" onClick={() => setMobileNavOpen(false)} className="rounded-xl px-3 py-2.5 text-sm font-medium text-stone-700 hover:bg-stone-50 hover:text-primary">About</a>
+                {publishedExam && (
+                  <a href="#results" onClick={() => setMobileNavOpen(false)} className="flex items-center justify-between rounded-xl bg-emerald-50 px-3 py-2.5 text-sm font-bold text-emerald-800 hover:bg-emerald-100">
+                    <span className="flex items-center gap-1.5"><Award className="w-4 h-4" /> Exam Results</span>
+                    <span className="rounded-full bg-amber-400 px-2 py-0.5 text-[10px] font-extrabold uppercase text-amber-950">New</span>
+                  </a>
+                )}
                 <Link to="/programs" onClick={() => setMobileNavOpen(false)} className="rounded-xl px-3 py-2.5 text-sm font-medium text-stone-700 hover:bg-stone-50 hover:text-primary">Programs</Link>
                 <Link to="/alumni" onClick={() => setMobileNavOpen(false)} className="rounded-xl px-3 py-2.5 text-sm font-medium text-stone-700 hover:bg-stone-50 hover:text-primary">Alumni</Link>
                 <Link to="/gallery" onClick={() => setMobileNavOpen(false)} className="rounded-xl px-3 py-2.5 text-sm font-medium text-stone-700 hover:bg-stone-50 hover:text-primary">Gallery</Link>
@@ -334,6 +356,16 @@ const LandingPage = () => {
         <div className="container relative z-10 mx-auto px-5 md:px-12 lg:px-24">
           <div className="grid md:grid-cols-2 gap-12 items-center">
             <motion.div initial={{ opacity: 0, x: -50 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 0.4 }}>
+              {publishedExam && (
+                <a
+                  href="#results"
+                  className="mb-3 flex w-fit max-w-full items-center gap-2 rounded-full bg-stone-950 py-1.5 pl-1.5 pr-4 text-xs font-bold text-white shadow-lg transition-colors hover:bg-emerald-800"
+                >
+                  <span className="rounded-full bg-amber-400 px-2 py-0.5 text-[10px] font-extrabold uppercase text-amber-950">New</span>
+                  <span className="truncate">{publishedExam.name} results are out</span>
+                  <ArrowRight className="h-3.5 w-3.5 flex-shrink-0 text-emerald-400" />
+                </a>
+              )}
               <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-emerald-200 bg-emerald-100 px-3.5 py-1.5 text-xs font-bold text-emerald-800 shadow-sm">
                 <Sparkles className="w-4 h-4 text-emerald-600" /> RMS Madrasa Management Platform
               </div>
@@ -509,6 +541,13 @@ const LandingPage = () => {
           <WaveDivider fill="#022c22" heightClass="h-12 sm:h-16 lg:h-20" />
         </div>
       </section>
+
+      {/* ── EXAM RESULTS (only while a published exam exists) ─────────────── */}
+      {publishedExam && (
+        <section id="results" className="relative scroll-mt-20 bg-gradient-to-b from-[#022c22] via-[#064e3b] to-[#022c22] star-pattern-bg py-16 text-white sm:py-20">
+          <ResultsSection exam={publishedExam} />
+        </section>
+      )}
 
       {/* ── CTA DARK SECTION ──────────────────────────────────────────────── */}
       <section className="bg-gradient-to-b from-[#022c22] via-[#064e3b] to-[#044e3a] star-pattern-bg py-20 text-white section-lazy md:py-24">
