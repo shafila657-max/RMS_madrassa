@@ -17,7 +17,7 @@ import { createClient } from '@supabase/supabase-js';
 import AdminStudentModal from '@/components/AdminStudentModal';
 import { computeStudentLeaderboard } from '@/utils/leaderboard';
 import ResultsManager from '@/components/results/ResultsManager';
-import { describeSaveError } from '@/utils/results';
+import { describeSaveError, CLASS_LEVELS } from '@/utils/results';
 
 const DISCIPLINE_DAYS = [
   { value: 0, label: 'Sunday' },
@@ -273,17 +273,25 @@ const AdminDashboard = () => {
 
   useEffect(() => { fetchAll(); }, []);
 
+  // A teacher's classes are stored against their name in the Teachers list. Match that entry
+  // by email first, so the classes survive the admin editing how the name is written.
+  const myTeacherName = (() => {
+    const email = profile?.email?.toLowerCase();
+    const contact = email && teacherContacts.find(t => t.email?.toLowerCase() === email);
+    return contact?.full_name || profile?.full_name;
+  })();
+
   // Auto-select first assigned class for teachers
   useEffect(() => {
-    if (isTeacher && classTeachers.length > 0 && profile?.full_name) {
+    if (isTeacher && classTeachers.length > 0 && myTeacherName) {
       const myClasses = classTeachers
-        .filter(ct => ct.teacher_name === profile.full_name)
+        .filter(ct => ct.teacher_name === myTeacherName)
         .map(ct => ct.class_level);
       if (myClasses.length > 0 && !myClasses.includes(selectedClassLevel)) {
         setSelectedClassLevel(myClasses[0]);
       }
     }
-  }, [isTeacher, classTeachers, profile, selectedClassLevel]);
+  }, [isTeacher, classTeachers, myTeacherName, selectedClassLevel]);
 
   const fetchStudents = useCallback(async () => {
     const { data } = await supabase
@@ -563,16 +571,62 @@ const AdminDashboard = () => {
   }, [activeTab, classSubTab, classAttendanceDate, selectedClassLevel, students]);
 
   // ─── Handlers ───────────────────────────────────────────────────────────────
-  const handleApprove = async (userId) => {
-    await supabase.from('profiles').update({ status: 'approved' }).eq('id', userId);
-    toast.success('User approved');
+  const setUserStatus = async (userId, status) => {
+    const { error } = await supabase.from('profiles').update({ status }).eq('id', userId);
+    if (error) { toast.error(`Could not update the account: ${error.message}`); return; }
+    toast.success(status === 'approved' ? 'User approved' : 'User rejected');
     fetchAll();
   };
+  const handleApprove = (userId) => setUserStatus(userId, 'approved');
+  const handleReject = (userId) => setUserStatus(userId, 'rejected');
 
-  const handleReject = async (userId) => {
-    await supabase.from('profiles').update({ status: 'rejected' }).eq('id', userId);
-    toast.success('User rejected');
-    fetchAll();
+  // Removes a teacher from the list, their class assignments, and their dashboard access.
+  const handleDeleteTeacher = async (t) => {
+    if (!window.confirm(`Remove ${t.full_name}? Their class assignments are cleared and they can no longer sign in to the dashboard.`)) return;
+    try {
+      const { error } = await supabase.from('teacher_contacts').delete().eq('id', t.id);
+      if (error) throw error;
+      const { error: ctError } = await supabase.from('class_teachers').delete().eq('teacher_name', t.full_name);
+      if (ctError) throw ctError;
+      let loginRevoked = false;
+      if (t.email) {
+        // Sign-in emails are stored lowercase; match exactly (ilike would treat _ and % as wildcards).
+        const { data: revoked, error: pError } = await supabase
+          .from('profiles')
+          .update({ status: 'rejected' })
+          .eq('role', 'teacher')
+          .eq('email', t.email.trim().toLowerCase())
+          .select('id');
+        if (pError && pError.code !== '42703') throw pError; // 42703: profiles has no email column
+        loginRevoked = (revoked || []).length > 0;
+      }
+      if (loginRevoked) {
+        toast.success(`${t.full_name} removed and their login disabled`);
+      } else {
+        toast.warning(`${t.full_name} removed, but no teacher login with the email ${t.email || '(none)'} was found to disable.`, { duration: 8000 });
+      }
+    } catch (err) {
+      toast.error('Could not remove teacher: ' + err.message);
+    } finally {
+      fetchTeachers();
+      fetchClassTeachers();
+    }
+  };
+
+  // Deletes one row after confirming, and reports failures instead of a false "Deleted".
+  const confirmAndDelete = async (table, id, label, refresh) => {
+    if (!window.confirm(`Delete this ${label}?`)) return;
+    const { error } = await supabase.from(table).delete().eq('id', id);
+    if (error) { toast.error(`Could not delete ${label}: ${error.message}`); return; }
+    toast.success(`${label.charAt(0).toUpperCase()}${label.slice(1)} deleted`);
+    refresh();
+  };
+
+  const setLeaveStatus = async (id, status) => {
+    const { error } = await supabase.from('leave_applications').update({ status }).eq('id', id);
+    if (error) { toast.error(`Could not update leave: ${error.message}`); return; }
+    toast.success(status === 'approved' ? 'Leave approved' : 'Leave rejected');
+    fetchLeaves();
   };
 
   const handleSaveDisciplineDay = async () => {
@@ -718,7 +772,7 @@ const AdminDashboard = () => {
     }
     setFormLoading(true);
     try {
-      const { error } = await supabase.from('fees').insert([{ ...feeForm }]);
+      const { error } = await supabase.from('fees').insert([{ ...feeForm, due_date: feeForm.due_date || null }]);
       if (error) throw error;
       toast.success('Fee record added!');
       setShowAddFee(false);
@@ -1166,6 +1220,7 @@ const AdminDashboard = () => {
         is_featured: galleryForm.is_featured
       }]);
       if (error) throw error;
+      toast.success('Gallery item added');
       setGalleryForm({ title: '', category: 'Meelad Fest', media_type: 'image', media_url: '', is_featured: false });
       setShowAddGallery(false);
       fetchGalleryItems();
@@ -1221,6 +1276,13 @@ const AdminDashboard = () => {
   };
 
   // ─── Helpers ─────────────────────────────────────────────────────────────────
+  // Dropped-out and graduated students keep their history but are left out of new
+  // attendance, homework and discipline entries.
+  const activeInClass = (cls) => students.filter(s =>
+    (s.class_level || '').trim().toLowerCase() === (cls || '').trim().toLowerCase() &&
+    (s.status || 'active') === 'active'
+  );
+
   const filteredStudents = students.filter(s => {
     const matchesSearch =
       s.full_name.toLowerCase().includes(studentSearch.toLowerCase()) ||
@@ -2034,7 +2096,7 @@ const AdminDashboard = () => {
         <Input label="Full Name *" value={studentForm.full_name} onChange={e => setStudentForm(f => ({ ...f, full_name: e.target.value }))} placeholder="e.g. Ahmed Ali" />
         <Select label="Class Level *" value={studentForm.class_level} onChange={e => setStudentForm(f => ({ ...f, class_level: e.target.value }))}>
           <option value="">Select class...</option>
-          {['Class 1','Class 2','Class 3','Class 4','Class 5','Class 6','Class 7','Class 8','Class 9','Class 10','Hifz','Alim'].map(c => (
+          {CLASS_LEVELS.map(c => (
             <option key={c} value={c}>{c}</option>
           ))}
         </Select>
@@ -2111,7 +2173,7 @@ const AdminDashboard = () => {
             className="w-full border border-stone-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 bg-white"
           >
             <option value="All">All Classes (General Announcement)</option>
-            {['Class 1','Class 2','Class 3','Class 4','Class 5','Class 6','Class 7','Class 8','Class 9','Class 10','Hifz','Alim'].map(c => (
+            {CLASS_LEVELS.map(c => (
               <option key={c} value={c}>{c}</option>
             ))}
           </select>
@@ -2736,7 +2798,7 @@ const AdminDashboard = () => {
                     }} className="text-blue-400 hover:text-blue-600 transition-colors p-1">
                       <Edit3 className="w-3.5 h-3.5" />
                     </button>
-                    <button onClick={async () => { await supabase.from('teacher_contacts').delete().eq('id', t.id); fetchTeachers(); toast.success('Deleted'); }} className="text-red-400 hover:text-red-600 transition-colors p-1">
+                    <button onClick={() => handleDeleteTeacher(t)} className="text-red-400 hover:text-red-600 transition-colors p-1">
                       <Trash2 className="w-3.5 h-3.5" />
                     </button>
                   </div>
@@ -2828,7 +2890,7 @@ const AdminDashboard = () => {
               <div className="mb-4">
                 <label className="block text-sm font-medium text-stone-700 mb-2">Assign Classes</label>
                 <div className="grid grid-cols-2 gap-2 max-h-40 overflow-y-auto p-2 border border-stone-200 rounded-xl bg-stone-50">
-                  {['Class 1','Class 2','Class 3','Class 4','Class 5','Class 6','Class 7','Class 8','Class 9','Class 10'].map(cls => (
+                  {CLASS_LEVELS.map(cls => (
                     <label key={cls} className="flex items-center gap-2 text-xs font-medium text-stone-700 cursor-pointer p-1">
                       <input 
                         type="checkbox" 
@@ -2865,6 +2927,13 @@ const AdminDashboard = () => {
               }).eq('id', editingTeacher.id);
               if (error) { toast.error(error.message); return; }
 
+              // Keep the teacher's login profile name in step with the list entry.
+              const teacherEmail = editTeacherForm.email || editingTeacher.email;
+              if (teacherEmail) {
+                await supabase.from('profiles').update({ full_name: editTeacherForm.full_name })
+                  .eq('role', 'teacher').eq('email', teacherEmail.trim().toLowerCase());
+              }
+
               // 2. Remove old class assignments for this teacher
               const { error: delErr } = await supabase.from('class_teachers').delete().eq('teacher_name', oldName);
               if (delErr) { toast.error('Failed to remove old classes: ' + delErr.message); return; }
@@ -2892,7 +2961,7 @@ const AdminDashboard = () => {
               <div className="mb-4">
                 <label className="block text-sm font-medium text-stone-700 mb-2">Assigned Classes</label>
                 <div className="grid grid-cols-2 gap-2 max-h-40 overflow-y-auto p-2 border border-stone-200 rounded-xl bg-stone-50">
-                  {['Class 1','Class 2','Class 3','Class 4','Class 5','Class 6','Class 7','Class 8','Class 9','Class 10'].map(cls => (
+                  {CLASS_LEVELS.map(cls => (
                     <label key={cls} className="flex items-center gap-2 text-xs font-medium text-stone-700 cursor-pointer p-1">
                       <input 
                         type="checkbox" 
@@ -3092,7 +3161,7 @@ const AdminDashboard = () => {
                     onChange={e => setDisciplineClassFilter(e.target.value)}
                     className="border border-stone-200 rounded-xl px-3 py-1.5 text-xs font-bold bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500"
                   >
-                    {['Class 1','Class 2','Class 3','Class 4','Class 5','Class 6','Class 7','Class 8','Class 9','Class 10'].map(c => (
+                    {CLASS_LEVELS.map(c => (
                       <option key={c} value={c}>{c}</option>
                     ))}
                   </select>
@@ -3191,7 +3260,7 @@ const AdminDashboard = () => {
                     className="border border-stone-200 rounded-xl px-3 py-1.5 text-xs font-bold bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500"
                   >
                     <option value="all">All Classes</option>
-                    {['Class 1','Class 2','Class 3','Class 4','Class 5','Class 6','Class 7','Class 8','Class 9','Class 10'].map(c => (
+                    {CLASS_LEVELS.map(c => (
                       <option key={c} value={c}>{c}</option>
                     ))}
                   </select>
@@ -3315,10 +3384,10 @@ const AdminDashboard = () => {
 
           {/* 10 Class Pills Bar */}
           <div className="flex gap-2 overflow-x-auto no-scrollbar touch-pan-x flex-nowrap pb-2">
-            {['Class 1','Class 2','Class 3','Class 4','Class 5','Class 6','Class 7','Class 8','Class 9','Class 10']
-              .filter(cls => !isTeacher || classTeachers.some(ct => ct.class_level === cls && ct.teacher_name === profile?.full_name))
+            {CLASS_LEVELS
+              .filter(cls => !isTeacher || classTeachers.some(ct => ct.class_level === cls && ct.teacher_name === myTeacherName))
               .map(cls => {
-              const count = students.filter(s => (s.class_level || '').trim().toLowerCase() === (cls || '').trim().toLowerCase()).length;
+              const count = activeInClass(cls).length;
               const isSelected = selectedClassLevel === cls;
               return (
                 <button
@@ -3341,7 +3410,7 @@ const AdminDashboard = () => {
 
           {/* Class Overview Header Card */}
           {(() => {
-            const clsStudents = students.filter(s => (s.class_level || '').trim().toLowerCase() === (selectedClassLevel || '').trim().toLowerCase());
+            const clsStudents = activeInClass(selectedClassLevel);
             const currentCT = classTeachers.find(ct => ct.class_level === selectedClassLevel);
             const clsSubjects = subjectsList.filter(s => s.class_level === selectedClassLevel);
 
@@ -3417,7 +3486,7 @@ const AdminDashboard = () => {
 
           {/* SUB-TAB 1: STUDENTS ROSTER & QUICK ATTENDANCE */}
           {classSubTab === 'students' && (() => {
-            const clsStudents = students.filter(s => (s.class_level || '').trim().toLowerCase() === (selectedClassLevel || '').trim().toLowerCase());
+            const clsStudents = activeInClass(selectedClassLevel);
             return (
               <div className="bg-white rounded-2xl border border-stone-200 p-4 sm:p-6 shadow-sm space-y-4 relative">
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-2 border-b border-stone-100">
@@ -3530,7 +3599,7 @@ const AdminDashboard = () => {
 
           {/* SUB-TAB 2: CLASS HOMEWORK & TASKS */}
           {classSubTab === 'tasks' && (() => {
-            const clsStudents = students.filter(s => s.class_level === selectedClassLevel);
+            const clsStudents = activeInClass(selectedClassLevel);
             return (
               <div className="bg-white rounded-2xl border border-stone-200 p-6 shadow-sm space-y-4">
                 <div className="flex items-center justify-between pb-2 border-b border-stone-100">
@@ -3663,7 +3732,7 @@ const AdminDashboard = () => {
 
           {/* SUB-TAB: DISCIPLINE RATINGS */}
           {classSubTab === 'discipline' && (() => {
-            const discClassStudents = students.filter(s => (s.class_level || '').trim().toLowerCase() === (selectedClassLevel || '').trim().toLowerCase());
+            const discClassStudents = activeInClass(selectedClassLevel);
             const disciplineDayIsOpen = !isTeacher || new Date().getDay() === disciplineAllowedDay;
             const disciplineDayLabel = DISCIPLINE_DAYS.find(day => day.value === disciplineAllowedDay)?.label || 'the permitted day';
             return (
@@ -3960,7 +4029,7 @@ const AdminDashboard = () => {
                         <td className="px-4 py-2 text-stone-600">{r.teacher_name}</td>
                         <td className="px-4 py-2 text-stone-500">{r.start_time?.slice(0,5)} – {r.end_time?.slice(0,5)}</td>
                         <td className="px-4 py-2">
-                          <button onClick={async () => { await supabase.from('timetable').delete().eq('id', r.id); fetchTimetable(); toast.success('Deleted'); }} className="text-red-400 hover:text-red-600 transition-colors">
+                          <button onClick={() => confirmAndDelete('timetable', r.id, 'timetable slot', fetchTimetable)} className="text-red-400 hover:text-red-600 transition-colors">
                             <Trash2 className="w-3.5 h-3.5" />
                           </button>
                         </td>
@@ -4024,7 +4093,7 @@ const AdminDashboard = () => {
                     <p className="font-bold text-stone-900">{s.name}</p>
                     <span className="text-xs bg-emerald-100 text-emerald-700 px-2 py-0.5 rounded-full font-medium">{s.class_level}</span>
                   </div>
-                  <button onClick={async () => { await supabase.from('subjects').delete().eq('id', s.id); fetchSubjects(); toast.success('Deleted'); }} className="text-red-400 hover:text-red-600 transition-colors p-1">
+                  <button onClick={() => confirmAndDelete('subjects', s.id, 'subject', fetchSubjects)} className="text-red-400 hover:text-red-600 transition-colors p-1">
                     <Trash2 className="w-3.5 h-3.5" />
                   </button>
                 </div>
@@ -4084,8 +4153,8 @@ const AdminDashboard = () => {
                   }`}>{l.status.toUpperCase()}</span>
                   {l.status === 'pending' && (
                     <div className="flex gap-2">
-                      <button onClick={async () => { await supabase.from('leave_applications').update({ status: 'approved' }).eq('id', l.id); fetchLeaves(); toast.success('Leave approved'); }} className="px-3 py-1 bg-emerald-600 text-white text-xs rounded-lg font-semibold hover:bg-emerald-700 transition-colors">Approve</button>
-                      <button onClick={async () => { await supabase.from('leave_applications').update({ status: 'rejected' }).eq('id', l.id); fetchLeaves(); toast.success('Leave rejected'); }} className="px-3 py-1 bg-red-500 text-white text-xs rounded-lg font-semibold hover:bg-red-600 transition-colors">Reject</button>
+                      <button onClick={() => setLeaveStatus(l.id, 'approved')} className="px-3 py-1 bg-emerald-600 text-white text-xs rounded-lg font-semibold hover:bg-emerald-700 transition-colors">Approve</button>
+                      <button onClick={() => setLeaveStatus(l.id, 'rejected')} className="px-3 py-1 bg-red-500 text-white text-xs rounded-lg font-semibold hover:bg-red-600 transition-colors">Reject</button>
                     </div>
                   )}
                 </div>
