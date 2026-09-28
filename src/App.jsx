@@ -10,6 +10,7 @@ import AlumniPage from './pages/AlumniPage';
 import GalleryPage from './pages/GalleryPage';
 import ProgramsPage from './pages/ProgramsPage';
 import ResetPasswordPage from './pages/ResetPasswordPage';
+import ResultsPage from './pages/ResultsPage';
 import ProtectedRoute from './components/ProtectedRoute';
 import { Toaster } from './components/ui/toaster';
 import PWAInstallPrompt from './components/PWAInstallPrompt';
@@ -52,6 +53,9 @@ function App() {
                       {/* Alumni Community & Directory */}
                       <Route path="/alumni" element={<AlumniPage />} />
                       
+                      {/* Public Exam Results (shareable, no login) */}
+                      <Route path="/results" element={<ResultsPage />} />
+
                       {/* Public Media Gallery */}
                       <Route path="/gallery" element={<GalleryPage />} />
                       
