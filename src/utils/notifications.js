@@ -28,8 +28,8 @@ export const sendPushNotification = (title, options = {}) => {
 
   try {
     const defaultOptions = {
-      icon: '/madrasa-pwa-icon.png',
-      badge: '/rms-madrasa-favicon.png',
+      icon: '/pwa-192x192.png',
+      badge: '/favicon.png',
       vibrate: [200, 100, 200],
       ...options,
     };

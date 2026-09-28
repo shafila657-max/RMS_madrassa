@@ -1,3 +1,7 @@
+-- ⚠️ SUPERSEDED: do not re-run this file on the live database.
+-- Its alumni, programs and storage rules were replaced by supabase_security_fixes.sql and
+-- supabase_public_pages_fixes.sql. The unsafe rules below have been neutralised so an
+-- accidental re-run cannot reopen them, but run those two files again afterwards to be sure.
 -- SQL Script: Ensure Full RLS, Table Columns & Storage Permissions for alumni_profiles
 -- Run this script in your Supabase Dashboard -> SQL Editor (https://supabase.com/dashboard)
 
@@ -20,12 +24,16 @@ DROP POLICY IF EXISTS "Allow authenticated full access to alumni_profiles" ON pu
 -- Allow anyone (public/guests) to submit an alumni registration form
 CREATE POLICY "Allow public insert to alumni_profiles"
 ON public.alumni_profiles FOR INSERT
-WITH CHECK (true);
+WITH CHECK (coalesce(status, 'pending') = 'pending' AND (user_id IS NULL OR user_id = auth.uid()));
 
 -- Allow public to view approved alumni (for landing page showcase & directory)
 CREATE POLICY "Allow public read approved alumni"
 ON public.alumni_profiles FOR SELECT
-USING (status = 'approved');
+TO authenticated
+USING (
+  status = 'approved'
+  AND EXISTS (SELECT 1 FROM public.profiles WHERE id = auth.uid() AND status = 'approved')
+);
 
 -- Allow authenticated users with 'admin' role to read ALL alumni profiles (pending, approved, rejected)
 CREATE POLICY "Allow admins full read on alumni_profiles"
@@ -84,10 +92,16 @@ CREATE POLICY "Public Upload Alumni Photos" ON storage.objects
 FOR INSERT WITH CHECK (bucket_id = 'alumni-photos');
 
 CREATE POLICY "Admin Modify Alumni Photos" ON storage.objects
-FOR UPDATE USING (bucket_id = 'alumni-photos');
+FOR UPDATE TO authenticated USING (
+  bucket_id = 'alumni-photos'
+  AND EXISTS (SELECT 1 FROM public.profiles WHERE id = auth.uid() AND role = 'admin' AND status = 'approved')
+);
 
 CREATE POLICY "Admin Delete Alumni Photos" ON storage.objects
-FOR DELETE USING (bucket_id = 'alumni-photos');
+FOR DELETE TO authenticated USING (
+  bucket_id = 'alumni-photos'
+  AND EXISTS (SELECT 1 FROM public.profiles WHERE id = auth.uid() AND role = 'admin' AND status = 'approved')
+);
 
 
 -- 6. CREATE MADRASA PROGRAMS TABLE & INITIAL EVENTS
@@ -114,7 +128,9 @@ FOR SELECT USING (is_active = true);
 -- Allow authenticated admins full control on madrasa_programs
 DROP POLICY IF EXISTS "Admin Full Access Programs" ON public.madrasa_programs;
 CREATE POLICY "Admin Full Access Programs" ON public.madrasa_programs
-FOR ALL TO authenticated USING (true) WITH CHECK (true);
+FOR ALL TO authenticated
+USING (EXISTS (SELECT 1 FROM public.profiles WHERE id = auth.uid() AND role = 'admin' AND status = 'approved'))
+WITH CHECK (EXISTS (SELECT 1 FROM public.profiles WHERE id = auth.uid() AND role = 'admin' AND status = 'approved'));
 
 -- Insert Default Madrasa Programs
 INSERT INTO public.madrasa_programs (title, tag, schedule_text, location, description, image_url)
@@ -131,6 +147,9 @@ ON CONFLICT (id) DO UPDATE SET public = true;
 DROP POLICY IF EXISTS "Public Read Program Images" ON storage.objects;
 DROP POLICY IF EXISTS "Public Upload Program Images" ON storage.objects;
 CREATE POLICY "Public Read Program Images" ON storage.objects FOR SELECT USING (bucket_id = 'program-images');
-CREATE POLICY "Public Upload Program Images" ON storage.objects FOR INSERT WITH CHECK (bucket_id = 'program-images');
+CREATE POLICY "Public Upload Program Images" ON storage.objects FOR INSERT TO authenticated WITH CHECK (
+  bucket_id = 'program-images'
+  AND EXISTS (SELECT 1 FROM public.profiles WHERE id = auth.uid() AND role = 'admin' AND status = 'approved')
+);
 
 

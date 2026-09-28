@@ -94,7 +94,7 @@ const AvatarIllustration = ({ type }) => {
   }
   return (
     <svg viewBox="0 0 100 100" className="w-full h-full object-cover">
-      <path d="M50 45c7 0 12-5 12-12s-5-12-12-12-12 5-12 12 12z" fill="#064e3b" />
+      <path d="M50 45c7 0 12-5 12-12s-5-12-12-12-12 5-12 12 5 12 12 12z" fill="#064e3b" />
       <path d="M50 51c-14 0-23 8-23 21v7h46v-7c0-13-9-21-23-21z" fill="#0284c7" />
       <path d="M45 51h10v10H45z" fill="#ffffff" />
     </svg>
