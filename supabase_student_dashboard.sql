@@ -10,8 +10,11 @@
 
 BEGIN;
 
+-- Deliberately no foreign key to profiles: a second students -> profiles relationship makes
+-- the app's "students with their parent" query ambiguous, and the student list comes back empty.
 ALTER TABLE public.students
-  ADD COLUMN IF NOT EXISTS student_user_id uuid REFERENCES public.profiles(id) ON DELETE SET NULL;
+  ADD COLUMN IF NOT EXISTS student_user_id uuid;
+ALTER TABLE public.students DROP CONSTRAINT IF EXISTS students_student_user_id_fkey;
 
 -- One login account belongs to at most one student.
 CREATE UNIQUE INDEX IF NOT EXISTS students_student_user_id_unique

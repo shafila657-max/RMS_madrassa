@@ -294,10 +294,16 @@ const AdminDashboard = () => {
   }, [isTeacher, classTeachers, myTeacherName, selectedClassLevel]);
 
   const fetchStudents = useCallback(async () => {
-    const { data } = await supabase
+    const { data, error } = await supabase
       .from('students')
-      .select(`*, profiles(full_name, id)`)
+      .select(`*, profiles!user_id(full_name, id)`)
       .order('full_name');
+    if (error) {
+      // Keep the current list rather than showing an empty directory when the query fails.
+      console.error('Students fetch error:', error);
+      toast.error(`Could not load students: ${error.message}`);
+      return;
+    }
     setStudents(data || []);
   }, []);
 
