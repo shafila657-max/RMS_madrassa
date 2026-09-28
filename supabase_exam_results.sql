@@ -12,6 +12,9 @@
 --   5. Public lookup functions: the public never reads the tables directly, only one result
 --      at a time, when both the registration number and date of birth match.
 
+-- Everything below runs as one transaction: if any step fails, nothing is changed.
+BEGIN;
+
 CREATE EXTENSION IF NOT EXISTS pgcrypto;
 
 -- ─── Helpers ─────────────────────────────────────────────────────────────────
@@ -762,3 +765,5 @@ $$;
 
 REVOKE ALL ON FUNCTION public.admin_preview_result(uuid, uuid) FROM PUBLIC, anon;
 GRANT EXECUTE ON FUNCTION public.admin_preview_result(uuid, uuid) TO authenticated;
+
+COMMIT;
