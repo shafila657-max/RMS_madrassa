@@ -845,6 +845,10 @@ const StudentDetailPage = ({ viewer = 'parent' }) => {
                             toast.error('All fields are required');
                             return;
                           }
+                          if (leaveForm.to_date < leaveForm.from_date) {
+                            toast.error('The "To" date cannot be before the "From" date');
+                            return;
+                          }
                           setLeaveLoading(true);
                           try {
                             const { error } = await supabase.from('leave_applications').insert([{
@@ -871,7 +875,7 @@ const StudentDetailPage = ({ viewer = 'parent' }) => {
                             </div>
                             <div>
                               <label className="block text-xs font-semibold text-stone-600 mb-1">To Date *</label>
-                              <input type="date" value={leaveForm.to_date} onChange={e => setLeaveForm(f => ({...f, to_date: e.target.value}))} className="w-full border border-stone-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500" required />
+                              <input type="date" min={leaveForm.from_date || undefined} value={leaveForm.to_date} onChange={e => setLeaveForm(f => ({...f, to_date: e.target.value}))} className="w-full border border-stone-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500" required />
                             </div>
                           </div>
                           <div>
@@ -896,7 +900,7 @@ const StudentDetailPage = ({ viewer = 'parent' }) => {
                                   l.status === 'approved' ? 'bg-emerald-100 text-emerald-700' :
                                   l.status === 'rejected' ? 'bg-red-100 text-red-700' :
                                   'bg-amber-100 text-amber-700'
-                                }`}>{l.status.toUpperCase()}</span>
+                                }`}>{(l.status || 'pending').toUpperCase()}</span>
                               </div>
                             </div>
                           ))}

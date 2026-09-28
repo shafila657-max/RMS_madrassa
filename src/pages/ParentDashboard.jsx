@@ -16,6 +16,7 @@ import { fetchMyChildrenResults } from '@/utils/results';
 import {
   filterAnnouncementsForParent,
   getNotificationPermission,
+  isPushSupported,
   requestNotificationPermission,
   sendPushNotification
 } from '@/utils/notifications';
@@ -64,7 +65,8 @@ const ParentDashboard = () => {
       if (!session?.user) return;
       
       setUserId(session.user.id);
-      const storedDismissed = JSON.parse(localStorage.getItem(`dismissed_notifs_${session.user.id}`) || '[]');
+      let storedDismissed = [];
+      try { storedDismissed = JSON.parse(localStorage.getItem(`dismissed_notifs_${session.user.id}`) || '[]'); } catch { /* corrupt or unavailable */ }
       setDismissedNotifs(storedDismissed);
 
       // Fetch all students linked to this parent
@@ -135,13 +137,18 @@ const ParentDashboard = () => {
       });
       setAnnouncements(filtered);
 
-      // Trigger browser push notification for newest targeted announcement if permission granted
-      if (filtered.length > 0 && Notification.permission === 'granted') {
+      // Show a browser notification for the newest announcement if it was posted in the last
+      // 15 minutes, once per announcement. Safari on iPhone has no Notification API unless the
+      // app is installed, so check support first (a bare Notification reference throws there).
+      if (filtered.length > 0 && isPushSupported() && getNotificationPermission() === 'granted') {
         const latest = filtered[0];
-        // Send push notification if posted within the last 15 minutes
         const diffMinutes = (new Date() - new Date(latest.created_at)) / (1000 * 60);
-        if (diffMinutes <= 15) {
+        const notifiedKey = `notified_announcement_${session.user.id}`;
+        let lastNotified = null;
+        try { lastNotified = localStorage.getItem(notifiedKey); } catch { /* storage unavailable */ }
+        if (diffMinutes <= 15 && lastNotified !== String(latest.id)) {
           sendPushNotification(latest.title, { body: latest.message });
+          try { localStorage.setItem(notifiedKey, String(latest.id)); } catch { /* storage unavailable */ }
         }
       }
     } catch (error) {
