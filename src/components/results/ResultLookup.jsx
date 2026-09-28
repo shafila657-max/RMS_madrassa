@@ -3,6 +3,7 @@ import { AnimatePresence, motion } from 'framer-motion';
 import { Search, RefreshCw, AlertCircle, RotateCcw } from 'lucide-react';
 import ResultCard from './ResultCard';
 import { fetchPublicResult } from '@/utils/results';
+import { localDateString } from '@/utils/date';
 
 /**
  * Registration number + date of birth form for the latest published exam.
@@ -90,7 +91,7 @@ const ResultLookup = ({ tone = 'light' }) => {
                   type="date"
                   value={dob}
                   onChange={e => setDob(e.target.value)}
-                  max={new Date().toISOString().split('T')[0]}
+                  max={localDateString()}
                   className={inputCls}
                 />
               </div>

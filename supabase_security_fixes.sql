@@ -265,6 +265,8 @@ BEGIN
     LEFT JOIN ex ON ex.student_id = st.id
     LEFT JOIN tk ON tk.student_id = st.id
     LEFT JOIN dc ON dc.student_id = st.id
+    -- Graduated and dropped-out students keep their records but leave the rankings.
+    WHERE coalesce(st.status, 'active') = 'active'
   ), ranked AS (
     SELECT
       pts.*,

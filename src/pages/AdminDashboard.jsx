@@ -15,7 +15,8 @@ import { logout, getCachedProfile, clearCachedProfile } from '@/utils/auth';
 import { supabase } from '@/lib/supabase';
 import { createClient } from '@supabase/supabase-js';
 import AdminStudentModal from '@/components/AdminStudentModal';
-import { computeStudentLeaderboard } from '@/utils/leaderboard';
+import { fetchFullLeaderboardData } from '@/utils/leaderboard';
+import { localDateString } from '@/utils/date';
 import ResultsManager from '@/components/results/ResultsManager';
 import { describeSaveError, CLASS_LEVELS } from '@/utils/results';
 
@@ -164,7 +165,7 @@ const AdminDashboard = () => {
 
   // Attendance
   const [attendanceStudents, setAttendanceStudents] = useState([]);
-  const [attendanceDate, setAttendanceDate] = useState(new Date().toISOString().split('T')[0]);
+  const [attendanceDate, setAttendanceDate] = useState(localDateString());
   const [attendanceMap, setAttendanceMap] = useState({});
   const [attendanceSaving, setAttendanceSaving] = useState(false);
   const [attendanceLoaded, setAttendanceLoaded] = useState(false);
@@ -249,7 +250,7 @@ const AdminDashboard = () => {
   const [classTeachers, setClassTeachers] = useState([]);
   const [selectedClassLevel, setSelectedClassLevel] = useState('Class 1');
   const [classSubTab, setClassSubTab] = useState('students');
-  const [classAttendanceDate, setClassAttendanceDate] = useState(new Date().toISOString().split('T')[0]);
+  const [classAttendanceDate, setClassAttendanceDate] = useState(localDateString());
   const [classAttendanceMap, setClassAttendanceMap] = useState({});
   const [showAddClassTask, setShowAddClassTask] = useState(false);
   const [classTaskForm, setClassTaskForm] = useState({ title: '', description: '', due_date: '' });
@@ -258,11 +259,10 @@ const AdminDashboard = () => {
 
   // Leaderboard System
   const [disciplineRecords, setDisciplineRecords] = useState([]);
-  const [leaderboardScores, setLeaderboardScores] = useState([]);
-  const [leaderboardTasks, setLeaderboardTasks] = useState([]);
-  const [leaderboardAttendance, setLeaderboardAttendance] = useState([]);
+  // Standings come from the database (get_leaderboard), the same numbers parents and visitors see.
+  const [leaderboardStandings, setLeaderboardStandings] = useState([]);
   const [leaderboardResetDate, setLeaderboardResetDate] = useState(null);
-  const [disciplineWeekDate, setDisciplineWeekDate] = useState(new Date().toISOString().split('T')[0]);
+  const [disciplineWeekDate, setDisciplineWeekDate] = useState(localDateString());
   const [disciplineClassFilter, setDisciplineClassFilter] = useState('Class 1');
   const [disciplineMap, setDisciplineMap] = useState({});
   const [savingDiscipline, setSavingDiscipline] = useState(false);
@@ -436,31 +436,34 @@ const AdminDashboard = () => {
       console.error('Error fetching class tasks:', e);
     }
   };
-  const fetchLeaderboardTab = async () => {
+  // Discipline scores for the selected week plus the scoring settings. Loading only one week
+  // keeps this small (a whole-table read is capped at 1,000 rows by the API).
+  const fetchDisciplineWeek = async (weekDate = disciplineWeekDate) => {
     try {
-      const [
-        { data: disc },
-        { data: settings },
-        { data: tasks },
-        { data: sc },
-        { data: att },
-      ] = await Promise.all([
-        supabase.from('discipline_records').select('*'),
-        supabase.from('leaderboard_settings').select('*').single(),
-        supabase.from('student_tasks').select('*'),
-        supabase.from('scores').select('*'),
-        supabase.from('attendance').select('*'),
+      const [{ data: disc, error: discError }, { data: settings }] = await Promise.all([
+        supabase.from('discipline_records').select('*').eq('week_date', weekDate),
+        supabase.from('leaderboard_settings').select('*').maybeSingle(),
       ]);
-      if (disc) setDisciplineRecords(disc);
+      if (discError) throw discError;
+      setDisciplineRecords(disc || []);
       if (settings?.last_reset_at) setLeaderboardResetDate(settings.last_reset_at);
       if (Number.isInteger(settings?.discipline_day_of_week)) {
         setDisciplineAllowedDay(settings.discipline_day_of_week);
       }
-      if (tasks) setLeaderboardTasks(tasks);
-      if (sc) setLeaderboardScores(sc);
-      if (att) setLeaderboardAttendance(att);
+    } catch (e) {
+      console.error('Discipline fetch error:', e);
+      toast.error('Could not load discipline scores: ' + (e.message || e));
+    }
+  };
+
+  const fetchLeaderboardTab = async () => {
+    fetchDisciplineWeek();
+    try {
+      const { standings } = await fetchFullLeaderboardData();
+      setLeaderboardStandings(standings || []);
     } catch (e) {
       console.error('Leaderboard fetch error:', e);
+      toast.error('Could not load the leaderboard');
     }
   };
 
@@ -526,9 +529,15 @@ const AdminDashboard = () => {
       fetchFeeStudents();
       fetchLeaves();
       fetchClassTasks(selectedClassLevel);
-      fetchLeaderboardTab();
+      fetchDisciplineWeek();
     }
   }, [activeTab, fetchGalleryItems, selectedClassLevel, classSubTab]);
+
+  // Reload discipline scores when a different week is picked.
+  useEffect(() => {
+    if (activeTab === 'leaderboard' || activeTab === 'classes') fetchDisciplineWeek(disciplineWeekDate);
+    setDisciplineMap({});
+  }, [disciplineWeekDate]);
 
   // Pull-to-refresh listener
   useEffect(() => {
@@ -2996,14 +3005,11 @@ const AdminDashboard = () => {
       {/* LEADERBOARD TAB                                                */}
       {/* ══════════════════════════════════════════════════════════════ */}
       {activeTab === 'leaderboard' && (() => {
-        const activeStandings = computeStudentLeaderboard({
-          students,
-          attendance: leaderboardAttendance.length > 0 ? leaderboardAttendance : [],
-          scores: leaderboardScores.length > 0 ? leaderboardScores : [],
-          tasks: leaderboardTasks.length > 0 ? leaderboardTasks : [],
-          disciplineRecords,
-          profiles: parents,
-          resetTimestamp: leaderboardResetDate,
+        const parentNameById = Object.fromEntries(parents.map(p => [p.id, p.full_name]));
+        const studentById = Object.fromEntries(students.map(st => [st.id, st]));
+        const activeStandings = leaderboardStandings.map(row => {
+          const parentId = studentById[row.id]?.user_id;
+          return { ...row, parent_name: parentId ? parentNameById[parentId] || 'Parent' : 'Parent' };
         });
 
         const filteredStandings = leaderboardClassFilter === 'all'
@@ -3195,7 +3201,10 @@ const AdminDashboard = () => {
                         const rows = discClassStudents.map(s => ({
                           student_id: s.id,
                           week_date: disciplineWeekDate,
-                          score: disciplineMap[s.id] !== undefined ? Number(disciplineMap[s.id]) : 10,
+                          // Untouched students keep their saved score (10 only if none was saved yet).
+                          score: disciplineMap[s.id] !== undefined
+                            ? Number(disciplineMap[s.id])
+                            : Number(disciplineRecords.find(d => d.student_id === s.id && d.week_date === disciplineWeekDate)?.score ?? 10),
                         }));
                         if (rows.length === 0) { toast.error('No students in selected class'); setSavingDiscipline(false); return; }
                         const { error } = await supabase.from('discipline_records').upsert(rows, { onConflict: 'student_id,week_date' });
@@ -3788,13 +3797,16 @@ const AdminDashboard = () => {
                             const rows = discClassStudents.map(s => ({
                               student_id: s.id,
                               week_date: disciplineWeekDate,
-                              score: disciplineMap[s.id] !== undefined ? Number(disciplineMap[s.id]) : 10,
+                              // Untouched students keep their saved score (10 only if none was saved yet).
+                          score: disciplineMap[s.id] !== undefined
+                            ? Number(disciplineMap[s.id])
+                            : Number(disciplineRecords.find(d => d.student_id === s.id && d.week_date === disciplineWeekDate)?.score ?? 10),
                             }));
                             if (rows.length === 0) { toast.error('No students in selected class'); setSavingDiscipline(false); return; }
                             const { error } = await supabase.from('discipline_records').upsert(rows, { onConflict: 'student_id,week_date' });
                             if (error) throw error;
                             toast.success(`Discipline points saved for ${selectedClassLevel}!`);
-                            fetchLeaderboardTab();
+                            fetchDisciplineWeek();
                           } catch (err) {
                             toast.error(err.message || 'Failed to save discipline records');
                           } finally {
@@ -3884,7 +3896,7 @@ const AdminDashboard = () => {
                     type="date"
                     value={attendanceDate}
                     onChange={e => { setAttendanceDate(e.target.value); fetchAttendanceForDate(e.target.value); }}
-                    max={new Date().toISOString().split('T')[0]}
+                    max={localDateString()}
                     className="border border-stone-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 w-full sm:w-auto"
                   />
                     <Btn className="whitespace-nowrap" onClick={handleSaveAttendance} loading={attendanceSaving}>

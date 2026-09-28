@@ -36,7 +36,9 @@ export function computeStudentLeaderboard({
     parentMap[p.id] = p.full_name;
   });
 
-  const rankedList = students.map(student => {
+  // Graduated and dropped-out students keep their records but leave the rankings
+  // (matches get_leaderboard() in the database).
+  const rankedList = students.filter(s => (s.status || 'active') === 'active').map(student => {
     // 1. Attendance Points: 1 point per 'present' day
     const presentDays = validAttendance.filter(
       a => a.student_id === student.id && a.status === 'present'
