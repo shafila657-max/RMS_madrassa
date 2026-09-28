@@ -1360,6 +1360,7 @@ const AdminDashboard = () => {
             <div className="hidden sm:flex flex-col items-end mr-2">
               <span className="text-sm font-bold text-stone-900 leading-tight">{profile?.full_name}</span>
               <span className="text-xs text-stone-500 leading-tight capitalize">{profile?.role || 'Administrator'}</span>
+              <span className="text-[10px] text-stone-300 leading-tight" title="App version">v {__APP_VERSION__}</span>
             </div>
             <button
               onClick={handleLogout}
