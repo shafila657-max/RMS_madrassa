@@ -12,7 +12,7 @@ import ProgramsPage from './pages/ProgramsPage';
 import ResetPasswordPage from './pages/ResetPasswordPage';
 import ResultsPage from './pages/ResultsPage';
 import ProtectedRoute from './components/ProtectedRoute';
-import { Toaster } from './components/ui/toaster';
+import { Toaster } from 'sonner';
 import PWAInstallPrompt from './components/PWAInstallPrompt';
 import AuthProvider from './context/AuthContext';
 import PullToRefresh from './components/PullToRefresh';
@@ -71,10 +71,18 @@ function App() {
                           </ProtectedRoute>
                       } />
                       
+                      {/* Protected Student Route: the student's own dashboard */}
+                      <Route path="/student" element={
+                          <ProtectedRoute allowedRoles={['student']}>
+                              <StudentDetailPage viewer="student" />
+                          </ProtectedRoute>
+                      } />
+
                       {/* Password reset */}
                       <Route path="/reset-password" element={<ResetPasswordPage />} />
                   </Routes>
-                  <Toaster />
+                  {/* Every screen calls toast() from 'sonner', so this is the toaster that must be mounted. */}
+                  <Toaster position="top-center" richColors closeButton />
                   <PWAInstallPrompt />
                 </div>
               </PullToRefresh>

@@ -2,12 +2,15 @@ import { supabase } from '@/lib/supabase';
 
 // ─── Auth Actions ─────────────────────────────────────────────────────────────
 
+export const MIN_PASSWORD_LENGTH = 8;
+
 export const register = async ({ email, password, full_name, phone, role }) => {
   const { data, error } = await supabase.auth.signUp({
     email,
     password,
     options: {
-      data: { full_name, phone, role: role || 'parent' },
+      // The database only accepts parent or student here; anything else becomes parent.
+      data: { full_name, phone, role: role === 'student' ? 'student' : 'parent' },
     },
   });
   if (error) {
@@ -15,12 +18,24 @@ export const register = async ({ email, password, full_name, phone, role }) => {
     if (error.message?.includes('Password should be')) {
       throw new Error(`Password is too weak: ${error.message}`);
     }
-    if (error.status === 422) {
-      throw new Error(`Registration failed (422): ${error.message}. Check Supabase auth settings.`);
+    if (error.message?.toLowerCase().includes('already registered')) {
+      throw new Error('An account with this email already exists. Please log in, or use "Forgot password".');
     }
-    throw error;
+    throw new Error(error.message || 'Registration failed. Please try again.');
   }
-  return data;
+
+  // Supabase answers a sign-up for an existing email with a fake success whose
+  // user has no identities, so the address can't be probed. Tell the person plainly.
+  if (data?.user && Array.isArray(data.user.identities) && data.user.identities.length === 0) {
+    throw new Error('An account with this email already exists. Please log in, or use "Forgot password".');
+  }
+
+  // New accounts wait for admin approval, so don't leave them signed in.
+  if (data?.session) {
+    await supabase.auth.signOut();
+  }
+
+  return { needsEmailConfirmation: !data?.session };
 };
 
 export const login = async ({ email, password }) => {
@@ -31,9 +46,9 @@ export const login = async ({ email, password }) => {
       throw new Error('Invalid email or password. Please check your credentials.');
     }
     if (error.message?.includes('Email not confirmed')) {
-      throw new Error('Please confirm your email first, or ask admin to disable email confirmation in Supabase dashboard.');
+      throw new Error('Please confirm your email first. Check your inbox (and spam folder) for the confirmation link.');
     }
-    throw error;
+    throw new Error(error.message || 'Login failed. Please try again.');
   }
 
   // Fetch the profile to check approval status
@@ -45,16 +60,11 @@ export const login = async ({ email, password }) => {
 
   if (profileError) {
     await supabase.auth.signOut();
-    if (profileError.code === 'PGRST116') {
-      throw new Error('Profile not found. Please run the SQL schema in your Supabase dashboard first.');
-    }
-    if (profileError.message?.includes('relation "profiles" does not exist')) {
-      throw new Error('Database not set up yet. Please run supabase_schema.sql in your Supabase SQL Editor.');
-    }
-    throw new Error(`Profile error: ${profileError.message}`);
+    console.error('Profile load error:', profileError);
+    throw new Error('We could not load your account. Please try again, or contact the madrasa office.');
   }
 
-  if (profile.status === 'pending' && profile.role !== 'teacher') {
+  if (profile.status === 'pending') {
     await supabase.auth.signOut();
     throw new Error('Your account is pending admin approval.');
   }

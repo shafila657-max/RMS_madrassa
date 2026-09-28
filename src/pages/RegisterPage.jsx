@@ -6,12 +6,13 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { toast } from 'sonner';
-import { register } from '@/utils/auth';
+import { register, MIN_PASSWORD_LENGTH } from '@/utils/auth';
 
 const RegisterPage = () => {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
-  const userType = searchParams.get('type') || 'parent';
+  // Self-registration is only for parents and students; staff accounts are created by the admin.
+  const userType = searchParams.get('type') === 'student' ? 'student' : 'parent';
 
   const [formData, setFormData] = useState({
     email: '',
@@ -27,12 +28,21 @@ const RegisterPage = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (formData.password.length < MIN_PASSWORD_LENGTH) {
+      toast.error(`Password must be at least ${MIN_PASSWORD_LENGTH} characters`);
+      return;
+    }
     setLoading(true);
 
     try {
-      await register({ ...formData, role: userType });
-      toast.success('Registration successful! Please wait for admin approval.');
-      setTimeout(() => navigate('/login', { state: { loginIntent: true } }), 2000);
+      const { needsEmailConfirmation } = await register({ ...formData, role: userType });
+      toast.success(
+        needsEmailConfirmation
+          ? 'Almost done! Check your email and click the confirmation link. Then the admin will approve your account.'
+          : 'Registration successful! You can log in once the admin approves your account.',
+        { duration: 8000 }
+      );
+      setTimeout(() => navigate('/login', { state: { loginIntent: true } }), 3000);
     } catch (error) {
       toast.error(error.message || 'Registration failed');
     } finally {
@@ -125,7 +135,8 @@ const RegisterPage = () => {
                 name="password"
                 type="password"
                 required
-                minLength={6}
+                minLength={MIN_PASSWORD_LENGTH}
+                placeholder={`At least ${MIN_PASSWORD_LENGTH} characters`}
                 value={formData.password}
                 onChange={handleChange}
                 className="mt-1"

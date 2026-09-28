@@ -5,11 +5,15 @@ import {
   ArrowLeft, Calendar, Award, TrendingUp,
   DollarSign, BarChart2, CheckCircle2, Clock, AlertCircle, Star,
   Bell, Megaphone, AlertTriangle, ListTodo, Check,
-  Table, BookMarked, Phone, FileText, Settings2, UserRound
+  Table, BookMarked, Phone, FileText, Settings2, UserRound, LogOut
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/context/AuthContext';
+import { logout, clearCachedProfile } from '@/utils/auth';
+import { fetchFullLeaderboardData } from '@/utils/leaderboard';
+import { fetchMyChildrenResults } from '@/utils/results';
+import ChildResultsHighlight from '@/components/results/ChildResultsHighlight';
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 const getGrade = (pct) => {
@@ -35,12 +39,17 @@ const RingProgress = ({ value, size = 80, stroke = 7, color = '#fff' }) => {
 };
 
 // ─── Main ─────────────────────────────────────────────────────────────────────
-const StudentDetailPage = () => {
+// viewer="parent": a parent looking at one of their children (/parent/:studentId).
+// viewer="student": a student's own dashboard (/student). Fees and leave are parent-only.
+const StudentDetailPage = ({ viewer = 'parent' }) => {
+  const isStudentView = viewer === 'student';
   const { studentId } = useParams();
   const navigate = useNavigate();
   const { session } = useAuth();
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [notLinked, setNotLinked] = useState(false);
+  const [latestResults, setLatestResults] = useState([]);
   const [activeTab, setActiveTab] = useState('overview');
 
   // New feature state
@@ -60,14 +69,17 @@ const StudentDetailPage = () => {
     try {
       if (!session?.user) return;
 
-      // Security: verify this student belongs to the logged-in parent
-      const { data: student, error: sErr } = await supabase
-        .from('students').select('*')
-        .eq('id', studentId)
-        .eq('user_id', session.user.id)
-        .single();
+      // Security: a parent may only open their own child; a student only their own record.
+      const query = supabase.from('students').select('*');
+      const { data: student, error: sErr } = isStudentView
+        ? await query.eq('student_user_id', session.user.id).maybeSingle()
+        : await query.eq('id', studentId).eq('user_id', session.user.id).single();
 
       if (sErr || !student) {
+        if (isStudentView) {
+          setNotLinked(true);
+          return;
+        }
         toast.error('Student not found or access denied');
         navigate('/parent');
         return;
@@ -86,7 +98,9 @@ const StudentDetailPage = () => {
         supabase.from('attendance').select('*').eq('student_id', sid).order('date', { ascending: false }),
         supabase.from('scores').select('*').eq('student_id', sid).order('created_at', { ascending: false }),
         supabase.from('achievements').select('*').eq('student_id', sid).order('date', { ascending: false }),
-        supabase.from('fees').select('*').eq('student_id', sid).order('created_at', { ascending: false }),
+        isStudentView
+          ? Promise.resolve({ data: [] })
+          : supabase.from('fees').select('*').eq('student_id', sid).order('created_at', { ascending: false }),
         supabase.from('announcements').select('*').order('created_at', { ascending: false }),
         supabase.from('student_tasks').select('*').eq('student_id', sid).order('created_at', { ascending: false }),
       ]);
@@ -99,27 +113,23 @@ const StudentDetailPage = () => {
         a.target_class === 'All' || a.target_class === student.class_level
       );
 
-      // Class rank
-      const { data: classStudents } = await supabase
-        .from('students').select('id').eq('class_level', student.class_level);
-      const classIds = (classStudents || []).map(s => s.id);
-
+      // Class rank from the leaderboard (other students' raw records are not readable here).
       let leaderboard_position = null;
-      if (classIds.length > 0) {
-        const { data: allScores } = await supabase
-          .from('scores').select('student_id, marks_obtained, total_marks').in('student_id', classIds);
+      let classSize = 0;
+      try {
+        const { standings } = await fetchFullLeaderboardData();
+        const classmates = standings.filter(s => s.class_level === student.class_level);
+        classSize = classmates.length;
+        const idx = classmates.findIndex(s => s.id === sid);
+        leaderboard_position = idx >= 0 ? idx + 1 : null;
+      } catch (err) {
+        console.error('Leaderboard rank error:', err);
+      }
 
-        const avgMap = {};
-        (allScores || []).forEach(({ student_id, marks_obtained, total_marks }) => {
-          if (!avgMap[student_id]) avgMap[student_id] = { sum: 0, count: 0 };
-          avgMap[student_id].sum += (marks_obtained / total_marks) * 100;
-          avgMap[student_id].count += 1;
-        });
-        const sorted = Object.entries(avgMap)
-          .map(([id, { sum, count }]) => ({ id, avg: sum / count }))
-          .sort((a, b) => b.avg - a.avg);
-        const rank = sorted.findIndex(s => s.id === sid);
-        leaderboard_position = rank >= 0 ? rank + 1 : null;
+      if (isStudentView) {
+        fetchMyChildrenResults()
+          .then(setLatestResults)
+          .catch(err => console.error('Results fetch error:', err));
       }
 
       const scores = (recentScores || []).map(s => ({
@@ -139,7 +149,7 @@ const StudentDetailPage = () => {
           due_date: f.due_date ? new Date(f.due_date).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }) : '',
         })),
         leaderboard_position,
-        total_students_in_class: classIds.length,
+        total_students_in_class: classSize,
       });
 
       // Fetch additional feature data based on class level
@@ -149,7 +159,9 @@ const StudentDetailPage = () => {
         supabase.from('timetable').select('*').eq('class_level', student.class_level).order('day_of_week').order('period_number'),
         supabase.from('subjects').select('*').eq('class_level', student.class_level).order('name'),
         supabase.from('teacher_contacts').select('*').order('full_name'),
-        supabase.from('leave_applications').select('*').eq('student_id', sid).order('created_at', { ascending: false }),
+        isStudentView
+          ? Promise.resolve({ data: [] })
+          : supabase.from('leave_applications').select('*').eq('student_id', sid).order('created_at', { ascending: false }),
       ]);
       if (ttData) setTimetable(ttData);
       if (subData) setSubjectsList(subData);
@@ -174,6 +186,30 @@ const StudentDetailPage = () => {
     );
   }
 
+  const handleLogout = async () => {
+    await logout();
+    clearCachedProfile();
+    navigate('/');
+  };
+
+  if (notLinked) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-emerald-50 to-stone-100 flex items-center justify-center p-6">
+        <div className="max-w-sm bg-white rounded-3xl border border-stone-100 shadow-sm p-8 text-center space-y-3">
+          <img src="/apple-touch-icon.png" alt="RMS Madrasa" className="w-12 h-12 rounded-2xl mx-auto" />
+          <h1 className="text-lg font-bold text-stone-900">Almost there!</h1>
+          <p className="text-sm text-stone-500">
+            Your account is approved but not yet linked to your student record.
+            Please ask the madrasa office to link it. Then your attendance, homework and results will appear here.
+          </p>
+          <button type="button" onClick={handleLogout} className="rounded-xl bg-stone-900 px-5 py-2.5 text-sm font-semibold text-white hover:bg-emerald-700">
+            Sign out
+          </button>
+        </div>
+      </div>
+    );
+  }
+
   if (!data) return null;
 
   const { student, attendance, scores, achievements, announcements, tasks = [], fees, leaderboard_position, total_students_in_class } = data;
@@ -186,31 +222,34 @@ const StudentDetailPage = () => {
     { id: 'notices',   label: `Notices${announcements.length > 0 ? ` (${announcements.length})` : ''}`, icon: Bell },
     { id: 'tasks',     label: `Homework${tasks.length > 0 ? ` (${tasks.length})` : ''}`, icon: ListTodo },
     { id: 'scores',    label: 'Scores',    icon: BarChart2 },
-    { id: 'fees',      label: 'Fees',      icon: DollarSign },
+    { id: 'fees',      label: 'Fees',      icon: DollarSign, parentOnly: true },
     { id: 'awards',    label: 'Awards',    icon: Award },
     { id: 'settings',  label: 'Settings',  icon: Settings2 },
-  ];
+  ].filter(t => !(isStudentView && t.parentOnly));
 
   const settingsTabs = [
     { id: 'profile', label: 'Profile', icon: UserRound, description: 'Student details and quick info' },
     { id: 'timetable', label: 'Timetable', icon: Table, description: 'Weekly class schedule' },
     { id: 'subjects', label: 'Subjects', icon: BookMarked, description: 'Class subjects list' },
     { id: 'teachers', label: 'Teachers', icon: Phone, description: 'Teacher contact list' },
-    { id: 'leave', label: 'Leave', icon: FileText, description: 'Apply for leave and review requests' },
-  ];
+    { id: 'leave', label: 'Leave', icon: FileText, description: 'Apply for leave and review requests', parentOnly: true },
+  ].filter(t => !(isStudentView && t.parentOnly));
+  const pendingTasks = tasks.filter(t => t.status !== 'completed').length;
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-emerald-50 via-white to-stone-50">
       {/* Sticky Header */}
       <header className="sticky top-0 z-50 bg-white/80 backdrop-blur-xl border-b border-stone-100 shadow-sm">
         <div className="max-w-2xl mx-auto px-4 py-3 flex items-center gap-3">
-          <button
-            onClick={() => navigate('/parent')}
-            className="p-2 rounded-xl hover:bg-stone-100 text-stone-500 transition-colors flex-shrink-0"
-            aria-label="Back to family"
-          >
-            <ArrowLeft className="w-4 h-4" />
-          </button>
+          {!isStudentView && (
+            <button
+              onClick={() => navigate('/parent')}
+              className="p-2 rounded-xl hover:bg-stone-100 text-stone-500 transition-colors flex-shrink-0"
+              aria-label="Back to family"
+            >
+              <ArrowLeft className="w-4 h-4" />
+            </button>
+          )}
           <div className="flex items-center gap-2 flex-1 min-w-0">
             <img src="/apple-touch-icon.png" alt="RMS Madrasa" className="w-7 h-7 rounded-lg object-cover flex-shrink-0" />
             <div className="min-w-0">
@@ -223,6 +262,15 @@ const StudentDetailPage = () => {
               <Star className="w-3 h-3 text-amber-500" />
               <span className="text-xs font-bold text-amber-700">#{leaderboard_position}</span>
             </div>
+          )}
+          {isStudentView && (
+            <button
+              onClick={handleLogout}
+              className="p-2 rounded-xl hover:bg-red-50 hover:text-red-600 text-stone-500 transition-colors flex-shrink-0"
+              aria-label="Sign out"
+            >
+              <LogOut className="w-4 h-4" />
+            </button>
           )}
         </div>
       </header>
@@ -261,7 +309,9 @@ const StudentDetailPage = () => {
               {[
                 { label: 'Avg Score', value: avgScore > 0 ? `${avgScore}%` : '—', icon: TrendingUp },
                 { label: 'Days Present', value: `${attendance.present}/${attendance.total}`, icon: Calendar },
-                { label: 'Fees Due', value: pendingFees > 0 ? `₹${pendingFees}` : '✓', icon: DollarSign },
+                isStudentView
+                  ? { label: 'Homework Due', value: pendingTasks > 0 ? pendingTasks : '✓', icon: ListTodo }
+                  : { label: 'Fees Due', value: pendingFees > 0 ? `₹${pendingFees}` : '✓', icon: DollarSign },
               ].map(({ label, value, icon: Icon }) => (
                 <div key={label} className="bg-white/10 rounded-2xl p-3 text-center">
                   <p className="font-bold text-base">{value}</p>
@@ -271,6 +321,13 @@ const StudentDetailPage = () => {
             </div>
           </div>
         </motion.div>
+
+        {/* Newly published exam result (student view; parents see it on their dashboard) */}
+        {isStudentView && latestResults.length > 0 && (
+          <div className="mb-5">
+            <ChildResultsHighlight results={latestResults} />
+          </div>
+        )}
 
         {/* Tab bar */}
         <div className="flex bg-stone-100 rounded-2xl p-1 mb-5 gap-1 overflow-x-auto">
@@ -659,14 +716,29 @@ const StudentDetailPage = () => {
                             <p className="text-[10px] uppercase tracking-wider text-stone-400 font-semibold">Average Score</p>
                             <p className="text-lg font-bold text-stone-900 mt-1">{avgScore > 0 ? `${avgScore}%` : '—'}</p>
                           </div>
-                          <div className="rounded-2xl bg-stone-50 p-4">
-                            <p className="text-[10px] uppercase tracking-wider text-stone-400 font-semibold">Fees Due</p>
-                            <p className="text-lg font-bold text-stone-900 mt-1">{pendingFees > 0 ? `₹${pendingFees}` : '✓'}</p>
-                          </div>
-                          <div className="rounded-2xl bg-stone-50 p-4">
-                            <p className="text-[10px] uppercase tracking-wider text-stone-400 font-semibold">Leave Requests</p>
-                            <p className="text-lg font-bold text-stone-900 mt-1">{leaveApplications.length}</p>
-                          </div>
+                          {isStudentView ? (
+                            <>
+                              <div className="rounded-2xl bg-stone-50 p-4">
+                                <p className="text-[10px] uppercase tracking-wider text-stone-400 font-semibold">Homework Due</p>
+                                <p className="text-lg font-bold text-stone-900 mt-1">{pendingTasks > 0 ? pendingTasks : '✓'}</p>
+                              </div>
+                              <div className="rounded-2xl bg-stone-50 p-4">
+                                <p className="text-[10px] uppercase tracking-wider text-stone-400 font-semibold">Registration No.</p>
+                                <p className="text-sm font-bold font-mono text-stone-900 mt-1.5">{student.registration_no || '—'}</p>
+                              </div>
+                            </>
+                          ) : (
+                            <>
+                              <div className="rounded-2xl bg-stone-50 p-4">
+                                <p className="text-[10px] uppercase tracking-wider text-stone-400 font-semibold">Fees Due</p>
+                                <p className="text-lg font-bold text-stone-900 mt-1">{pendingFees > 0 ? `₹${pendingFees}` : '✓'}</p>
+                              </div>
+                              <div className="rounded-2xl bg-stone-50 p-4">
+                                <p className="text-[10px] uppercase tracking-wider text-stone-400 font-semibold">Leave Requests</p>
+                                <p className="text-lg font-bold text-stone-900 mt-1">{leaveApplications.length}</p>
+                              </div>
+                            </>
+                          )}
                         </div>
 
                         <div className="rounded-2xl bg-emerald-50 border border-emerald-100 p-4">
