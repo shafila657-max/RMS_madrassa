@@ -25,13 +25,20 @@ const PageLoader = () => (
 import ProtectedRoute from './components/ProtectedRoute';
 import { Toaster } from 'sonner';
 import PWAInstallPrompt from './components/PWAInstallPrompt';
-import AuthProvider from './context/AuthContext';
+import AuthProvider, { useAuth } from './context/AuthContext';
+import { homePathFor } from './utils/auth';
 import PullToRefresh from './components/PullToRefresh';
 
 // `/login` is only a destination for an intentional in-app login action.
 // This keeps copied/bookmarked login URLs from bypassing the public landing page.
+// Someone already signed in skips the form and goes to their dashboard.
 function LoginRoute() {
     const location = useLocation();
+    const { profile, loading } = useAuth();
+
+    if (loading) return <PageLoader />;
+    const home = homePathFor(profile);
+    if (home) return <Navigate to={home} replace />;
 
     if (!location.state?.loginIntent) {
         return <Navigate to="/" replace />;
