@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Download, X, Share, PlusSquare } from 'lucide-react';
+import { useLocation } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 
 const isIOS = () =>
@@ -10,16 +11,25 @@ const isInStandaloneMode = () =>
   window.matchMedia('(display-mode: standalone)').matches ||
   window.navigator.standalone === true;
 
+const SNOOZE_KEY = 'pwa-prompt-dismissed-at';
+const SNOOZE_MS = 7 * 24 * 60 * 60 * 1000;
+const isSnoozed = () => {
+  try { return Date.now() - Number(localStorage.getItem(SNOOZE_KEY) || 0) < SNOOZE_MS; } catch { return false; }
+};
+
 const PWAInstallPrompt = () => {
   const [deferredPrompt, setDeferredPrompt] = useState(null);
   const [showAndroidPrompt, setShowAndroidPrompt] = useState(false);
   const [showIOSGuide, setShowIOSGuide] = useState(false);
   const [dismissed, setDismissed] = useState(false);
+  // The landing page has its own Android install banner (with the APK download);
+  // the iPhone guide below still shows there.
+  const onLandingPage = useLocation().pathname === '/';
 
   useEffect(() => {
     // Don't show if already installed
     if (isInStandaloneMode()) return;
-    if (sessionStorage.getItem('pwa-prompt-dismissed')) return;
+    if (isSnoozed()) return;
 
     // Android: listen for beforeinstallprompt
     const handler = (e) => {
@@ -32,7 +42,7 @@ const PWAInstallPrompt = () => {
     // iOS: show manual guide after 3 seconds
     if (isIOS()) {
       const timer = setTimeout(() => {
-        if (!sessionStorage.getItem('pwa-prompt-dismissed')) {
+        if (!isSnoozed()) {
           setShowIOSGuide(true);
         }
       }, 3000);
@@ -59,7 +69,7 @@ const PWAInstallPrompt = () => {
     setShowAndroidPrompt(false);
     setShowIOSGuide(false);
     setDismissed(true);
-    sessionStorage.setItem('pwa-prompt-dismissed', 'true');
+    try { localStorage.setItem(SNOOZE_KEY, String(Date.now())); } catch { /* storage unavailable */ }
   };
 
   if (dismissed) return null;
@@ -67,7 +77,7 @@ const PWAInstallPrompt = () => {
   return (
     <AnimatePresence>
       {/* Android Install Banner */}
-      {showAndroidPrompt && (
+      {showAndroidPrompt && !onLandingPage && (
         <motion.div
           key="android-prompt"
           initial={{ y: 100, opacity: 0 }}

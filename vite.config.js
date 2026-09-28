@@ -6,7 +6,14 @@ import path from 'path';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
+// Short commit id on Vercel builds, otherwise the build date.
+const APP_VERSION = (process.env.VERCEL_GIT_COMMIT_SHA || '').slice(0, 7)
+  || new Date().toISOString().slice(0, 16).replace('T', ' ');
+
 export default defineConfig({
+  define: {
+    __APP_VERSION__: JSON.stringify(APP_VERSION),
+  },
   plugins: [
     react(),
     VitePWA({
@@ -63,6 +70,19 @@ export default defineConfig({
       },
     }),
   ],
+  build: {
+    rollupOptions: {
+      output: {
+        // Libraries change rarely; keeping them in their own files means an app update
+        // only re-downloads the app's own code.
+        manualChunks: {
+          'vendor-react': ['react', 'react-dom', 'react-router-dom'],
+          'vendor-supabase': ['@supabase/supabase-js'],
+          'vendor-motion': ['framer-motion'],
+        },
+      },
+    },
+  },
   resolve: {
     alias: {
       '@': path.resolve(__dirname, './src'),

@@ -1,16 +1,27 @@
-import React from 'react';
+import React, { lazy, Suspense } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import LandingPage from './pages/LandingPage';
-import LoginPage from './pages/LoginPage';
-import RegisterPage from './pages/RegisterPage';
-import AdminDashboard from './pages/AdminDashboard';
-import ParentDashboard from './pages/ParentDashboard';
-import StudentDetailPage from './pages/StudentDetailPage';
-import AlumniPage from './pages/AlumniPage';
-import GalleryPage from './pages/GalleryPage';
-import ProgramsPage from './pages/ProgramsPage';
+// ResetPasswordPage reads the reset link from the URL as soon as it loads, before the
+// Supabase client clears it, so it must stay in the main bundle (not lazy).
 import ResetPasswordPage from './pages/ResetPasswordPage';
-import ResultsPage from './pages/ResultsPage';
+
+// Every other page loads on demand, so visitors to the landing page don't download
+// the admin dashboard and the rest of the app.
+const LoginPage = lazy(() => import('./pages/LoginPage'));
+const RegisterPage = lazy(() => import('./pages/RegisterPage'));
+const AdminDashboard = lazy(() => import('./pages/AdminDashboard'));
+const ParentDashboard = lazy(() => import('./pages/ParentDashboard'));
+const StudentDetailPage = lazy(() => import('./pages/StudentDetailPage'));
+const AlumniPage = lazy(() => import('./pages/AlumniPage'));
+const GalleryPage = lazy(() => import('./pages/GalleryPage'));
+const ProgramsPage = lazy(() => import('./pages/ProgramsPage'));
+const ResultsPage = lazy(() => import('./pages/ResultsPage'));
+
+const PageLoader = () => (
+    <div className="min-h-screen flex items-center justify-center bg-stone-50">
+        <div className="w-10 h-10 border-4 border-emerald-600 border-t-transparent rounded-full animate-spin" />
+    </div>
+);
 import ProtectedRoute from './components/ProtectedRoute';
 import { Toaster } from 'sonner';
 import PWAInstallPrompt from './components/PWAInstallPrompt';
@@ -35,6 +46,7 @@ function App() {
             <AuthProvider>
               <PullToRefresh>
                 <div className="App">
+                  <Suspense fallback={<PageLoader />}>
                   <Routes>
                       <Route path="/" element={<LandingPage />} />
                       <Route path="/login" element={<LoginRoute />} />
@@ -81,6 +93,7 @@ function App() {
                       {/* Password reset */}
                       <Route path="/reset-password" element={<ResetPasswordPage />} />
                   </Routes>
+                  </Suspense>
                   {/* Every screen calls toast() from 'sonner', so this is the toaster that must be mounted. */}
                   <Toaster position="top-center" richColors closeButton />
                   <PWAInstallPrompt />
