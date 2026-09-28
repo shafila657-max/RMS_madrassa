@@ -7,7 +7,8 @@ export const register = async ({ email, password, full_name, phone, role }) => {
     email,
     password,
     options: {
-      data: { full_name, phone, role: role || 'parent' },
+      // The database only accepts parent or student here; anything else becomes parent.
+      data: { full_name, phone, role: role === 'student' ? 'student' : 'parent' },
     },
   });
   if (error) {
@@ -54,7 +55,7 @@ export const login = async ({ email, password }) => {
     throw new Error(`Profile error: ${profileError.message}`);
   }
 
-  if (profile.status === 'pending' && profile.role !== 'teacher') {
+  if (profile.status === 'pending') {
     await supabase.auth.signOut();
     throw new Error('Your account is pending admin approval.');
   }

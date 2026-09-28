@@ -11,7 +11,8 @@ import { register } from '@/utils/auth';
 const RegisterPage = () => {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
-  const userType = searchParams.get('type') || 'parent';
+  // Self-registration is only for parents and students; staff accounts are created by the admin.
+  const userType = searchParams.get('type') === 'student' ? 'student' : 'parent';
 
   const [formData, setFormData] = useState({
     email: '',

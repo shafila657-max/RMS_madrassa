@@ -61,14 +61,14 @@ const AlumniPage = () => {
         const uid = session.user.id;
 
         // Any approved signed-in member (admin, parent, student, teacher, or alumni)
-        // can view the directory. Teachers are treated as approved by auth rules.
+        // can view the directory.
         const { data: prof } = await supabase
           .from('profiles')
           .select('role, status')
           .eq('id', uid)
           .maybeSingle();
 
-        const approvedMember = prof?.status === 'approved' || prof?.role === 'teacher';
+        const approvedMember = prof?.status === 'approved';
 
         if (approvedMember) {
           directoryAccess = true;

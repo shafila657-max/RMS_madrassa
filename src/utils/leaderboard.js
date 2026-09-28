@@ -99,9 +99,45 @@ export function computeStudentLeaderboard({
 }
 
 /**
- * Fetches all necessary data from Supabase and computes the leaderboard standings
+ * Leaderboard for the landing page and parent dashboard.
+ * Uses the get_leaderboard() database function, which returns only names, classes,
+ * photos and points (the raw student records are not readable by parents or visitors).
+ * Its points formula mirrors computeStudentLeaderboard above; keep the two in sync.
  */
 export async function fetchFullLeaderboardData() {
+  const { data, error } = await supabase.rpc('get_leaderboard');
+  if (!error && data) {
+    const standings = (data.standings || []).map(row => {
+      const presentDays = Number(row.present_days || 0);
+      const totalExamMarks = Number(row.total_exam_marks || 0);
+      const completedTasks = Number(row.completed_tasks || 0);
+      const disciplinePoints = Number(row.discipline_points || 0);
+      return {
+        id: row.id,
+        full_name: row.full_name,
+        class_level: row.class_level,
+        photo_url: row.photo_url,
+        status: row.status,
+        presentDays,
+        totalExamMarks,
+        completedTasks,
+        attendancePoints: presentDays,
+        examPoints: Math.floor(totalExamMarks / 10),
+        taskPoints: completedTasks * 5,
+        disciplinePoints,
+        totalPoints: Number(row.total_points || 0),
+        rank: Number(row.rank),
+      };
+    });
+    return { standings, resetTimestamp: data.reset_at || null };
+  }
+
+  // Fallback until supabase_security_fixes.sql has been run.
+  if (error) console.warn('get_leaderboard unavailable, using direct reads:', error.message);
+  return fetchLeaderboardFromTables();
+}
+
+async function fetchLeaderboardFromTables() {
   const results = await Promise.allSettled([
     supabase.from('students').select('*'),
     supabase.from('attendance').select('*'),
