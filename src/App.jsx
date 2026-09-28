@@ -71,6 +71,13 @@ function App() {
                           </ProtectedRoute>
                       } />
                       
+                      {/* Protected Student Route: the student's own dashboard */}
+                      <Route path="/student" element={
+                          <ProtectedRoute allowedRoles={['student']}>
+                              <StudentDetailPage viewer="student" />
+                          </ProtectedRoute>
+                      } />
+
                       {/* Password reset */}
                       <Route path="/reset-password" element={<ResetPasswordPage />} />
                   </Routes>

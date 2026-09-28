@@ -85,6 +85,9 @@ export const describeSaveError = (err) => {
   if (msg.includes('students_registration_no_unique')) {
     return 'This registration number is already used by another student.';
   }
+  if (msg.includes('students_student_user_id_unique')) {
+    return 'That student login is already linked to another student.';
+  }
   return msg;
 };
 

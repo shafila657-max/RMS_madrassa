@@ -68,6 +68,9 @@ const ProtectedRoute = ({ children, allowedRoles = [] }) => {
     if (profile.role === 'parent') {
       return <Navigate to="/parent" replace />;
     }
+    if (profile.role === 'student') {
+      return <Navigate to="/student" replace />;
+    }
     return <Navigate to="/login" state={{ loginIntent: true }} replace />;
   }
 

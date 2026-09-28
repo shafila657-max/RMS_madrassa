@@ -30,7 +30,9 @@ const AdminStudentModal = ({ student, parents = [], open, onClose, onRefresh }) 
   const [tasks, setTasks] = useState([]);
 
   // Edit Profile Form
-  const [profileForm, setProfileForm] = useState({ full_name: '', class_level: '', admission_date: '', user_id: '', photo_url: '', registration_no: '', date_of_birth: '' });
+  const [profileForm, setProfileForm] = useState({ full_name: '', class_level: '', admission_date: '', user_id: '', photo_url: '', registration_no: '', date_of_birth: '', student_user_id: '' });
+  // Approved student-role accounts that can be linked as this student's own login.
+  const [studentAccounts, setStudentAccounts] = useState([]);
   const [photoFile, setPhotoFile] = useState(null);
   const [photoPreview, setPhotoPreview] = useState('');
   const [savingProfile, setSavingProfile] = useState(false);
@@ -78,12 +80,12 @@ const AdminStudentModal = ({ student, parents = [], open, onClose, onRefresh }) 
         supabase.from('achievements').select('*').eq('student_id', sid).order('date', { ascending: false }),
         supabase.from('student_tasks').select('*').eq('student_id', sid).order('created_at', { ascending: false }),
       ]);
-      // Date of birth lives in an admin-only table (the students table is publicly readable).
-      const { data: privateData } = await supabase
-        .from('student_private_details')
-        .select('date_of_birth')
-        .eq('student_id', sid)
-        .maybeSingle();
+      // Date of birth lives in an admin-only table.
+      const [{ data: privateData }, { data: accounts }] = await Promise.all([
+        supabase.from('student_private_details').select('date_of_birth').eq('student_id', sid).maybeSingle(),
+        supabase.from('profiles').select('id, full_name, email').eq('role', 'student').eq('status', 'approved').order('full_name'),
+      ]);
+      setStudentAccounts(accounts || []);
 
       setStudentInfo(sData || student);
       setProfileForm({
@@ -95,6 +97,7 @@ const AdminStudentModal = ({ student, parents = [], open, onClose, onRefresh }) 
         photo_url: sData?.photo_url || '',
         registration_no: sData?.registration_no || '',
         date_of_birth: privateData?.date_of_birth || '',
+        student_user_id: sData?.student_user_id || '',
       });
       setPhotoFile(null);
       setPhotoPreview(sData?.photo_url || '');
@@ -149,6 +152,7 @@ const AdminStudentModal = ({ student, parents = [], open, onClose, onRefresh }) 
           photo_url: photoUrl,
           // Blank means "assign the next automatic number".
           registration_no: profileForm.registration_no.trim() || null,
+          student_user_id: profileForm.student_user_id || null,
         })
         .eq('id', student.id);
 
@@ -576,6 +580,21 @@ const AdminStudentModal = ({ student, parents = [], open, onClose, onRefresh }) 
                               <option key={p.id} value={p.id}>{p.full_name}</option>
                             ))}
                           </select>
+                        </div>
+
+                        <div>
+                          <label className="block text-xs font-medium text-stone-700 mb-1">Student Login Account</label>
+                          <select
+                            value={profileForm.student_user_id || ''}
+                            onChange={e => setProfileForm(f => ({ ...f, student_user_id: e.target.value }))}
+                            className="w-full border border-stone-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 bg-white"
+                          >
+                            <option value="">-- No Student Login Linked --</option>
+                            {studentAccounts.map(a => (
+                              <option key={a.id} value={a.id}>{a.full_name || 'Unnamed'}{a.email ? ` (${a.email})` : ''}</option>
+                            ))}
+                          </select>
+                          <p className="text-[10px] text-stone-400 mt-1">Lets the student sign in and see their own dashboard. Approve the account first.</p>
                         </div>
 
                         <div>
