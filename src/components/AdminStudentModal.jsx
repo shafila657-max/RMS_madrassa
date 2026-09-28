@@ -8,6 +8,7 @@ import {
 import { toast } from 'sonner';
 import { supabase } from '@/lib/supabase';
 import { describeSaveError } from '@/utils/results';
+import { localDateString } from '@/utils/date';
 
 const getGrade = (pct) => {
   if (pct >= 90) return { label: 'A+', color: 'text-emerald-600' };
@@ -38,7 +39,7 @@ const AdminStudentModal = ({ student, parents = [], open, onClose, onRefresh }) 
   const [savingProfile, setSavingProfile] = useState(false);
 
   // Attendance Form
-  const [attDate, setAttDate] = useState(new Date().toISOString().split('T')[0]);
+  const [attDate, setAttDate] = useState(localDateString());
   const [attStatus, setAttStatus] = useState('present');
   const [savingAtt, setSavingAtt] = useState(false);
 
@@ -52,7 +53,7 @@ const AdminStudentModal = ({ student, parents = [], open, onClose, onRefresh }) 
 
   // Achievement Form
   const [showAddAch, setShowAddAch] = useState(false);
-  const [achForm, setAchForm] = useState({ title: '', description: '', date: new Date().toISOString().split('T')[0] });
+  const [achForm, setAchForm] = useState({ title: '', description: '', date: localDateString() });
 
   // Task Form
   const [showAddTask, setShowAddTask] = useState(false);
@@ -290,7 +291,7 @@ const AdminStudentModal = ({ student, parents = [], open, onClose, onRefresh }) 
       if (error) throw error;
       toast.success('Achievement added!');
       setShowAddAch(false);
-      setAchForm({ title: '', description: '', date: new Date().toISOString().split('T')[0] });
+      setAchForm({ title: '', description: '', date: localDateString() });
       fetchStudentFullDetails();
     } catch (err) {
       toast.error('Failed to add achievement: ' + err.message);
@@ -551,7 +552,7 @@ const AdminStudentModal = ({ student, parents = [], open, onClose, onRefresh }) 
                           <input
                             type="date"
                             value={profileForm.date_of_birth || ''}
-                            max={new Date().toISOString().split('T')[0]}
+                            max={localDateString()}
                             onChange={e => setProfileForm(f => ({ ...f, date_of_birth: e.target.value }))}
                             className="w-full border border-stone-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
                           />
