@@ -73,7 +73,7 @@ const AdminStudentModal = ({ student, parents = [], open, onClose, onRefresh }) 
         { data: achData },
         { data: taskData },
       ] = await Promise.all([
-        supabase.from('students').select(`*, profiles(full_name, id)`).eq('id', sid).single(),
+        supabase.from('students').select(`*, profiles!user_id(full_name, id)`).eq('id', sid).single(),
         supabase.from('attendance').select('*').eq('student_id', sid).order('date', { ascending: false }),
         supabase.from('scores').select('*').eq('student_id', sid).order('created_at', { ascending: false }),
         supabase.from('fees').select('*').eq('student_id', sid).order('created_at', { ascending: false }),

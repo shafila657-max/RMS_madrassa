@@ -56,22 +56,10 @@ export default defineConfig({
         skipWaiting: true,
         clientsClaim: true,
         cleanupOutdatedCaches: true,
-        // Cache app shell and static assets
+        // Cache app shell and static assets only.
+        // Supabase API responses are deliberately NOT cached: they hold private student data
+        // (which must not outlive a logout on a shared device) and stale copies hid live data.
         globPatterns: ['**/*.{js,css,html,ico,png,svg,woff,woff2}'],
-        // Cache Supabase API responses (network-first strategy)
-        runtimeCaching: [
-          {
-            urlPattern: /^https:\/\/.*\.supabase\.co\/.*/i,
-            handler: 'NetworkFirst',
-            options: {
-              cacheName: 'supabase-cache',
-              expiration: {
-                maxEntries: 50,
-                maxAgeSeconds: 60 * 60, // 1 hour
-              },
-            },
-          },
-        ],
       },
     }),
   ],
