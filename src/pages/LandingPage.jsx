@@ -164,8 +164,11 @@ const LandingPage = () => {
   useEffect(() => {
     const fetchLiveCounts = async () => {
       try {
-        const { count: sCount } = await supabase.from('students').select('id', { count: 'exact', head: true });
-        const { count: aCount } = await supabase.from('alumni_profiles').select('id', { count: 'exact', head: true });
+        // Visitors cannot read the students table, so counts come from a public summary function.
+        const { data, error } = await supabase.rpc('get_public_stats');
+        if (error) throw error;
+        const sCount = Number(data?.students || 0);
+        const aCount = Number(data?.alumni || 0);
 
         setLiveCounts((prev) => ({
           ...prev,
@@ -179,15 +182,15 @@ const LandingPage = () => {
     fetchLiveCounts();
   }, []);
 
-  // Fetch 4 approved alumni for the orbital showcase (public fields only)
+  // Fetch 4 approved alumni for the orbital showcase. The directory itself (with phone and
+  // email) is members-only, so visitors get public card fields through this function.
   useEffect(() => {
     supabase
-      .from('alumni_profiles')
-      .select('id, full_name, working_area, passout_year, location')
-      .eq('status', 'approved')
-      .order('created_at', { ascending: false })
-      .limit(4)
-      .then(({ data }) => { if (data) setAlumniPreview(data); });
+      .rpc('get_alumni_showcase', { p_limit: 4 })
+      .then(({ data, error }) => {
+        if (error) { console.error('Alumni showcase error:', error); return; }
+        if (Array.isArray(data)) setAlumniPreview(data);
+      });
   }, []);
 
   // Fetch featured gallery items
