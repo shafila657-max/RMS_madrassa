@@ -2823,7 +2823,7 @@ const AdminDashboard = () => {
               <Input label="Subject *" value={teacherForm.subject} onChange={e => setTeacherForm(f => ({...f, subject: e.target.value}))} placeholder="e.g. Quran Memorization" required />
               <Input label="Phone" type="tel" value={teacherForm.phone} onChange={e => setTeacherForm(f => ({...f, phone: e.target.value}))} placeholder="+91 9876543210" />
               <Input label="Email *" type="email" value={teacherForm.email} onChange={e => setTeacherForm(f => ({...f, email: e.target.value}))} placeholder="teacher@rmsmadrasa.edu" required />
-              <Input label="Password *" type="password" value={teacherForm.password} onChange={e => setTeacherForm(f => ({...f, password: e.target.value}))} placeholder="Min 6 characters" required minLength={6} />
+              <Input label="Password *" type="password" value={teacherForm.password} onChange={e => setTeacherForm(f => ({...f, password: e.target.value}))} placeholder="Min 8 characters" required minLength={8} />
               
               <div className="mb-4">
                 <label className="block text-sm font-medium text-stone-700 mb-2">Assign Classes</label>
