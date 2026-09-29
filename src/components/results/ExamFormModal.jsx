@@ -32,6 +32,9 @@ const ExamFormModal = ({ open, onClose, source = null, mode = 'create', onSaved 
   const [catalog, setCatalog] = useState([]);
   const [bulk, setBulk] = useState({ max: '100', pass: '40' });
   const [saving, setSaving] = useState(false);
+  // Classes already published for this exam: shown read-only; new classes can still be added.
+  const liveClasses = new Set(mode === 'edit' ? (source?.liveClasses || []) : []);
+  const anyLive = liveClasses.size > 0;
 
   useEffect(() => {
     if (!open) return;
@@ -73,6 +76,10 @@ const ExamFormModal = ({ open, onClose, source = null, mode = 'create', onSaved 
   };
 
   const toggleClass = (cls) => {
+    if (liveClasses.has(cls)) {
+      toast.error(`${cls} is published. Unpublish it in Review & Publish before removing it.`);
+      return;
+    }
     setClassSubjects(prev => {
       const next = { ...prev };
       if (next[cls]) {
@@ -106,7 +113,7 @@ const ExamFormModal = ({ open, onClose, source = null, mode = 'create', onSaved 
 
   const applyBulk = () => {
     setClassSubjects(prev => Object.fromEntries(
-      Object.entries(prev).map(([cls, rows]) => [cls, rows.map(r => ({ ...r, max_marks: bulk.max, pass_marks: bulk.pass }))])
+      Object.entries(prev).map(([cls, rows]) => [cls, liveClasses.has(cls) ? rows : rows.map(r => ({ ...r, max_marks: bulk.max, pass_marks: bulk.pass }))])
     ));
     toast.success('Applied to every subject');
   };
@@ -185,19 +192,22 @@ const ExamFormModal = ({ open, onClose, source = null, mode = 'create', onSaved 
 
       if (mode === 'edit') {
         const keepIds = rows.filter(r => r.id).map(r => r.id);
-        const removed = (source.subjects || []).filter(s => !keepIds.includes(s.id)).map(s => s.id);
+        const removed = (source.subjects || [])
+          .filter(s => !keepIds.includes(s.id) && !liveClasses.has(s.class_level))
+          .map(s => s.id);
         if (removed.length) {
           const { error } = await supabase.from('exam_subjects').delete().in('id', removed);
           if (error) throw error;
         }
-        for (const r of rows.filter(x => x.id)) {
+        // Published classes are locked in the database; leave their subjects untouched.
+        for (const r of rows.filter(x => x.id && !liveClasses.has(x.class_level))) {
           const { id, ...rest } = r;
           const { error } = await supabase.from('exam_subjects').update(rest).eq('id', id);
           if (error) throw error;
         }
       }
 
-      const inserts = rows.filter(r => !r.id).map(({ id, ...rest }) => rest);
+      const inserts = rows.filter(r => !r.id && !liveClasses.has(r.class_level)).map(({ id, ...rest }) => rest);
       if (inserts.length) {
         const { error } = await supabase.from('exam_subjects').insert(inserts);
         if (error) throw error;
@@ -255,16 +265,21 @@ const ExamFormModal = ({ open, onClose, source = null, mode = 'create', onSaved 
         {/* Result options */}
         <section className="space-y-3 rounded-2xl border border-stone-200 p-4">
           <p className="text-sm font-bold text-stone-900">What the result shows</p>
+          {anyLive && (
+            <p className="rounded-xl bg-amber-50 px-3 py-2 text-xs text-amber-800">
+              Results are published for {[...liveClasses].join(', ')}, so rank and grade settings are locked to keep every class's results consistent.
+            </p>
+          )}
           <label className="flex items-center justify-between gap-3 text-sm">
             <span>Show class rank <span className="block text-xs text-stone-400">e.g. "2nd of 30 students"</span></span>
-            <input type="checkbox" className="h-5 w-5 accent-emerald-600" checked={form.show_rank} onChange={e => setForm(f => ({ ...f, show_rank: e.target.checked }))} />
+            <input type="checkbox" disabled={anyLive} className="h-5 w-5 accent-emerald-600 disabled:opacity-50" checked={form.show_rank} onChange={e => setForm(f => ({ ...f, show_rank: e.target.checked }))} />
           </label>
           <label className="flex items-center justify-between gap-3 text-sm">
             <span>Show grades <span className="block text-xs text-stone-400">Based on the overall percentage</span></span>
-            <input type="checkbox" className="h-5 w-5 accent-emerald-600" checked={form.grading_enabled} onChange={e => setForm(f => ({ ...f, grading_enabled: e.target.checked }))} />
+            <input type="checkbox" disabled={anyLive} className="h-5 w-5 accent-emerald-600 disabled:opacity-50" checked={form.grading_enabled} onChange={e => setForm(f => ({ ...f, grading_enabled: e.target.checked }))} />
           </label>
           {form.grading_enabled && (
-            <div className="rounded-xl bg-stone-50 p-3">
+            <fieldset disabled={anyLive} className="rounded-xl bg-stone-50 p-3 disabled:opacity-60">
               <div className="mb-2 grid grid-cols-[1fr_1fr_auto] gap-2 text-[11px] font-semibold uppercase text-stone-500">
                 <span>Grade</span><span>From %</span><span className="w-7" />
               </div>
@@ -283,7 +298,7 @@ const ExamFormModal = ({ open, onClose, source = null, mode = 'create', onSaved 
                 <button type="button" onClick={() => setForm(f => ({ ...f, grade_scale: [...f.grade_scale, { min: 0, grade: '' }] }))} className="text-emerald-700 hover:underline">+ Add grade</button>
                 <button type="button" onClick={() => setForm(f => ({ ...f, grade_scale: DEFAULT_GRADE_SCALE }))} className="text-stone-500 hover:underline">Reset to default</button>
               </div>
-            </div>
+            </fieldset>
           )}
         </section>
 
@@ -293,19 +308,24 @@ const ExamFormModal = ({ open, onClose, source = null, mode = 'create', onSaved 
           <div className="flex flex-wrap gap-2">
             {CLASS_LEVELS.map(cls => {
               const on = !!classSubjects[cls];
+              const live = liveClasses.has(cls);
               return (
                 <button
                   key={cls}
                   type="button"
                   onClick={() => toggleClass(cls)}
-                  className={`rounded-full border px-3 py-1.5 text-xs font-bold transition-colors ${on ? 'border-emerald-600 bg-emerald-600 text-white' : 'border-stone-200 bg-white text-stone-600 hover:border-emerald-300'}`}
+                  title={live ? 'Published: unpublish it before removing' : undefined}
+                  className={`rounded-full border px-3 py-1.5 text-xs font-bold transition-colors ${on ? 'border-emerald-600 bg-emerald-600 text-white' : 'border-stone-200 bg-white text-stone-600 hover:border-emerald-300'} ${live ? 'cursor-not-allowed' : ''}`}
                 >
-                  {on && '✓ '}{cls}
+                  {live ? '🔒 ' : on ? '✓ ' : ''}{cls}
                 </button>
               );
             })}
           </div>
-          <p className="mt-2 text-xs text-stone-400">Subjects are filled in from each class's subject list. You can change them here.</p>
+          <p className="mt-2 text-xs text-stone-400">
+            Subjects are filled in from each class's subject list. You can change them here.
+            {anyLive && ' 🔒 = published; you can add more classes and publish them separately.'}
+          </p>
         </section>
 
         {selectedClasses.length > 0 && (
@@ -328,9 +348,11 @@ const ExamFormModal = ({ open, onClose, source = null, mode = 'create', onSaved 
               <div key={cls} className="overflow-hidden rounded-2xl border border-stone-200">
                 <div className="flex items-center justify-between bg-stone-50 px-4 py-2.5">
                   <p className="text-sm font-bold text-stone-900">{cls}</p>
-                  <span className="text-xs text-stone-500">{classSubjects[cls].length} subjects</span>
+                  <span className="text-xs text-stone-500">
+                    {liveClasses.has(cls) ? '🔒 Published · read only' : `${classSubjects[cls].length} subjects`}
+                  </span>
                 </div>
-                <div className="space-y-2 p-3">
+                <fieldset disabled={liveClasses.has(cls)} className="space-y-2 p-3 disabled:opacity-60">
                   <div className="grid grid-cols-[1fr_4.5rem_4.5rem_2rem] gap-2 px-1 text-[11px] font-semibold uppercase text-stone-400">
                     <span>Subject</span><span className="text-center">Max</span><span className="text-center">Pass</span><span />
                   </div>
@@ -344,10 +366,12 @@ const ExamFormModal = ({ open, onClose, source = null, mode = 'create', onSaved 
                       </button>
                     </div>
                   ))}
-                  <button type="button" onClick={() => addRow(cls)} className="inline-flex items-center gap-1 px-1 pt-1 text-xs font-bold text-emerald-700 hover:underline">
-                    <Plus className="h-3.5 w-3.5" /> Add subject
-                  </button>
-                </div>
+                  {!liveClasses.has(cls) && (
+                    <button type="button" onClick={() => addRow(cls)} className="inline-flex items-center gap-1 px-1 pt-1 text-xs font-bold text-emerald-700 hover:underline">
+                      <Plus className="h-3.5 w-3.5" /> Add subject
+                    </button>
+                  )}
+                </fieldset>
               </div>
             ))}
           </section>

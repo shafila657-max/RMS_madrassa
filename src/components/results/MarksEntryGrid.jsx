@@ -114,7 +114,7 @@ const MarksEntryGrid = ({ classLevel, subjects, roster, marks, locked, onSaved, 
     <div className="space-y-3">
       {locked ? (
         <div className="flex items-center gap-2 rounded-xl bg-amber-50 px-4 py-3 text-sm text-amber-800">
-          <Lock className="h-4 w-4 flex-shrink-0" /> This exam is published, so marks are locked. Unpublish it to make corrections.
+          <Lock className="h-4 w-4 flex-shrink-0" /> {classLevel} is published, so its marks are locked. Unpublish {classLevel} (in Review &amp; Publish) to make corrections.
         </div>
       ) : (
         <div className="flex items-start gap-2 rounded-xl bg-sky-50 px-4 py-3 text-xs text-sky-800">

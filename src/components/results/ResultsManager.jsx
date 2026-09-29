@@ -6,6 +6,7 @@ import { supabase } from '@/lib/supabase';
 import ExamFormModal from './ExamFormModal';
 import ExamWorkspace from './ExamWorkspace';
 import RegistrationSettingsModal from './RegistrationSettingsModal';
+import { PublishBadge } from './ExamWorkspace';
 
 /**
  * Admin "Results" tab: list of exams → workspace for entering marks, reviewing and publishing.
@@ -17,11 +18,13 @@ const ResultsManager = ({ students = [] }) => {
   const [openExamId, setOpenExamId] = useState(null);
   const [form, setForm] = useState({ open: false, mode: 'create', source: null });
   const [showRegSettings, setShowRegSettings] = useState(false);
+  // Bumped after the exam is edited so the open workspace reloads its subjects.
+  const [editVersion, setEditVersion] = useState(0);
 
   const fetchExams = useCallback(async () => {
     const { data, error } = await supabase
       .from('exams')
-      .select('*, exam_subjects(id, class_level)')
+      .select('*, exam_subjects(id, class_level), exam_class_publications(class_level)')
       .order('created_at', { ascending: false });
     if (error) {
       toast.error('Could not load exams. Has the results SQL been run in Supabase? ' + error.message);
@@ -61,7 +64,7 @@ const ResultsManager = ({ students = [] }) => {
     return (
       <>
         <ExamWorkspace
-          key={`${openExam.id}-${openExam.status}-${openExam.updated_at}`}
+          key={`${openExam.id}-${editVersion}`}
           exam={openExam}
           students={students}
           onBack={() => setOpenExamId(null)}
@@ -73,7 +76,7 @@ const ResultsManager = ({ students = [] }) => {
           mode={form.mode}
           source={form.source}
           onClose={() => setForm(f => ({ ...f, open: false }))}
-          onSaved={() => { setForm(f => ({ ...f, open: false })); fetchExams(); }}
+          onSaved={() => { setForm(f => ({ ...f, open: false })); setEditVersion(v => v + 1); fetchExams(); }}
         />
       </>
     );
@@ -119,7 +122,9 @@ const ResultsManager = ({ students = [] }) => {
         <div className="divide-y divide-stone-100 overflow-hidden rounded-2xl border border-stone-100 bg-white shadow-sm">
           {exams.map((exam, idx) => {
             const classCount = new Set((exam.exam_subjects || []).map(s => s.class_level)).size;
-            const published = exam.status === 'published';
+            const liveCount = (exam.exam_class_publications || []).length;
+            const published = liveCount > 0;
+            const fullyPublished = published && liveCount >= classCount;
             return (
               <motion.div
                 key={exam.id}
@@ -135,9 +140,7 @@ const ResultsManager = ({ students = [] }) => {
                   <div className="min-w-0">
                     <p className="flex flex-wrap items-center gap-2 font-semibold text-stone-900">
                       <span className="truncate">{exam.name}</span>
-                      {published
-                        ? <span className="rounded-full bg-emerald-100 px-2 py-0.5 text-[10px] font-bold text-emerald-800">● Published</span>
-                        : <span className="rounded-full bg-stone-200 px-2 py-0.5 text-[10px] font-bold text-stone-600">Draft</span>}
+                      <PublishBadge live={liveCount} total={classCount} />
                     </p>
                     <p className="text-xs text-stone-500">
                       {[exam.academic_year, `${classCount} class${classCount === 1 ? '' : 'es'}`, published && exam.published_at && `published ${new Date(exam.published_at).toLocaleDateString('en-IN')}`].filter(Boolean).join(' · ')}
@@ -146,13 +149,16 @@ const ResultsManager = ({ students = [] }) => {
                 </button>
                 <div className="flex flex-wrap gap-2">
                   <button type="button" onClick={() => setOpenExamId(exam.id)} className="inline-flex flex-1 items-center justify-center gap-1 rounded-xl bg-emerald-600 px-3.5 py-2 text-xs font-semibold text-white hover:bg-emerald-700 sm:flex-none">
-                    {published ? 'View' : 'Enter marks'} <ChevronRight className="h-3.5 w-3.5" />
+                    {fullyPublished ? 'View' : 'Enter marks'} <ChevronRight className="h-3.5 w-3.5" />
                   </button>
-                  {!published && (
-                    <button type="button" onClick={() => openForm('edit', exam)} className="rounded-xl bg-stone-100 p-2 text-stone-600 hover:bg-stone-200" title="Edit exam">
-                      <Edit3 className="h-4 w-4" />
-                    </button>
-                  )}
+                  <button
+                    type="button"
+                    onClick={() => openForm('edit', { ...exam, liveClasses: (exam.exam_class_publications || []).map(p => p.class_level) })}
+                    className="rounded-xl bg-stone-100 p-2 text-stone-600 hover:bg-stone-200"
+                    title={published ? 'Add a class or edit exam details' : 'Edit exam'}
+                  >
+                    <Edit3 className="h-4 w-4" />
+                  </button>
                   <button type="button" onClick={() => openForm('duplicate', exam)} className="rounded-xl bg-stone-100 p-2 text-stone-600 hover:bg-stone-200" title="Duplicate (reuse subjects for the next exam)">
                     <Copy className="h-4 w-4" />
                   </button>
