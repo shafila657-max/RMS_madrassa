@@ -78,3 +78,15 @@ export function setupAppUpdates() {
   window.setInterval(checkForUpdate, CHECK_EVERY_MS);
   checkForUpdate();
 }
+
+/**
+ * Asks the server for a newer version now. Resolves to 'found' (it downloads and the usual
+ * "Update now" prompt follows), 'latest', or 'unsupported' (no service worker, e.g. in dev).
+ */
+export async function checkForAppUpdate() {
+  if (typeof window === 'undefined' || !('serviceWorker' in navigator)) return 'unsupported';
+  const registration = await navigator.serviceWorker.getRegistration();
+  if (!registration) return 'unsupported';
+  await registration.update();
+  return registration.installing || registration.waiting ? 'found' : 'latest';
+}

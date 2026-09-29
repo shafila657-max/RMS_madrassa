@@ -19,6 +19,10 @@ import { fetchFullLeaderboardData } from '@/utils/leaderboard';
 import { localDateString } from '@/utils/date';
 import ResultsManager from '@/components/results/ResultsManager';
 import { describeSaveError, CLASS_LEVELS } from '@/utils/results';
+import ProfileMenu from '@/components/account/ProfileMenu';
+import ProfilePage from '@/components/account/ProfilePage';
+import SettingsPage from '@/components/account/SettingsPage';
+import UsersPage from '@/components/account/UsersPage';
 
 const DISCIPLINE_DAYS = [
   { value: 0, label: 'Sunday' },
@@ -135,7 +139,7 @@ const DEFAULT_PROGRAMS = [
 // ─── MAIN COMPONENT ────────────────────────────────────────────────────────────
 const AdminDashboard = () => {
   const navigate = useNavigate();
-  const profile = getCachedProfile();
+  const [profile, setProfile] = useState(getCachedProfile);
   
   const isTeacher = profile?.role === 'teacher';
   const isAdmin = profile?.role === 'admin';
@@ -144,8 +148,10 @@ const AdminDashboard = () => {
   // the Back button and shared links keep the section.
   const ADMIN_TABS = ['overview', 'classes', 'approvals', 'alumni', 'programs', 'announcements',
     'students', 'results', 'gallery', 'teachers', 'leaderboard'];
+  // Pages opened from the profile menu rather than the tab bar.
+  const ACCOUNT_PAGES = isTeacher ? ['profile', 'settings'] : ['profile', 'settings', 'users'];
   const { tab: tabParam } = useParams();
-  const allowedTabs = isTeacher ? ['classes'] : ADMIN_TABS;
+  const allowedTabs = [...(isTeacher ? ['classes'] : ADMIN_TABS), ...ACCOUNT_PAGES];
   const activeTab = allowedTabs.includes(tabParam) ? tabParam : (isTeacher ? 'classes' : 'overview');
   const setActiveTab = useCallback((id) => {
     if (id === activeTab) return;
@@ -1367,21 +1373,7 @@ const AdminDashboard = () => {
               <p className="text-sm text-emerald-700 font-semibold leading-tight">{isTeacher ? 'Teacher Dashboard' : 'Admin Dashboard'}</p>
             </div>
           </div>
-          <div className="flex items-center gap-4">
-            <div className="hidden sm:flex flex-col items-end mr-2">
-              <span className="text-sm font-bold text-stone-900 leading-tight">{profile?.full_name}</span>
-              <span className="text-xs text-stone-500 leading-tight capitalize">{profile?.role || 'Administrator'}</span>
-              <span className="text-[10px] text-stone-300 leading-tight" title="App version">v {__APP_VERSION__}</span>
-            </div>
-            <button
-              onClick={handleLogout}
-              className="flex items-center gap-2 px-4 py-2 rounded-xl bg-stone-100 hover:bg-red-50 hover:text-red-600 text-stone-600 text-sm font-semibold transition-colors"
-              data-testid="admin-logout-button"
-            >
-              <LogOut className="w-4 h-4" />
-              <span className="hidden sm:block">Logout</span>
-            </button>
-          </div>
+          <ProfileMenu profile={profile} onNavigate={setActiveTab} onLogout={handleLogout} />
         </div>
 
         {/* Tab bar */}
@@ -1412,6 +1404,23 @@ const AdminDashboard = () => {
 
       <div className={`max-w-6xl mx-auto px-4 ${isTeacher ? 'py-2 md:py-6' : 'py-6'}`}>
         <AnimatePresence mode="wait">
+
+          {/* ── ACCOUNT PAGES (profile menu) ── */}
+          {activeTab === 'profile' && (
+            <motion.div key="profile" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+              <ProfilePage profile={profile} onProfileChange={setProfile} />
+            </motion.div>
+          )}
+          {activeTab === 'settings' && (
+            <motion.div key="settings" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+              <SettingsPage profile={profile} onSignedOut={() => navigate('/')} />
+            </motion.div>
+          )}
+          {activeTab === 'users' && isAdmin && (
+            <motion.div key="users" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+              <UsersPage me={profile} />
+            </motion.div>
+          )}
 
           {/* ── OVERVIEW ── */}
           {activeTab === 'overview' && (
