@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
 import {
   LogOut, Users, UserCheck, DollarSign, TrendingUp,
   CheckCircle, XCircle, Plus, X, Link, Calendar, Search,
@@ -140,7 +140,18 @@ const AdminDashboard = () => {
   const isTeacher = profile?.role === 'teacher';
   const isAdmin = profile?.role === 'admin';
 
-  const [activeTab, setActiveTab] = useState(isTeacher ? 'classes' : 'overview');
+  // Each section has its own address (/admin/students, /admin/results, …) so refresh,
+  // the Back button and shared links keep the section.
+  const ADMIN_TABS = ['overview', 'classes', 'approvals', 'alumni', 'programs', 'announcements',
+    'students', 'results', 'gallery', 'teachers', 'leaderboard'];
+  const { tab: tabParam } = useParams();
+  const allowedTabs = isTeacher ? ['classes'] : ADMIN_TABS;
+  const activeTab = allowedTabs.includes(tabParam) ? tabParam : (isTeacher ? 'classes' : 'overview');
+  const setActiveTab = useCallback((id) => {
+    if (id === activeTab) return;
+    navigate(`/admin/${id}`);
+    window.scrollTo(0, 0);
+  }, [activeTab, navigate]);
   const [stats, setStats] = useState(null);
   const [loading, setLoading] = useState(true);
 
