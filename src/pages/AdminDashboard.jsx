@@ -298,17 +298,33 @@ const AdminDashboard = () => {
     return contact?.full_name || profile?.full_name;
   })();
 
-  // Auto-select first assigned class for teachers
+  // Classes this person is class teacher of (teachers, and admins who also teach).
+  const myClassLevels = CLASS_LEVELS.filter(cls =>
+    myTeacherName && classTeachers.some(ct => ct.class_level === cls && ct.teacher_name === myTeacherName)
+  );
+  const myClassKey = myClassLevels.join('|');
+  // Admins who teach see their own classes first, with a switch to all classes.
+  const [classScope, setClassScope] = useState('mine');
+  const showOnlyMyClasses = isTeacher || (myClassLevels.length > 0 && classScope === 'mine');
+
+  // Start on one of my classes: always for teachers, once on arrival for admins who teach.
+  const openedMyClass = React.useRef(false);
   useEffect(() => {
-    if (isTeacher && classTeachers.length > 0 && myTeacherName) {
-      const myClasses = classTeachers
-        .filter(ct => ct.teacher_name === myTeacherName)
-        .map(ct => ct.class_level);
-      if (myClasses.length > 0 && !myClasses.includes(selectedClassLevel)) {
-        setSelectedClassLevel(myClasses[0]);
-      }
+    if (myClassLevels.length === 0) return;
+    if (isTeacher) {
+      if (!myClassLevels.includes(selectedClassLevel)) setSelectedClassLevel(myClassLevels[0]);
+    } else if (!openedMyClass.current) {
+      openedMyClass.current = true;
+      setSelectedClassLevel(myClassLevels[0]);
     }
-  }, [isTeacher, classTeachers, myTeacherName, selectedClassLevel]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isTeacher, myClassKey, selectedClassLevel]);
+
+  const openMyClasses = (cls) => {
+    setClassScope('mine');
+    if (cls || !myClassLevels.includes(selectedClassLevel)) setSelectedClassLevel(cls || myClassLevels[0]);
+    setActiveTab('classes');
+  };
 
   const fetchStudents = useCallback(async () => {
     const { data, error } = await supabase
@@ -1373,7 +1389,7 @@ const AdminDashboard = () => {
               <p className="text-sm text-emerald-700 font-semibold leading-tight">{isTeacher ? 'Teacher Dashboard' : 'Admin Dashboard'}</p>
             </div>
           </div>
-          <ProfileMenu profile={profile} onNavigate={setActiveTab} onLogout={handleLogout} />
+          <ProfileMenu profile={profile} onNavigate={setActiveTab} onLogout={handleLogout} onMyClasses={!isTeacher && myClassLevels.length > 0 ? () => openMyClasses() : undefined} />
         </div>
 
         {/* Tab bar */}
@@ -1426,6 +1442,26 @@ const AdminDashboard = () => {
           {activeTab === 'overview' && (
             <motion.div key="overview" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
               <h1 className="text-2xl font-bold text-stone-900 mb-6">Dashboard Overview</h1>
+              {myClassLevels.length > 0 && (
+                <div className="mb-6 flex flex-col gap-3 rounded-2xl border border-emerald-100 bg-emerald-50 p-4 sm:flex-row sm:items-center sm:justify-between">
+                  <div>
+                    <p className="text-sm font-bold text-emerald-900">⭐ My classes</p>
+                    <p className="text-xs text-emerald-700">You're class teacher here. Take attendance, give homework and more.</p>
+                  </div>
+                  <div className="flex flex-wrap gap-2">
+                    {myClassLevels.map(cls => (
+                      <button
+                        key={cls}
+                        type="button"
+                        onClick={() => openMyClasses(cls)}
+                        className="inline-flex items-center gap-1.5 rounded-xl bg-emerald-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-emerald-700"
+                      >
+                        {cls} <span className="rounded-full bg-white/20 px-1.5 text-[10px]">{activeInClass(cls).length}</span>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
               <div className="grid sm:grid-cols-2 lg:grid-cols-5 gap-4 mb-8">
                 <StatCard icon={GraduationCap} label="Students" value={stats?.total_students || 0} color="bg-blue-500" delay={0} />
                 <StatCard icon={Users} label="Parents" value={stats?.total_parents || 0} color="bg-emerald-500" delay={0.05} />
@@ -3418,10 +3454,32 @@ const AdminDashboard = () => {
             </div>
           </div>
 
+          {/* Admins who are also class teachers: their classes, or every class */}
+          {!isTeacher && myClassLevels.length > 0 && (
+            <div className="inline-flex rounded-2xl bg-stone-100 p-1">
+              {[
+                { id: 'mine', label: `⭐ My classes (${myClassLevels.length})` },
+                { id: 'all', label: 'All classes' },
+              ].map(opt => (
+                <button
+                  key={opt.id}
+                  type="button"
+                  onClick={() => {
+                    setClassScope(opt.id);
+                    if (opt.id === 'mine' && !myClassLevels.includes(selectedClassLevel)) setSelectedClassLevel(myClassLevels[0]);
+                  }}
+                  className={`rounded-xl px-4 py-2 text-xs font-bold transition-colors ${classScope === opt.id ? 'bg-white text-emerald-700 shadow-sm' : 'text-stone-500 hover:text-stone-800'}`}
+                >
+                  {opt.label}
+                </button>
+              ))}
+            </div>
+          )}
+
           {/* 10 Class Pills Bar */}
           <div className="flex gap-2 overflow-x-auto no-scrollbar touch-pan-x flex-nowrap pb-2">
             {CLASS_LEVELS
-              .filter(cls => !isTeacher || classTeachers.some(ct => ct.class_level === cls && ct.teacher_name === myTeacherName))
+              .filter(cls => !showOnlyMyClasses || myClassLevels.includes(cls))
               .map(cls => {
               const count = activeInClass(cls).length;
               const isSelected = selectedClassLevel === cls;
@@ -3435,7 +3493,7 @@ const AdminDashboard = () => {
                       : 'bg-white text-stone-600 border-stone-200 hover:border-emerald-300'
                   }`}
                 >
-                  <span>{cls}</span>
+                  <span>{!isTeacher && !showOnlyMyClasses && myClassLevels.includes(cls) ? `⭐ ${cls}` : cls}</span>
                   <span className={`px-2 py-0.5 rounded-full text-[10px] ${isSelected ? 'bg-white/20 text-white' : 'bg-stone-100 text-stone-500'}`}>
                     {count}
                   </span>
