@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
-import { ChevronDown, LogOut, Settings, User, Users } from 'lucide-react';
+import { ChevronDown, LogOut, School, Settings, User, Users } from 'lucide-react';
 
 export const initialsOf = (name) =>
   (name || '?').trim().split(/\s+/).slice(0, 2).map(w => w[0]?.toUpperCase() || '').join('') || '?';
@@ -9,7 +9,7 @@ export const initialsOf = (name) =>
  * Avatar button in the dashboard header with the account menu:
  * Profile, Settings, Users (admins only) and Logout.
  */
-const ProfileMenu = ({ profile, onNavigate, onLogout }) => {
+const ProfileMenu = ({ profile, onNavigate, onLogout, onMyClasses }) => {
   const [open, setOpen] = useState(false);
   const ref = useRef(null);
   const isAdmin = profile?.role === 'admin';
@@ -27,12 +27,13 @@ const ProfileMenu = ({ profile, onNavigate, onLogout }) => {
   }, [open]);
 
   const items = [
+    onMyClasses && { id: 'my-classes', label: 'My classes', icon: School, hint: 'Class teacher', action: onMyClasses },
     { id: 'profile', label: 'My profile', icon: User },
     { id: 'settings', label: 'Settings', icon: Settings },
     isAdmin && { id: 'users', label: 'Users', icon: Users, hint: 'Admins & teachers' },
   ].filter(Boolean);
 
-  const go = (id) => { setOpen(false); onNavigate(id); };
+  const go = (item) => { setOpen(false); if (item.action) item.action(); else onNavigate(item.id); };
 
   return (
     <div ref={ref} className="relative">
@@ -70,12 +71,12 @@ const ProfileMenu = ({ profile, onNavigate, onLogout }) => {
               <p className="mt-1 inline-block rounded-full bg-emerald-50 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-emerald-700">{profile?.role}</p>
             </div>
             <div className="p-1.5">
-              {items.map(({ id, label, icon: Icon, hint }) => (
+              {items.map(({ id, label, icon: Icon, hint, action }) => (
                 <button
                   key={id}
                   type="button"
                   role="menuitem"
-                  onClick={() => go(id)}
+                  onClick={() => go({ id, action })}
                   className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left text-sm font-semibold text-stone-700 hover:bg-stone-50"
                 >
                   <Icon className="h-4 w-4 text-stone-400" />
