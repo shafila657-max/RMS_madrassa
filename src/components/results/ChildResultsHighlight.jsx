@@ -20,6 +20,8 @@ const markSeen = (key) => {
  */
 const ChildResultsHighlight = ({ results }) => {
   const exam = results[0]?.exam;
+  // Each child shows their most recent published result, which can be from different exams.
+  const sameExam = results.every(r => r.exam?.id === exam?.id);
   const [openId, setOpenId] = useState(null);
   const [celebrateId, setCelebrateId] = useState(null);
 
@@ -46,7 +48,9 @@ const ChildResultsHighlight = ({ results }) => {
         </div>
         <div className="min-w-0">
           <p className="text-[11px] font-bold uppercase tracking-widest text-amber-200">Results published</p>
-          <h2 className="text-lg font-extrabold leading-tight">{exam.name}{exam.academic_year ? ` ${exam.academic_year}` : ''}</h2>
+          <h2 className="text-lg font-extrabold leading-tight">
+            {sameExam ? `${exam.name}${exam.academic_year ? ` ${exam.academic_year}` : ''}` : 'Latest results'}
+          </h2>
         </div>
       </div>
 
@@ -65,6 +69,7 @@ const ChildResultsHighlight = ({ results }) => {
                 </div>
                 <div className="min-w-0 flex-1">
                   <p className="truncate font-bold">{r.student.full_name}</p>
+                  {!sameExam && <p className="truncate text-[11px] font-semibold text-emerald-700">{r.exam.name}</p>}
                   <p className="text-xs text-stone-500">
                     {formatMarks(r.total_obtained)}/{formatMarks(r.total_max)} · {formatMarks(r.percentage)}%
                     {r.grade ? ` · Grade ${r.grade}` : ''}

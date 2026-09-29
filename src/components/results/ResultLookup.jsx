@@ -34,6 +34,11 @@ const ResultLookup = ({ tone = 'light' }) => {
         setResult(null);
         return;
       }
+      if (data.pending) {
+        setError('Your result has not been published yet. Please check again later.');
+        setResult(null);
+        return;
+      }
       setResult(data);
       setTimeout(() => resultRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 80);
     } catch (err) {

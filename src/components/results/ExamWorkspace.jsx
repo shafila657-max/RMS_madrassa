@@ -30,11 +30,15 @@ async function fetchAllMarks(subjectIds) {
   return rows;
 }
 
-const StatusBadge = ({ status }) => (
-  status === 'published'
-    ? <span className="rounded-full bg-emerald-100 px-2.5 py-1 text-[11px] font-bold text-emerald-800">● Published</span>
-    : <span className="rounded-full bg-stone-200 px-2.5 py-1 text-[11px] font-bold text-stone-600">Draft</span>
-);
+// "Published", "Published · 1/2 classes" or "Draft".
+export const PublishBadge = ({ live, total }) => {
+  if (live === 0) return <span className="rounded-full bg-stone-200 px-2.5 py-1 text-[11px] font-bold text-stone-600">Draft</span>;
+  return (
+    <span className="rounded-full bg-emerald-100 px-2.5 py-1 text-[11px] font-bold text-emerald-800">
+      ● Published{live < total ? ` · ${live}/${total} classes` : ''}
+    </span>
+  );
+};
 
 const ExamWorkspace = ({ exam, students, onBack, onEdit, onChanged }) => {
   const [subjects, setSubjects] = useState([]);
@@ -43,23 +47,25 @@ const ExamWorkspace = ({ exam, students, onBack, onEdit, onChanged }) => {
   const [step, setStep] = useState('marks');
   const [activeClass, setActiveClass] = useState(null);
   const [gridDirty, setGridDirty] = useState(false);
-  const [confirm, setConfirm] = useState(null); // 'publish' | 'unpublish'
+  // { action: 'publish' | 'unpublish', cls: 'Class 5' } — cls null means every class.
+  const [confirm, setConfirm] = useState(null);
   const [working, setWorking] = useState(false);
   const [preview, setPreview] = useState({ studentId: '', result: null, loading: false });
-
-  const locked = exam.status === 'published';
+  // Classes of this exam that are live on the website: class_level -> published_at.
+  const [liveClasses, setLiveClasses] = useState(new Map());
 
   const load = useCallback(async () => {
     try {
-      const { data: subs, error } = await supabase
-        .from('exam_subjects')
-        .select('*')
-        .eq('exam_id', exam.id)
-        .order('sort_order');
+      const [{ data: subs, error }, { data: pubs, error: pubError }] = await Promise.all([
+        supabase.from('exam_subjects').select('*').eq('exam_id', exam.id).order('sort_order'),
+        supabase.from('exam_class_publications').select('class_level, published_at').eq('exam_id', exam.id),
+      ]);
       if (error) throw error;
+      if (pubError) throw pubError;
       const rows = await fetchAllMarks((subs || []).map(s => s.id));
       setSubjects(subs || []);
       setMarkRows(rows);
+      setLiveClasses(new Map((pubs || []).map(p => [p.class_level, p.published_at])));
     } catch (err) {
       toast.error('Could not load exam: ' + (err.message || err));
     } finally {
@@ -120,11 +126,17 @@ const ExamWorkspace = ({ exam, students, onBack, onEdit, onChanged }) => {
   const runStatusChange = async () => {
     setWorking(true);
     try {
-      const fn = confirm === 'publish' ? 'publish_exam' : 'unpublish_exam';
-      const { error } = await supabase.rpc(fn, { p_exam_id: exam.id });
+      const { action, cls } = confirm;
+      const { error } = cls
+        ? await supabase.rpc(action === 'publish' ? 'publish_exam_class' : 'unpublish_exam_class', { p_exam_id: exam.id, p_class_level: cls })
+        : await supabase.rpc(action === 'publish' ? 'publish_exam' : 'unpublish_exam', { p_exam_id: exam.id });
       if (error) throw error;
-      toast.success(confirm === 'publish' ? '🎉 Results published on the website!' : 'Results taken off the website. Marks are editable again.');
+      const what = cls || 'Results';
+      toast.success(action === 'publish'
+        ? `🎉 ${what} published on the website!`
+        : `${what} taken off the website. Marks are editable again.`);
       setConfirm(null);
+      await load();
       await onChanged?.();
     } catch (err) {
       toast.error(err.message || String(err));
@@ -160,6 +172,14 @@ const ExamWorkspace = ({ exam, students, onBack, onEdit, onChanged }) => {
   }
 
   const pct = totals.cells ? Math.round((totals.filled / totals.cells) * 100) : 0;
+  const liveCount = classes.filter(c => liveClasses.has(c)).length;
+  // Classes with at least one mark that are not live yet.
+  const readyClasses = classStats.filter(c => c.filledCells > 0 && !liveClasses.has(c.cls)).map(c => c.cls);
+  const confirmStats = confirm
+    ? classStats.filter(c => (confirm.cls ? c.cls === confirm.cls : (confirm.action === 'publish' ? readyClasses.includes(c.cls) : liveClasses.has(c.cls))))
+    : [];
+  const confirmStudents = confirmStats.reduce((n, c) => n + c.roster.length, 0);
+  const confirmIncomplete = confirmStats.reduce((n, c) => n + c.incomplete.length, 0);
 
   return (
     <div className="space-y-5">
@@ -171,17 +191,15 @@ const ExamWorkspace = ({ exam, students, onBack, onEdit, onChanged }) => {
           </button>
           <div className="flex flex-wrap items-center gap-2">
             <h2 className="truncate text-xl font-bold text-stone-900">{exam.name}</h2>
-            <StatusBadge status={exam.status} />
+            <PublishBadge live={liveCount} total={classes.length} />
           </div>
           <p className="mt-0.5 text-xs text-stone-500">
             {[exam.academic_year, exam.exam_date && new Date(exam.exam_date).toLocaleDateString('en-IN'), `${classes.length} classes`, `${totals.students} students`].filter(Boolean).join(' · ')}
           </p>
         </div>
-        {!locked && (
-          <button type="button" onClick={() => guardDirty(() => onEdit({ ...exam, subjects }))} className="inline-flex items-center justify-center gap-1.5 rounded-xl border border-stone-200 px-4 py-2.5 text-sm font-semibold text-stone-700 hover:bg-stone-50">
-            <Edit3 className="h-4 w-4" /> Edit exam & subjects
-          </button>
-        )}
+        <button type="button" onClick={() => guardDirty(() => onEdit({ ...exam, subjects, liveClasses: [...liveClasses.keys()] }))} className="inline-flex items-center justify-center gap-1.5 rounded-xl border border-stone-200 px-4 py-2.5 text-sm font-semibold text-stone-700 hover:bg-stone-50">
+          <Edit3 className="h-4 w-4" /> {liveCount > 0 ? 'Add class / edit exam' : 'Edit exam & subjects'}
+        </button>
       </div>
 
       {/* Steps */}
@@ -215,7 +233,7 @@ const ExamWorkspace = ({ exam, students, onBack, onEdit, onChanged }) => {
               >
                 <span className="block text-sm font-bold">{c.cls}</span>
                 <span className={`block text-[10px] font-semibold ${c.cls === activeClass ? 'text-emerald-100' : 'text-stone-400'}`}>
-                  {c.roster.length - c.incomplete.length}/{c.roster.length} complete
+                  {liveClasses.has(c.cls) ? '● Published' : `${c.roster.length - c.incomplete.length}/${c.roster.length} complete`}
                 </span>
               </button>
             ))}
@@ -227,7 +245,7 @@ const ExamWorkspace = ({ exam, students, onBack, onEdit, onChanged }) => {
               subjects={active.subs}
               roster={active.roster}
               marks={marks}
-              locked={locked}
+              locked={liveClasses.has(active.cls)}
               onSaved={load}
               onDirtyChange={setGridDirty}
             />
@@ -236,43 +254,41 @@ const ExamWorkspace = ({ exam, students, onBack, onEdit, onChanged }) => {
       ) : (
         <div className="space-y-5">
           {/* Publish panel */}
-          <div className={`rounded-2xl border p-5 ${locked ? 'border-emerald-200 bg-emerald-50' : 'border-stone-200 bg-white'}`}>
-            {locked ? (
-              <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-                <div>
-                  <p className="flex items-center gap-2 font-bold text-emerald-800"><CheckCircle2 className="h-5 w-5" /> Live on the website</p>
-                  <p className="mt-1 text-sm text-emerald-700">
-                    Published {exam.published_at && new Date(exam.published_at).toLocaleString('en-IN')}. Students and parents can check results with the registration number and date of birth.
+          <div className={`rounded-2xl border p-5 ${liveCount > 0 ? 'border-emerald-200 bg-emerald-50' : 'border-stone-200 bg-white'}`}>
+            <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+              <div className="min-w-0 flex-1">
+                {liveCount > 0 ? (
+                  <p className="flex items-center gap-2 font-bold text-emerald-800">
+                    <CheckCircle2 className="h-5 w-5" /> {liveCount} of {classes.length} class{classes.length === 1 ? '' : 'es'} live on the website
                   </p>
-                </div>
-                <div className="flex flex-wrap gap-2">
-                  <a href={RESULTS_PATH} target="_blank" rel="noreferrer" className="inline-flex flex-1 items-center justify-center gap-1.5 rounded-xl bg-white px-4 py-2.5 text-sm font-semibold text-emerald-800 hover:bg-emerald-100 sm:flex-none">
-                    <ExternalLink className="h-4 w-4" /> Open page
-                  </a>
-                  <button type="button" onClick={handleShare} className="inline-flex flex-1 items-center justify-center gap-1.5 rounded-xl bg-white px-4 py-2.5 text-sm font-semibold text-emerald-800 hover:bg-emerald-100 sm:flex-none">
-                    <Share2 className="h-4 w-4" /> Share link
-                  </button>
-                  <button type="button" onClick={() => setConfirm('unpublish')} className="inline-flex flex-1 items-center justify-center gap-1.5 rounded-xl border border-red-100 bg-red-50 px-4 py-2.5 text-sm font-semibold text-red-600 hover:bg-red-100 sm:flex-none">
-                    <EyeOff className="h-4 w-4" /> Unpublish
-                  </button>
-                </div>
-              </div>
-            ) : (
-              <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-                <div className="min-w-0 flex-1">
+                ) : (
                   <p className="font-bold text-stone-900">Marks entered: {pct}%</p>
-                  <div className="mt-2 h-2 overflow-hidden rounded-full bg-stone-100">
-                    <div className="h-full rounded-full bg-emerald-500 transition-all" style={{ width: `${pct}%` }} />
-                  </div>
-                  <p className="mt-2 text-xs text-stone-500">
-                    {totals.incomplete === 0 ? 'Every student has all marks. Ready to publish.' : `${totals.incomplete} student${totals.incomplete > 1 ? 's have' : ' has'} missing marks.`}
-                  </p>
+                )}
+                <div className="mt-2 h-2 overflow-hidden rounded-full bg-white/70">
+                  <div className="h-full rounded-full bg-emerald-500 transition-all" style={{ width: `${pct}%` }} />
                 </div>
-                <button type="button" onClick={() => setConfirm('publish')} disabled={totals.filled === 0} className="inline-flex items-center justify-center gap-2 rounded-xl bg-emerald-600 px-6 py-3 text-sm font-bold text-white shadow-sm hover:bg-emerald-700 disabled:opacity-50">
-                  <Send className="h-4 w-4" /> Publish Results
-                </button>
+                <p className={`mt-2 text-xs ${liveCount > 0 ? 'text-emerald-700' : 'text-stone-500'}`}>
+                  Publish each class when its marks are ready. Published classes stay online while you work on the others.
+                </p>
               </div>
-            )}
+              <div className="flex flex-wrap gap-2">
+                {readyClasses.length > 0 && (
+                  <button type="button" onClick={() => setConfirm({ action: 'publish', cls: readyClasses.length === 1 ? readyClasses[0] : null })} className="inline-flex flex-1 items-center justify-center gap-2 rounded-xl bg-emerald-600 px-5 py-2.5 text-sm font-bold text-white shadow-sm hover:bg-emerald-700 sm:flex-none">
+                    <Send className="h-4 w-4" /> {readyClasses.length === 1 ? `Publish ${readyClasses[0]}` : `Publish ${readyClasses.length} ready classes`}
+                  </button>
+                )}
+                {liveCount > 0 && (
+                  <>
+                    <a href={RESULTS_PATH} target="_blank" rel="noreferrer" className="inline-flex flex-1 items-center justify-center gap-1.5 rounded-xl bg-white px-4 py-2.5 text-sm font-semibold text-emerald-800 hover:bg-emerald-100 sm:flex-none">
+                      <ExternalLink className="h-4 w-4" /> Open page
+                    </a>
+                    <button type="button" onClick={handleShare} className="inline-flex flex-1 items-center justify-center gap-1.5 rounded-xl bg-white px-4 py-2.5 text-sm font-semibold text-emerald-800 hover:bg-emerald-100 sm:flex-none">
+                      <Share2 className="h-4 w-4" /> Share link
+                    </button>
+                  </>
+                )}
+              </div>
+            </div>
           </div>
 
           {/* Class completion */}
@@ -280,10 +296,12 @@ const ExamWorkspace = ({ exam, students, onBack, onEdit, onChanged }) => {
             {classStats.map(c => {
               const cp = c.totalCells ? Math.round((c.filledCells / c.totalCells) * 100) : 0;
               return (
-                <div key={c.cls} className="rounded-2xl border border-stone-200 bg-white p-4">
-                  <div className="flex items-center justify-between">
+                <div key={c.cls} className={`rounded-2xl border bg-white p-4 ${liveClasses.has(c.cls) ? 'border-emerald-200' : 'border-stone-200'}`}>
+                  <div className="flex items-center justify-between gap-2">
                     <p className="font-bold text-stone-900">{c.cls}</p>
-                    <span className={`text-xs font-bold ${cp === 100 ? 'text-emerald-600' : 'text-amber-600'}`}>{cp}%</span>
+                    {liveClasses.has(c.cls)
+                      ? <span className="rounded-full bg-emerald-100 px-2 py-0.5 text-[10px] font-bold text-emerald-800">● Published {new Date(liveClasses.get(c.cls)).toLocaleDateString('en-IN')}</span>
+                      : <span className={`text-xs font-bold ${cp === 100 ? 'text-emerald-600' : 'text-amber-600'}`}>{cp}% entered</span>}
                   </div>
                   <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-stone-100">
                     <div className={`h-full rounded-full ${cp === 100 ? 'bg-emerald-500' : 'bg-amber-400'}`} style={{ width: `${cp}%` }} />
@@ -303,6 +321,17 @@ const ExamWorkspace = ({ exam, students, onBack, onEdit, onChanged }) => {
                       </ul>
                     </details>
                   )}
+                  <div className="mt-3 flex justify-end">
+                    {liveClasses.has(c.cls) ? (
+                      <button type="button" onClick={() => setConfirm({ action: 'unpublish', cls: c.cls })} className="inline-flex items-center gap-1.5 rounded-xl border border-red-100 bg-red-50 px-3 py-1.5 text-xs font-semibold text-red-600 hover:bg-red-100">
+                        <EyeOff className="h-3.5 w-3.5" /> Unpublish {c.cls}
+                      </button>
+                    ) : (
+                      <button type="button" onClick={() => setConfirm({ action: 'publish', cls: c.cls })} disabled={c.filledCells === 0} className="inline-flex items-center gap-1.5 rounded-xl bg-emerald-600 px-3 py-1.5 text-xs font-bold text-white hover:bg-emerald-700 disabled:opacity-40" title={c.filledCells === 0 ? 'Enter marks first' : undefined}>
+                        <Send className="h-3.5 w-3.5" /> Publish {c.cls}
+                      </button>
+                    )}
+                  </div>
                 </div>
               );
             })}
@@ -333,7 +362,9 @@ const ExamWorkspace = ({ exam, students, onBack, onEdit, onChanged }) => {
       <ResultsModal
         open={!!confirm}
         onClose={() => !working && setConfirm(null)}
-        title={confirm === 'publish' ? 'Publish results?' : 'Unpublish results?'}
+        title={confirm?.action === 'publish'
+          ? `Publish ${confirm?.cls || `${confirmStats.length} classes`}?`
+          : `Unpublish ${confirm?.cls || 'every class'}?`}
         maxWidth="max-w-md"
         footer={(
           <div className="flex gap-2">
@@ -342,30 +373,30 @@ const ExamWorkspace = ({ exam, students, onBack, onEdit, onChanged }) => {
               type="button"
               onClick={runStatusChange}
               disabled={working}
-              className={`flex flex-1 items-center justify-center gap-1.5 rounded-xl px-4 py-2.5 text-sm font-semibold text-white disabled:opacity-50 ${confirm === 'publish' ? 'bg-emerald-600 hover:bg-emerald-700' : 'bg-red-600 hover:bg-red-700'}`}
+              className={`flex flex-1 items-center justify-center gap-1.5 rounded-xl px-4 py-2.5 text-sm font-semibold text-white disabled:opacity-50 ${confirm?.action === 'publish' ? 'bg-emerald-600 hover:bg-emerald-700' : 'bg-red-600 hover:bg-red-700'}`}
             >
               {working && <RefreshCw className="h-4 w-4 animate-spin" />}
-              {confirm === 'publish' ? 'Yes, publish' : 'Yes, unpublish'}
+              {confirm?.action === 'publish' ? 'Yes, publish' : 'Yes, unpublish'}
             </button>
           </div>
         )}
       >
-        {confirm === 'publish' ? (
+        {confirm?.action === 'publish' ? (
           <ul className="space-y-2 text-sm text-stone-600">
-            <li>• <b>{totals.students}</b> students in <b>{classes.length}</b> classes can check their result on the website.</li>
-            <li>• A “Results Published” section appears on the home page, and this becomes the result shown at <b>/results</b>.</li>
+            <li>• <b>{confirmStudents}</b> student{confirmStudents === 1 ? '' : 's'} in <b>{confirmStats.map(c => c.cls).join(', ')}</b> can check their result on the website.</li>
+            {liveCount === 0 && <li>• A “Results Published” section appears on the home page, and the result is available at <b>/results</b>.</li>}
             <li>• Marks are added to the <b>leaderboard</b> and parents see them on their dashboard.</li>
-            <li>• Marks are locked until you unpublish.</li>
-            {totals.incomplete > 0 && (
+            <li>• {confirm?.cls ? `${confirm.cls}'s` : 'These classes’'} marks are locked until unpublished. Other classes stay editable.</li>
+            {confirmIncomplete > 0 && (
               <li className="rounded-xl bg-amber-50 p-3 text-amber-800">
-                ⚠️ {totals.incomplete} student{totals.incomplete > 1 ? 's have' : ' has'} missing marks. Those subjects will show as “Pending”.
+                ⚠️ {confirmIncomplete} student{confirmIncomplete > 1 ? 's have' : ' has'} missing marks. Those subjects will show as “Pending”.
               </li>
             )}
           </ul>
         ) : (
           <p className="text-sm text-stone-600">
-            The results disappear from the website and parent dashboard, and the leaderboard points from this exam are removed.
-            You can correct marks and publish again.
+            {confirm?.cls || 'Every class'}&apos;s results disappear from the website and parent dashboards, and their leaderboard points
+            from this exam are removed. {liveCount > 1 && confirm?.cls ? 'Other published classes stay online. ' : ''}You can correct marks and publish again.
           </p>
         )}
       </ResultsModal>
