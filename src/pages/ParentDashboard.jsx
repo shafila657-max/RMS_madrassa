@@ -3,7 +3,7 @@ import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import {
   LogOut, ChevronRight, Users, AlertCircle,
-  Calendar, TrendingUp, DollarSign, Award, Bell, Megaphone, AlertTriangle, Trophy, ShieldCheck, X
+  Calendar, TrendingUp, DollarSign, Award, Bell, Megaphone, AlertTriangle, Trophy, ShieldCheck, X, LayoutDashboard, ChevronDown
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { logout, clearCachedProfile } from '@/utils/auth';
@@ -33,6 +33,7 @@ const ParentDashboard = () => {
   const [pushPermission, setPushPermission] = useState(getNotificationPermission());
   const [dismissedNotifs, setDismissedNotifs] = useState([]);
   const [showNotifications, setShowNotifications] = useState(false);
+  const [showChildPicker, setShowChildPicker] = useState(false);
   const [userId, setUserId] = useState(null);
 
   useEffect(() => { fetchChildren(); }, [session?.user?.id]);
@@ -201,16 +202,58 @@ const ParentDashboard = () => {
       {/* Header */}
       <header className="sticky top-0 z-50 bg-white/80 backdrop-blur-xl border-b border-stone-100 shadow-sm">
         <div className="max-w-2xl mx-auto px-4 py-3 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <img src="/apple-touch-icon.png" alt="RMS Madrasa" className="w-10 h-10 rounded-2xl object-cover shadow-md shadow-emerald-200" />
-            <div>
-              <span className="font-bold text-stone-900 text-sm">RMS Madrasa</span>
-              <p className="text-[11px] text-stone-400 font-medium">Parent Family Portal</p>
+          <div className="flex min-w-0 items-center gap-2.5 sm:gap-3">
+            <img src="/apple-touch-icon.png" alt="RMS Madrasa" className="w-10 h-10 flex-shrink-0 rounded-2xl object-cover shadow-md shadow-emerald-200" />
+            <div className="min-w-0">
+              <span className="block whitespace-nowrap font-bold text-stone-900 text-sm">RMS Madrasa</span>
+              <p className="truncate text-[11px] text-stone-400 font-medium">Parent Family Portal</p>
             </div>
           </div>
-          <div className="flex items-center gap-2 relative">
+          <div className="flex flex-shrink-0 items-center gap-1 sm:gap-2 relative">
+            {/* Straight to the child's dashboard; with several children, pick one first. */}
+            {children.length > 0 && (
+              <div className="relative">
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (children.length === 1) navigate(`/parent/${children[0].id}`);
+                    else { setShowNotifications(false); setShowChildPicker(v => !v); }
+                  }}
+                  className="inline-flex items-center gap-1.5 rounded-xl bg-emerald-600 px-3 py-2 text-xs font-bold text-white shadow-sm shadow-emerald-200 transition-colors hover:bg-emerald-700"
+                  aria-haspopup={children.length > 1 ? 'menu' : undefined}
+                  aria-expanded={children.length > 1 ? showChildPicker : undefined}
+                >
+                  <LayoutDashboard className="h-4 w-4" />
+                  <span>Dashboard</span>
+                  {children.length > 1 && <ChevronDown className={`h-3.5 w-3.5 transition-transform ${showChildPicker ? 'rotate-180' : ''}`} />}
+                </button>
+                {showChildPicker && children.length > 1 && (
+                  <>
+                    <div className="fixed inset-0 z-40" onClick={() => setShowChildPicker(false)} aria-hidden="true" />
+                    <div role="menu" className="absolute right-0 top-full z-50 mt-2 w-60 overflow-hidden rounded-2xl border border-stone-200 bg-white p-1.5 shadow-xl">
+                      <p className="px-3 pb-1 pt-1.5 text-[10px] font-bold uppercase tracking-wide text-stone-400">Open dashboard for</p>
+                      {children.map(child => (
+                        <button
+                          key={child.id}
+                          type="button"
+                          role="menuitem"
+                          onClick={() => { setShowChildPicker(false); navigate(`/parent/${child.id}`); }}
+                          className="flex w-full items-center justify-between gap-2 rounded-xl px-3 py-2.5 text-left hover:bg-stone-50"
+                        >
+                          <span className="min-w-0">
+                            <span className="block truncate text-sm font-semibold text-stone-800">{child.full_name}</span>
+                            <span className="block text-[11px] text-stone-400">{child.class_level}</span>
+                          </span>
+                          <ChevronRight className="h-4 w-4 flex-shrink-0 text-stone-300" />
+                        </button>
+                      ))}
+                    </div>
+                  </>
+                )}
+              </div>
+            )}
             <button
-              onClick={() => setShowNotifications(!showNotifications)}
+              onClick={() => { setShowChildPicker(false); setShowNotifications(!showNotifications); }}
               className="relative p-2 rounded-xl hover:bg-stone-100 text-stone-500 transition-colors"
             >
               <Bell className="w-5 h-5" />
@@ -404,6 +447,7 @@ const ParentDashboard = () => {
                 standings={leaderboardStandings}
                 highlightIds={children.map(child => child.id)}
                 title="Top Performers"
+                listLimit={5}
               />
             )}
             <h2 className="text-base font-bold text-stone-900">Enrolled Children ({children.length})</h2>

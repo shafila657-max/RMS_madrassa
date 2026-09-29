@@ -84,6 +84,31 @@ const AvatarSquare = ({ student }) => (
   </div>
 );
 
+const RankedRow = ({ student, rank, isHighlighted }) => (
+  <div className={`flex items-center gap-3 px-4 py-4 ${isHighlighted ? 'bg-emerald-50/70' : 'bg-white'}`}>
+    <div className="relative flex h-9 w-9 shrink-0 items-center justify-center">
+      <Star className={`absolute inset-0 h-9 w-9 fill-current drop-shadow-sm ${listTheme.rank}`} />
+      <span className="relative text-[10px] font-black text-slate-950">#{rank}</span>
+    </div>
+
+    <AvatarSquare student={student} />
+
+    <div className="min-w-0 flex-1">
+      <p className="text-sm font-medium leading-snug text-slate-900 sm:text-base">
+        {student.full_name}
+      </p>
+      <p className="mt-0.5 text-[10px] text-slate-500">
+        {student.class_level}
+        {isHighlighted ? ' · Your child' : ''}
+      </p>
+    </div>
+
+    <div className={`shrink-0 text-right text-base font-black sm:text-lg ${listTheme.score}`}>
+      {student.totalPoints}
+    </div>
+  </div>
+);
+
 const PodiumColumn = ({ student, rank, dense = false }) => {
   if (!student) return <div className="min-h-[1px]" />;
 
@@ -148,6 +173,9 @@ const LeaderboardShowcase = ({
   screenTone = 'emerald',
   showScreenHeader = true,
   showRankedList = true,
+  // Show only this many places after the podium; highlighted students further down are
+  // added at the end with their own rank. Omit to list everyone.
+  listLimit,
 }) => {
   const [activeTab, setActiveTab] = useState('all');
   const isScreen = variant === 'screen';
@@ -155,12 +183,18 @@ const LeaderboardShowcase = ({
   if (!standings.length) return null;
 
   const highlighted = new Set(highlightIds);
+
   const podium = {
     1: standings[0] || null,
     2: standings[1] || null,
     3: standings[2] || null,
   };
-  const rankedList = standings.slice(3);
+  const rankOf = (student, index) => student.rank ?? index + 1;
+  const withRank = standings.map((student, index) => ({ student, rank: rankOf(student, index) }));
+  const rankedList = listLimit == null ? withRank.slice(3) : withRank.slice(3, 3 + listLimit);
+  const pinnedBelow = listLimit == null
+    ? []
+    : withRank.slice(3 + listLimit).filter(({ student }) => highlighted.has(student.id));
   const screenSurface = screenTone === 'neutral'
     ? 'bg-[linear-gradient(180deg,#f5f5f4_0%,#e7e5e4_46%,#d6d3d1_100%)]'
     : screenTone === 'transparent'
@@ -246,37 +280,19 @@ const LeaderboardShowcase = ({
           </div>
 
           <div className="mt-4 divide-y divide-slate-200">
-            {rankedList.map((student, index) => {
-              const rank = index + 4;
-              const isHighlighted = highlighted.has(student.id);
-              return (
-                <div
-                  key={student.id}
-                  className={`flex items-center gap-3 px-4 py-4 ${isHighlighted ? 'bg-emerald-50/70' : 'bg-white'}`}
-                >
-                  <div className="relative flex h-9 w-9 shrink-0 items-center justify-center">
-                    <Star className={`absolute inset-0 h-9 w-9 fill-current drop-shadow-sm ${listTheme.rank}`} />
-                    <span className="relative text-[10px] font-black text-slate-950">#{rank}</span>
-                  </div>
-
-                  <AvatarSquare student={student} />
-
-                  <div className="min-w-0 flex-1">
-                    <p className="text-sm font-medium leading-snug text-slate-900 sm:text-base">
-                      {student.full_name}
-                    </p>
-                    <p className="mt-0.5 text-[10px] text-slate-500">
-                      {student.class_level}
-                      {isHighlighted ? ' · Your student' : ''}
-                    </p>
-                  </div>
-
-                  <div className={`shrink-0 text-right text-base font-black sm:text-lg ${listTheme.score}`}>
-                    {student.totalPoints}
-                  </div>
-                </div>
-              );
-            })}
+            {rankedList.map(({ student, rank }) => (
+              <RankedRow key={student.id} student={student} rank={rank} isHighlighted={highlighted.has(student.id)} />
+            ))}
+            {pinnedBelow.length > 0 && (
+              <div className="flex items-center justify-center gap-1 bg-slate-50 py-1.5 text-slate-400" aria-hidden="true">
+                <span className="h-1 w-1 rounded-full bg-current" />
+                <span className="h-1 w-1 rounded-full bg-current" />
+                <span className="h-1 w-1 rounded-full bg-current" />
+              </div>
+            )}
+            {pinnedBelow.map(({ student, rank }) => (
+              <RankedRow key={student.id} student={student} rank={rank} isHighlighted />
+            ))}
           </div>
         </div>
       </section>}
