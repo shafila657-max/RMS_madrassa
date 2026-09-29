@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import {
   ArrowLeft, Calendar, Award, TrendingUp,
   DollarSign, BarChart2, CheckCircle2, Clock, AlertCircle, Star,
@@ -50,7 +50,14 @@ const StudentDetailPage = ({ viewer = 'parent' }) => {
   const [loading, setLoading] = useState(true);
   const [notLinked, setNotLinked] = useState(false);
   const [latestResults, setLatestResults] = useState([]);
-  const [activeTab, setActiveTab] = useState('overview');
+  // The open tab lives in the address (?tab=homework etc.) so refresh and Back keep it.
+  const [searchParams, setSearchParams] = useSearchParams();
+  const requestedTab = searchParams.get('tab') || 'overview';
+  const setActiveTab = (id) => {
+    if (id === 'overview') setSearchParams({});
+    else setSearchParams({ tab: id });
+    window.scrollTo(0, 0);
+  };
 
   // New feature state
   const [timetable, setTimetable] = useState([]);
@@ -226,6 +233,7 @@ const StudentDetailPage = ({ viewer = 'parent' }) => {
     { id: 'awards',    label: 'Awards',    icon: Award },
     { id: 'settings',  label: 'Settings',  icon: Settings2 },
   ].filter(t => !(isStudentView && t.parentOnly));
+  const activeTab = tabs.some(t => t.id === requestedTab) ? requestedTab : 'overview';
 
   const settingsTabs = [
     { id: 'profile', label: 'Profile', icon: UserRound, description: 'Student details and quick info' },

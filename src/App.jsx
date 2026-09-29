@@ -63,7 +63,7 @@ function App() {
                       <Route path="/programs" element={<ProgramsPage />} />
 
                       {/* Protected Admin & Teacher Routes */}
-                      <Route path="/admin" element={
+                      <Route path="/admin/:tab?" element={
                           <ProtectedRoute allowedRoles={['admin', 'teacher']}>
                               <AdminDashboard />
                           </ProtectedRoute>
