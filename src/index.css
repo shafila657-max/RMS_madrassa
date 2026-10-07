@@ -275,3 +275,44 @@
     display: none !important;
   }
 }
+
+/* Date and time fields must never be wider than their box (any browser). */
+input[type='date'],
+input[type='time'],
+input[type='datetime-local'],
+input[type='month'] {
+  min-width: 0;
+  max-width: 100%;
+}
+
+/* iPhone / iPad (Safari, and Chrome, which uses the same engine there): native date fields
+   ignore width:100% and stick out of their card, and an empty one shows no hint. */
+@supports (-webkit-touch-callout: none) {
+  input[type='date'],
+  input[type='time'],
+  input[type='datetime-local'],
+  input[type='month'] {
+    -webkit-appearance: none;
+    appearance: none;
+    min-width: 0;
+    max-width: 100%;
+  }
+  input[type='date']::-webkit-date-and-time-value,
+  input[type='time']::-webkit-date-and-time-value,
+  input[type='datetime-local']::-webkit-date-and-time-value,
+  input[type='month']::-webkit-date-and-time-value {
+    text-align: left;
+    min-height: 1.25em;
+  }
+  .ios-date-hint:has(input[type='date']:placeholder-shown, input[type='date'][data-empty='true'])::after {
+    content: attr(data-hint);
+    position: absolute;
+    left: 1rem;
+    top: 50%;
+    transform: translateY(-50%);
+    pointer-events: none;
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: rgb(168 162 158);
+  }
+}

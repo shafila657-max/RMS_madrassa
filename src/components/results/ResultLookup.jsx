@@ -91,14 +91,17 @@ const ResultLookup = ({ tone = 'light' }) => {
               </div>
               <div>
                 <label htmlFor="result-dob" className={labelCls}>Date of Birth</label>
-                <input
-                  id="result-dob"
-                  type="date"
-                  value={dob}
-                  onChange={e => setDob(e.target.value)}
-                  max={localDateString()}
-                  className={inputCls}
-                />
+                <div className="ios-date-hint relative" data-hint="Tap to select date">
+                  <input
+                    id="result-dob"
+                    type="date"
+                    value={dob}
+                    data-empty={dob ? 'false' : 'true'}
+                    onChange={e => setDob(e.target.value)}
+                    max={localDateString()}
+                    className={inputCls}
+                  />
+                </div>
               </div>
             </div>
 
