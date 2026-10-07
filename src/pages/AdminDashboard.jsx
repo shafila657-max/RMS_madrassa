@@ -19,6 +19,7 @@ import { fetchFullLeaderboardData } from '@/utils/leaderboard';
 import { localDateString } from '@/utils/date';
 import ResultsManager from '@/components/results/ResultsManager';
 import TeacherExams from '@/components/results/TeacherExams';
+import StudentListExport from '@/components/StudentListExport';
 import { describeSaveError, CLASS_LEVELS } from '@/utils/results';
 import ProfileMenu from '@/components/account/ProfileMenu';
 import ProfilePage from '@/components/account/ProfilePage';
@@ -169,6 +170,7 @@ const AdminDashboard = () => {
   const [students, setStudents] = useState([]);
   const [parents, setParents] = useState([]);
   const [showAddStudent, setShowAddStudent] = useState(false);
+  const [showStudentExport, setShowStudentExport] = useState(false);
   const [showLinkParent, setShowLinkParent] = useState(false);
   const [selectedStudent, setSelectedStudent] = useState(null);
   const [studentForm, setStudentForm] = useState({ full_name: '', class_level: '', admission_date: '', registration_no: '', date_of_birth: '' });
@@ -1930,10 +1932,20 @@ const AdminDashboard = () => {
                   <h2 className="text-xl font-bold text-stone-900">Student Directory ({filteredStudents.length})</h2>
                   <p className="text-xs text-stone-400">Default view shows active enrolled students</p>
                 </div>
-                <Btn className="w-full sm:w-auto flex-shrink-0" onClick={() => setShowAddStudent(true)}>
-                  <Plus className="w-4 h-4" /> Add Student
-                </Btn>
+                <div className="flex gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setShowStudentExport(true)}
+                    className="inline-flex flex-1 items-center justify-center gap-1.5 rounded-xl bg-stone-100 px-4 py-2.5 text-sm font-semibold text-stone-700 hover:bg-stone-200 sm:flex-none"
+                  >
+                    <FileText className="w-4 h-4" /> Download list
+                  </button>
+                  <Btn className="flex-1 sm:flex-none" onClick={() => setShowAddStudent(true)}>
+                    <Plus className="w-4 h-4" /> Add Student
+                  </Btn>
+                </div>
               </div>
+              <StudentListExport open={showStudentExport} onClose={() => setShowStudentExport(false)} />
 
               {/* Status Filter Tabs */}
               <div className="flex flex-wrap items-center gap-2 p-1.5 bg-stone-100/80 rounded-2xl">
