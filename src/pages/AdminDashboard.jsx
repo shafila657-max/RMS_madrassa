@@ -18,6 +18,7 @@ import AdminStudentModal from '@/components/AdminStudentModal';
 import { fetchFullLeaderboardData } from '@/utils/leaderboard';
 import { localDateString } from '@/utils/date';
 import ResultsManager from '@/components/results/ResultsManager';
+import TeacherExams from '@/components/results/TeacherExams';
 import { describeSaveError, CLASS_LEVELS } from '@/utils/results';
 import ProfileMenu from '@/components/account/ProfileMenu';
 import ProfilePage from '@/components/account/ProfilePage';
@@ -151,7 +152,7 @@ const AdminDashboard = () => {
   // Pages opened from the profile menu rather than the tab bar.
   const ACCOUNT_PAGES = isTeacher ? ['profile', 'settings'] : ['profile', 'settings', 'users'];
   const { tab: tabParam } = useParams();
-  const allowedTabs = [...(isTeacher ? ['classes'] : ADMIN_TABS), ...ACCOUNT_PAGES];
+  const allowedTabs = [...(isTeacher ? ['classes', 'exams'] : ADMIN_TABS), ...ACCOUNT_PAGES];
   const activeTab = allowedTabs.includes(tabParam) ? tabParam : (isTeacher ? 'classes' : 'overview');
   const setActiveTab = useCallback((id) => {
     if (id === activeTab) return;
@@ -1350,7 +1351,8 @@ const AdminDashboard = () => {
 
   const tabs = isTeacher 
     ? [
-        { id: 'classes', label: 'Classes' }
+        { id: 'classes', label: 'Classes' },
+        { id: 'exams', label: '📝 Exams' },
       ] 
     : [
         { id: 'overview', label: 'Overview' },
@@ -2068,6 +2070,13 @@ const AdminDashboard = () => {
           {activeTab === 'results' && (
             <motion.div key="results" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
               <ResultsManager students={students} />
+            </motion.div>
+          )}
+
+          {/* ── EXAMS (teachers: marks of their classes, reports) ── */}
+          {activeTab === 'exams' && isTeacher && (
+            <motion.div key="exams" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+              <TeacherExams students={students} />
             </motion.div>
           )}
 
@@ -4279,16 +4288,18 @@ const AdminDashboard = () => {
             { id: 'discipline', label: 'Discipline', icon: ShieldCheck },
             { id: 'timetable', label: 'Timetable', icon: Clock },
             { id: 'leaves', label: 'Leaves', icon: Calendar },
-          ].map(({ id, label, icon: Icon }) => {
-            const isActive = classSubTab === id;
+            { id: 'exams', label: 'Exams', icon: FileText, tab: 'exams' },
+          ].map(({ id, label, icon: Icon, tab }) => {
+            const isActive = tab ? activeTab === tab : activeTab === 'classes' && classSubTab === id;
             return (
               <button
                 key={id}
                 onClick={() => {
+                  if (tab) { setActiveTab(tab); return; }
                   setActiveTab('classes');
                   setClassSubTab(id);
                 }}
-                className={`flex flex-col items-center gap-1 px-3 py-1 rounded-xl transition-all flex-shrink-0 ${
+                className={`flex flex-col items-center gap-1 px-1.5 py-1 rounded-xl transition-all flex-shrink-0 ${
                   isActive ? 'text-emerald-700 font-bold scale-105' : 'text-stone-400 hover:text-stone-700 font-medium'
                 }`}
               >

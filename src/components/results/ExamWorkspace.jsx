@@ -1,34 +1,17 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { toast } from 'sonner';
 import {
-  ArrowLeft, Edit3, RefreshCw, Send, EyeOff, CheckCircle2, AlertCircle, ExternalLink, Share2, Eye, ClipboardList,
+  ArrowLeft, Edit3, RefreshCw, Send, EyeOff, CheckCircle2, AlertCircle, ExternalLink, Share2, Eye, ClipboardList, FileText,
 } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import MarksEntryGrid from './MarksEntryGrid';
 import ResultCard from './ResultCard';
 import ResultsModal from './ResultsModal';
 import {
-  CLASS_LEVELS, RESULTS_PATH, fetchAdminPreviewResult, markKey, shareResultsLink, studentsForExamClass,
+  CLASS_LEVELS, RESULTS_PATH, fetchAdminPreviewResult, fetchAllMarks, markKey, shareResultsLink, studentsForExamClass,
 } from '@/utils/results';
-
-// PostgREST returns at most 1000 rows per request, so page through larger mark sheets.
-async function fetchAllMarks(subjectIds) {
-  if (subjectIds.length === 0) return [];
-  const pageSize = 1000;
-  const rows = [];
-  for (let from = 0; ; from += pageSize) {
-    const { data, error } = await supabase
-      .from('exam_marks')
-      .select('id, exam_subject_id, student_id, marks_obtained, is_absent')
-      .in('exam_subject_id', subjectIds)
-      .order('id')
-      .range(from, from + pageSize - 1);
-    if (error) throw error;
-    rows.push(...(data || []));
-    if (!data || data.length < pageSize) break;
-  }
-  return rows;
-}
+import MarkChangesList from './MarkChangesList';
+import ExamReports from './ExamReports';
 
 // "Published", "Published · 1/2 classes" or "Draft".
 export const PublishBadge = ({ live, total }) => {
@@ -203,24 +186,27 @@ const ExamWorkspace = ({ exam, students, onBack, onEdit, onChanged }) => {
       </div>
 
       {/* Steps */}
-      <div className="grid grid-cols-2 gap-2 rounded-2xl bg-stone-100 p-1.5">
+      <div className="grid grid-cols-3 gap-1.5 rounded-2xl bg-stone-100 p-1.5 sm:gap-2">
         {[
-          { id: 'marks', label: '2. Enter Marks', icon: ClipboardList },
-          { id: 'review', label: '3. Review & Publish', icon: Send },
-        ].map(({ id, label, icon: Icon }) => (
+          { id: 'marks', label: '2. Enter Marks', short: 'Marks', icon: ClipboardList },
+          { id: 'review', label: '3. Review & Publish', short: 'Publish', icon: Send },
+          { id: 'reports', label: '4. Reports & Cards', short: 'Reports', icon: FileText },
+        ].map(({ id, label, short, icon: Icon }) => (
           <button
             key={id}
             type="button"
             onClick={() => guardDirty(() => setStep(id))}
             className={`inline-flex items-center justify-center gap-1.5 rounded-xl py-2.5 text-sm font-bold transition-all ${step === id ? 'bg-white text-emerald-700 shadow-sm' : 'text-stone-500 hover:text-stone-800'}`}
           >
-            <Icon className="h-4 w-4" /> {label}
+            <Icon className="h-4 w-4" /> <span className="sm:hidden">{short}</span><span className="hidden sm:inline">{label}</span>
           </button>
         ))}
       </div>
 
       {classes.length === 0 ? (
         <p className="rounded-2xl bg-white p-10 text-center text-sm text-stone-400">This exam has no classes yet. Use “Edit exam & subjects” to add them.</p>
+      ) : step === 'reports' ? (
+        <ExamReports key={markRows.length} exam={exam} classes={classes} canEditRemarks />
       ) : step === 'marks' ? (
         <>
           <div className="flex gap-2 overflow-x-auto pb-1 no-scrollbar">
@@ -245,7 +231,7 @@ const ExamWorkspace = ({ exam, students, onBack, onEdit, onChanged }) => {
               subjects={active.subs}
               roster={active.roster}
               marks={marks}
-              locked={liveClasses.has(active.cls)}
+              live={liveClasses.has(active.cls)}
               onSaved={load}
               onDirtyChange={setGridDirty}
             />
@@ -337,6 +323,8 @@ const ExamWorkspace = ({ exam, students, onBack, onEdit, onChanged }) => {
             })}
           </div>
 
+          <MarkChangesList examId={exam.id} refreshKey={markRows} />
+
           {/* Preview */}
           <div className="rounded-2xl border border-stone-200 bg-white p-4">
             <p className="flex items-center gap-2 font-bold text-stone-900"><Eye className="h-4 w-4 text-emerald-600" /> Preview a student&apos;s result</p>
@@ -386,7 +374,7 @@ const ExamWorkspace = ({ exam, students, onBack, onEdit, onChanged }) => {
             <li>• <b>{confirmStudents}</b> student{confirmStudents === 1 ? '' : 's'} in <b>{confirmStats.map(c => c.cls).join(', ')}</b> can check their result on the website.</li>
             {liveCount === 0 && <li>• A “Results Published” section appears on the home page, and the result is available at <b>/results</b>.</li>}
             <li>• Marks are added to the <b>leaderboard</b> and parents see them on their dashboard.</li>
-            <li>• {confirm?.cls ? `${confirm.cls}'s` : 'These classes’'} marks are locked until unpublished. Other classes stay editable.</li>
+            <li>• Marks can still be corrected later (by you or the class teacher). Corrections go live at once and are recorded.</li>
             {confirmIncomplete > 0 && (
               <li className="rounded-xl bg-amber-50 p-3 text-amber-800">
                 ⚠️ {confirmIncomplete} student{confirmIncomplete > 1 ? 's have' : ' has'} missing marks. Those subjects will show as “Pending”.

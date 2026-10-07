@@ -67,6 +67,9 @@ export default defineConfig({
         // Supabase API responses are deliberately NOT cached: they hold private student data
         // (which must not outlive a logout on a shared device) and stale copies hid live data.
         globPatterns: ['**/*.{js,css,html,ico,png,svg,woff,woff2}'],
+        // PDF / Excel code is large and only needed online (for downloads): don't make every
+        // phone download it when the app installs or updates.
+        globIgnores: ['**/reports-*.js', '**/html2canvas.esm-*.js', '**/purify.es-*.js', '**/index.es-*.js'],
       },
     }),
   ],
@@ -79,6 +82,9 @@ export default defineConfig({
           'vendor-react': ['react', 'react-dom', 'react-router-dom'],
           'vendor-supabase': ['@supabase/supabase-js'],
           'vendor-motion': ['framer-motion'],
+          // Only loaded when someone downloads a result sheet or progress card.
+          'reports-pdf': ['jspdf', 'html2canvas-pro'],
+          'reports-excel': ['write-excel-file'],
         },
       },
     },
