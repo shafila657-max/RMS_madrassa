@@ -7,7 +7,7 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { supabase } from '@/lib/supabase';
-import { describeSaveError } from '@/utils/results';
+import { describeSaveError, CLASS_LEVELS } from '@/utils/results';
 import { localDateString } from '@/utils/date';
 
 const getGrade = (pct) => {
@@ -530,7 +530,7 @@ const AdminStudentModal = ({ student, parents = [], open, onClose, onRefresh }) 
                             onChange={e => setProfileForm(f => ({ ...f, class_level: e.target.value }))}
                             className="w-full border border-stone-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 bg-white"
                           >
-                            {['Class 1','Class 2','Class 3','Class 4','Class 5','Class 6','Class 7','Class 8','Class 9','Class 10','Hifz','Alim'].map(c => (
+                            {CLASS_LEVELS.map(c => (
                               <option key={c} value={c}>{c}</option>
                             ))}
                           </select>
@@ -606,7 +606,7 @@ const AdminStudentModal = ({ student, parents = [], open, onClose, onRefresh }) 
                             className="w-full border border-stone-200 rounded-xl px-3 py-2 text-sm font-bold focus:outline-none focus:ring-2 focus:ring-emerald-500 bg-white"
                           >
                             <option value="active">🟢 Active Enrolled Student</option>
-                            <option value="completed">🎓 Completed / Graduated (Class 10 / Alim)</option>
+                            <option value="completed">🎓 Completed / Graduated (Plus Two / Alim)</option>
                             <option value="dropped">⚠️ Dropped Out (Discontinued)</option>
                           </select>
                         </div>

@@ -3450,7 +3450,7 @@ const AdminDashboard = () => {
           <div className={`flex items-center justify-between ${isTeacher ? 'hidden md:flex' : ''}`}>
             <div>
               <h2 className="font-bold text-xl text-stone-900">Class Level Management</h2>
-              <p className="text-xs text-stone-500">Manage Class 1 to Class 10 roster, teachers, attendance & homework</p>
+              <p className="text-xs text-stone-500">Manage Class 1 to Plus Two roster, teachers, attendance & homework</p>
             </div>
           </div>
 
@@ -4263,7 +4263,7 @@ const AdminDashboard = () => {
           })(leaveApplications.filter(l => l.students?.class_level === selectedClassLevel))}
 
       {/* ══════════════════════════════════════════════════════════════ */}
-      {/* CLASS LEVEL MANAGEMENT TAB (Class 1 to Class 10)               */}
+      {/* CLASS LEVEL MANAGEMENT TAB (Class 1 to Plus Two, Hifz, Alim)   */}
       {/* ══════════════════════════════════════════════════════════════ */}
       
           </div>
