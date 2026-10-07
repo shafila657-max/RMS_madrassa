@@ -25,7 +25,7 @@ const toCellText = (row) => {
  * Spreadsheet-style marks sheet for one class: students as rows, subjects as columns.
  * Enter / arrow keys move between rows, Tab moves across subjects.
  */
-const MarksEntryGrid = ({ classLevel, subjects, roster, marks, locked, onSaved, onDirtyChange }) => {
+const MarksEntryGrid = ({ classLevel, subjects, roster, marks, locked, live, onSaved, onDirtyChange }) => {
   const [cells, setCells] = useState({});
   const [saving, setSaving] = useState(false);
 
@@ -94,7 +94,9 @@ const MarksEntryGrid = ({ classLevel, subjects, roster, marks, locked, onSaved, 
         const { error } = await supabase.from('exam_marks').delete().in('id', deletes);
         if (error) throw error;
       }
-      toast.success(`Saved ${dirtyKeys.length} mark${dirtyKeys.length > 1 ? 's' : ''} for ${classLevel}`);
+      toast.success(live
+        ? `Saved ${dirtyKeys.length} correction${dirtyKeys.length > 1 ? 's' : ''}. The published result is updated.`
+        : `Saved ${dirtyKeys.length} mark${dirtyKeys.length > 1 ? 's' : ''} for ${classLevel}`);
       await onSaved?.();
     } catch (err) {
       toast.error('Could not save marks: ' + (err.message || err));
@@ -115,6 +117,11 @@ const MarksEntryGrid = ({ classLevel, subjects, roster, marks, locked, onSaved, 
       {locked ? (
         <div className="flex items-center gap-2 rounded-xl bg-amber-50 px-4 py-3 text-sm text-amber-800">
           <Lock className="h-4 w-4 flex-shrink-0" /> {classLevel} is published, so its marks are locked. Unpublish {classLevel} (in Review &amp; Publish) to make corrections.
+        </div>
+      ) : live ? (
+        <div className="flex items-start gap-2 rounded-xl bg-amber-50 px-4 py-3 text-xs text-amber-900">
+          <Info className="mt-0.5 h-4 w-4 flex-shrink-0" />
+          <span><b>{classLevel} is published.</b> Corrections you save go live straight away on the website, leaderboard and parent dashboard, and are recorded with your name.</span>
         </div>
       ) : (
         <div className="flex items-start gap-2 rounded-xl bg-sky-50 px-4 py-3 text-xs text-sky-800">

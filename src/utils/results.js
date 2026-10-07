@@ -101,3 +101,22 @@ export const studentsForExamClass = (students, classLevel, markedStudentIds = ne
     .sort((a, b) => (a.full_name || '').localeCompare(b.full_name || ''));
 
 export const markKey = (subjectId, studentId) => `${subjectId}:${studentId}`;
+
+// PostgREST returns at most 1000 rows per request, so page through larger mark sheets.
+export async function fetchAllMarks(subjectIds) {
+  if (subjectIds.length === 0) return [];
+  const pageSize = 1000;
+  const rows = [];
+  for (let from = 0; ; from += pageSize) {
+    const { data, error } = await supabase
+      .from('exam_marks')
+      .select('id, exam_subject_id, student_id, marks_obtained, is_absent')
+      .in('exam_subject_id', subjectIds)
+      .order('id')
+      .range(from, from + pageSize - 1);
+    if (error) throw error;
+    rows.push(...(data || []));
+    if (!data || data.length < pageSize) break;
+  }
+  return rows;
+}
